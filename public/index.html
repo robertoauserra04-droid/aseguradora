@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seguros Carguill — Panel de Conversaciones</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css"
+    rel="stylesheet"
+  />
+  <style>
+    body { background: #f1f5f9; font-size: 14px; }
+    .sidebar { width: 260px; min-height: 100vh; background: #1e293b; color: #e2e8f0; }
+    .sidebar .brand { padding: 20px 16px 12px; font-weight: 700; font-size: 16px; border-bottom: 1px solid #334155; }
+    .estado-item { padding: 8px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-radius: 0; }
+    .estado-item:hover, .estado-item.active { background: #334155; }
+    .estado-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+    .badge-count { background: #334155; color: #94a3b8; font-size: 11px; padding: 2px 7px; border-radius: 10px; }
+    .estado-item.active .badge-count { background: #475569; color: #e2e8f0; }
+    .conv-card { background: #fff; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; border: 2px solid transparent; transition: border-color .15s; }
+    .conv-card:hover { border-color: #cbd5e1; }
+    .conv-card.selected { border-color: #3b82f6; }
+    .conv-card .nombre { font-weight: 600; font-size: 14px; }
+    .conv-card .preview { color: #64748b; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+    .prioridad-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+    .prioridad-critica { background: #fee2e2; color: #dc2626; }
+    .prioridad-alta { background: #fef3c7; color: #d97706; }
+    .prioridad-normal { background: #e0f2fe; color: #0284c7; }
+    .prioridad-baja { background: #f1f5f9; color: #64748b; }
+    .msg-burbuja { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 13px; margin-bottom: 6px; word-break: break-word; }
+    .msg-cliente { background: #f1f5f9; align-self: flex-start; border-bottom-left-radius: 2px; }
+    .msg-agente { background: #dcfce7; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .msg-sistema { background: #fef9c3; align-self: center; font-size: 11px; color: #92400e; }
+    .msg-hora { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+    #mensajes-container { display: flex; flex-direction: column; overflow-y: auto; max-height: calc(100vh - 340px); padding: 12px; background: #f8fafc; border-radius: 8px; }
+    .kpi-card { background: #fff; border-radius: 10px; padding: 16px 20px; text-align: center; }
+    .kpi-num { font-size: 28px; font-weight: 700; color: #1e293b; }
+    .kpi-label { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: .5px; margin-bottom: 8px; }
+    .badge-estado { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+    #detail-panel { display: none; }
+    #detail-panel.visible { display: block; }
+    .tab-content-custom { display: none; }
+    .tab-content-custom.active { display: block; }
+    .nota-item { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 8px; font-size: 13px; }
+    .cotizacion-item { background: #f0fdf4; border-left: 3px solid #22c55e; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 8px; font-size: 13px; }
+    .historial-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #475569; }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="d-flex">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar flex-shrink-0">
+    <div class="brand"><i class="bi bi-shield-check me-2"></i>Carguill</div>
+    <div class="px-3 pt-3 pb-1" style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Estados</div>
+    <div id="estados-lista"></div>
+    <div class="px-3 pt-3 mt-2" style="border-top:1px solid #334155;">
+      <button class="btn btn-sm btn-outline-secondary w-100 text-start" onclick="filtrarEstado(null)" style="color:#94a3b8;border-color:#334155;">
+        <i class="bi bi-grid me-1"></i> Todas
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="flex-grow-1 p-3" style="min-width:0;">
+
+    <!-- KPIs -->
+    <div class="row g-2 mb-3" id="kpis-row">
+      <div class="col-3"><div class="kpi-card"><div class="kpi-num" id="kpi-nuevos">—</div><div class="kpi-label">Nuevos hoy</div></div></div>
+      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-warning" id="kpi-pendientes">—</div><div class="kpi-label">Sin respuesta</div></div></div>
+      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-primary" id="kpi-propuestas">—</div><div class="kpi-label">Propuestas hoy</div></div></div>
+      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-success" id="kpi-polizas">—</div><div class="kpi-label">Pólizas activadas</div></div></div>
+    </div>
+
+    <div class="row g-3">
+      <!-- LISTA -->
+      <div class="col-4">
+        <div class="d-flex align-items-center mb-2 gap-2">
+          <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Buscar nombre o teléfono…" oninput="buscar(this.value)" />
+          <select id="sort-select" class="form-select form-select-sm" style="width:auto;" onchange="cargarConversaciones()">
+            <option value="mas_reciente">Recientes</option>
+            <option value="mas_urgente">Urgentes</option>
+            <option value="sin_respuesta">Sin respuesta</option>
+          </select>
+        </div>
+        <div id="filtro-activo" class="mb-2" style="min-height:24px;"></div>
+        <div id="lista-conversaciones"></div>
+        <div id="paginacion" class="d-flex justify-content-between mt-2"></div>
+      </div>
+
+      <!-- DETALLE -->
+      <div class="col-8" id="detail-panel">
+        <div class="bg-white rounded-3 p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h5 class="mb-0" id="det-nombre"></h5>
+              <div class="text-muted small" id="det-telefono"></div>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+              <span id="det-tipo" class="badge bg-secondary"></span>
+              <span id="det-estado-badge" class="badge-estado"></span>
+              <span id="det-prioridad" class="prioridad-badge"></span>
+            </div>
+          </div>
+          <div class="mt-2 d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-primary" onclick="abrirCambiarEstado()"><i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="mostrarTabContenido('tab-notas')"><i class="bi bi-sticky me-1"></i>Nota</button>
+            <button class="btn btn-sm btn-outline-success" onclick="mostrarTabContenido('tab-cotizaciones')"><i class="bi bi-currency-dollar me-1"></i>Cotización</button>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-2" id="det-tabs">
+          <li class="nav-item"><a class="nav-link active" href="#" onclick="mostrarTabContenido('tab-mensajes');return false">Mensajes</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarTabContenido('tab-notas');return false">Notas</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarTabContenido('tab-cotizaciones');return false">Cotizaciones</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarTabContenido('tab-historial');return false">Historial</a></li>
+        </ul>
+
+        <div id="tab-mensajes" class="tab-content-custom active">
+          <div id="mensajes-container"></div>
+        </div>
+
+        <div id="tab-notas" class="tab-content-custom">
+          <div class="mb-2">
+            <textarea id="nueva-nota-texto" class="form-control form-control-sm" rows="2" placeholder="Escribe una nota interna…"></textarea>
+            <button class="btn btn-sm btn-warning mt-1" onclick="guardarNota()">Guardar nota</button>
+          </div>
+          <div id="lista-notas"></div>
+        </div>
+
+        <div id="tab-cotizaciones" class="tab-content-custom">
+          <div class="row g-2 mb-3">
+            <div class="col-4"><input type="text" id="cot-aseguradora" class="form-control form-control-sm" placeholder="Aseguradora" /></div>
+            <div class="col-2"><input type="number" id="cot-prima" class="form-control form-control-sm" placeholder="Prima" /></div>
+            <div class="col-3"><input type="text" id="cot-cobertura" class="form-control form-control-sm" placeholder="Cobertura" /></div>
+            <div class="col-3">
+              <select id="cot-estado" class="form-select form-select-sm">
+                <option value="cotizando">Cotizando</option>
+                <option value="enviada">Enviada</option>
+                <option value="aceptada">Aceptada</option>
+                <option value="rechazada">Rechazada</option>
+              </select>
+            </div>
+            <div class="col-12"><button class="btn btn-sm btn-success" onclick="guardarCotizacion()">Agregar cotización</button></div>
+          </div>
+          <div id="lista-cotizaciones"></div>
+        </div>
+
+        <div id="tab-historial" class="tab-content-custom">
+          <div id="lista-historial"></div>
+        </div>
+      </div>
+
+      <!-- Placeholder -->
+      <div class="col-8 d-flex align-items-center justify-content-center text-muted" id="detail-placeholder" style="min-height:300px;">
+        <div class="text-center"><i class="bi bi-chat-dots" style="font-size:40px;color:#cbd5e1;"></i><br>Selecciona una conversación</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal cambiar estado -->
+<div class="modal fade" id="modal-estado" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2"><h6 class="modal-title mb-0">Cambiar estado</h6><button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <select id="nuevo-estado-select" class="form-select form-select-sm mb-2"></select>
+        <textarea id="motivo-estado" class="form-control form-control-sm" rows="2" placeholder="Motivo del cambio (requerido)"></textarea>
+      </div>
+      <div class="modal-footer py-2">
+        <button class="btn btn-sm btn-primary" onclick="confirmarCambioEstado()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Detectar URL base automáticamente (funciona en local y en Railway)
+const API_BASE = '';
+
+const ESTADOS = {
+  prospectiva:       { label: 'Prospectiva',               color: '#3B82F6' },
+  diagnostico:       { label: 'Levantamiento',              color: '#8B5CF6' },
+  cotizacion_proceso:{ label: 'Cotización en Proceso',      color: '#F59E0B' },
+  propuesta_enviada: { label: 'Propuesta Enviada',          color: '#EC4899' },
+  propuesta_final:   { label: 'Propuesta Final',            color: '#F97316' },
+  documentacion:     { label: 'Documentación',              color: '#6366F1' },
+  poliza_activa:     { label: 'Póliza Activa',              color: '#10B981' },
+  gestion_continua:  { label: 'Gestión / Mantenimiento',    color: '#06B6D4' },
+  renovacion:        { label: 'Renovación - Retención',     color: '#EF4444' },
+  renovado_activo:   { label: 'Renovado / Activo',          color: '#22C55E' },
+  churn:             { label: 'Perdido / Churn',            color: '#64748B' },
+};
+
+let estadoFiltro = null;
+let searchQuery = '';
+let offsetActual = 0;
+const LIMIT = 20;
+let convSeleccionada = null;
+let kpisCounts = {};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  renderEstadosSidebar();
+  await Promise.all([cargarKpis(), cargarConversaciones()]);
+  setInterval(cargarKpis, 60000);
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+
+function renderEstadosSidebar() {
+  const el = document.getElementById('estados-lista');
+  el.innerHTML = Object.entries(ESTADOS).map(([key, e]) => `
+    <div class="estado-item ${estadoFiltro === key ? 'active' : ''}" onclick="filtrarEstado('${key}')">
+      <span><span class="estado-dot" style="background:${e.color}"></span>${e.label}</span>
+      <span class="badge-count" id="cnt-${key}">${kpisCounts[key] ?? ''}</span>
+    </div>
+  `).join('');
+}
+
+function filtrarEstado(estado) {
+  estadoFiltro = estado;
+  offsetActual = 0;
+  renderEstadosSidebar();
+  actualizarFiltroBadge();
+  cargarConversaciones();
+}
+
+function actualizarFiltroBadge() {
+  const el = document.getElementById('filtro-activo');
+  if (estadoFiltro) {
+    el.innerHTML = `<span class="badge" style="background:${ESTADOS[estadoFiltro]?.color}20;color:${ESTADOS[estadoFiltro]?.color};border:1px solid ${ESTADOS[estadoFiltro]?.color}40;">${ESTADOS[estadoFiltro]?.label} <span onclick="filtrarEstado(null)" style="cursor:pointer;">✕</span></span>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function buscar(val) {
+  searchQuery = val;
+  offsetActual = 0;
+  cargarConversaciones();
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────────
+
+async function cargarKpis() {
+  try {
+    const data = await fetch(`${API_BASE}/api/dashboard/kpis`).then(r => r.json());
+    document.getElementById('kpi-nuevos').textContent = data.hoy.nuevos_contactos;
+    document.getElementById('kpi-pendientes').textContent = data.hoy.respuestas_pendientes;
+    document.getElementById('kpi-propuestas').textContent = data.hoy.propuestas_enviadas;
+    document.getElementById('kpi-polizas').textContent = data.hoy.polizas_activadas;
+    kpisCounts = data.conversaciones_por_estado || {};
+    // Actualizar conteos en sidebar
+    Object.entries(kpisCounts).forEach(([k, v]) => {
+      const el = document.getElementById(`cnt-${k}`);
+      if (el) el.textContent = v || '';
+    });
+  } catch {}
+}
+
+// ── Lista de conversaciones ────────────────────────────────────────────────────
+
+async function cargarConversaciones() {
+  const sort = document.getElementById('sort-select')?.value || 'mas_reciente';
+  const params = new URLSearchParams({ limit: LIMIT, offset: offsetActual, sort_by: sort });
+  if (estadoFiltro) params.set('estado', estadoFiltro);
+  if (searchQuery) params.set('search', searchQuery);
+
+  try {
+    const data = await fetch(`${API_BASE}/api/conversaciones?${params}`).then(r => r.json());
+    renderLista(data.conversaciones || []);
+    renderPaginacion(data.total || 0);
+  } catch (err) {
+    document.getElementById('lista-conversaciones').innerHTML = '<div class="text-danger small">Error cargando conversaciones</div>';
+  }
+}
+
+function renderLista(convs) {
+  const el = document.getElementById('lista-conversaciones');
+  if (!convs.length) {
+    el.innerHTML = '<div class="text-muted small text-center py-3">Sin conversaciones</div>';
+    return;
+  }
+  el.innerHTML = convs.map(c => {
+    const estado = ESTADOS[c.estado] || { label: c.estado, color: '#94a3b8' };
+    const prioClass = { critica: 'prioridad-critica', alta: 'prioridad-alta', normal: 'prioridad-normal', baja: 'prioridad-baja' }[c.prioridad] || 'prioridad-normal';
+    const urgente = c.requiere_respuesta ? '<i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Requiere respuesta"></i>' : '';
+    return `
+      <div class="conv-card ${convSeleccionada === c.id ? 'selected' : ''}" onclick="abrirDetalle('${c.id}')">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <span class="nombre">${c.cliente_nombre}${urgente}</span>
+          <span class="prioridad-badge ${prioClass}">${c.prioridad}</span>
+        </div>
+        <div class="preview">${c.ultimo_mensaje?.contenido || 'Sin mensajes'}</div>
+        <div class="d-flex justify-content-between mt-1">
+          <span style="font-size:11px;background:${estado.color}20;color:${estado.color};padding:1px 6px;border-radius:10px;">${estado.label}</span>
+          <span style="font-size:11px;color:#94a3b8;">${c.cliente_telefono}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderPaginacion(total) {
+  const el = document.getElementById('paginacion');
+  const totalPaginas = Math.ceil(total / LIMIT);
+  const paginaActual = Math.floor(offsetActual / LIMIT) + 1;
+  if (totalPaginas <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <button class="btn btn-sm btn-outline-secondary" ${offsetActual === 0 ? 'disabled' : ''} onclick="cambiarPagina(-1)"><i class="bi bi-chevron-left"></i></button>
+    <span class="small text-muted">${paginaActual} / ${totalPaginas} (${total})</span>
+    <button class="btn btn-sm btn-outline-secondary" ${paginaActual >= totalPaginas ? 'disabled' : ''} onclick="cambiarPagina(1)"><i class="bi bi-chevron-right"></i></button>`;
+}
+
+function cambiarPagina(dir) {
+  offsetActual = Math.max(0, offsetActual + dir * LIMIT);
+  cargarConversaciones();
+}
+
+// ── Detalle ───────────────────────────────────────────────────────────────────
+
+async function abrirDetalle(id) {
+  convSeleccionada = id;
+  // Marcar tarjeta seleccionada
+  document.querySelectorAll('.conv-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.conv-card').forEach(c => {
+    if (c.getAttribute('onclick')?.includes(id)) c.classList.add('selected');
+  });
+
+  document.getElementById('detail-panel').classList.add('visible');
+  document.getElementById('detail-placeholder').style.display = 'none';
+
+  try {
+    const data = await fetch(`${API_BASE}/api/conversaciones/${id}`).then(r => r.json());
+    const c = data.conversacion;
+    const estado = ESTADOS[c.estado] || { label: c.estado, color: '#94a3b8' };
+
+    document.getElementById('det-nombre').textContent = c.cliente_nombre;
+    document.getElementById('det-telefono').textContent = c.cliente_telefono;
+    document.getElementById('det-tipo').textContent = c.tipo_seguro || 'Sin tipo';
+    document.getElementById('det-estado-badge').textContent = estado.label;
+    document.getElementById('det-estado-badge').style.cssText = `background:${estado.color}20;color:${estado.color};border:1px solid ${estado.color}40;`;
+    const prioClass = { critica: 'prioridad-critica', alta: 'prioridad-alta', normal: 'prioridad-normal', baja: 'prioridad-baja' }[c.prioridad] || 'prioridad-normal';
+    document.getElementById('det-prioridad').textContent = c.prioridad;
+    document.getElementById('det-prioridad').className = `prioridad-badge ${prioClass}`;
+
+    renderMensajes(data.mensajes || []);
+    renderNotas(data.notas || []);
+    renderCotizaciones(data.cotizaciones || []);
+    renderHistorial(data.historial_estados || []);
+    mostrarTabContenido('tab-mensajes');
+  } catch {
+    document.getElementById('det-nombre').textContent = 'Error cargando detalle';
+  }
+}
+
+function renderMensajes(mensajes) {
+  const el = document.getElementById('mensajes-container');
+  if (!mensajes.length) { el.innerHTML = '<div class="text-muted small text-center">Sin mensajes</div>'; return; }
+  el.innerHTML = mensajes.map(m => {
+    const cls = m.autor === 'cliente' ? 'msg-cliente' : m.autor === 'agente' ? 'msg-agente' : 'msg-sistema';
+    const align = m.autor === 'agente' ? 'ms-auto' : m.autor === 'sistema' ? 'mx-auto' : '';
+    const hora = m.timestamp_mensaje ? new Date(m.timestamp_mensaje).toLocaleString('es-MX', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+    return `<div class="msg-burbuja ${cls} ${align}">
+      ${escHtml(m.contenido)}
+      <div class="msg-hora text-end">${hora}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderNotas(notas) {
+  const el = document.getElementById('lista-notas');
+  el.innerHTML = notas.length
+    ? notas.map(n => `<div class="nota-item"><strong>${escHtml(n.agente_nombre || 'Agente')}</strong> · ${new Date(n.created_at).toLocaleString('es-MX')}<br>${escHtml(n.contenido)}</div>`).join('')
+    : '<div class="text-muted small">Sin notas</div>';
+}
+
+function renderCotizaciones(cots) {
+  const el = document.getElementById('lista-cotizaciones');
+  el.innerHTML = cots.length
+    ? cots.map(c => `<div class="cotizacion-item"><strong>${escHtml(c.aseguradora)}</strong> · $${c.prima ? Number(c.prima).toLocaleString('es-MX') : '—'} ${c.moneda} · <em>${c.estado}</em><br><span class="text-muted">${c.cobertura || ''}</span></div>`).join('')
+    : '<div class="text-muted small">Sin cotizaciones</div>';
+}
+
+function renderHistorial(hist) {
+  const el = document.getElementById('lista-historial');
+  el.innerHTML = hist.length
+    ? hist.map(h => `<div class="historial-item"><strong>${escHtml(h.estado_anterior || '—')} → ${escHtml(h.estado_nuevo)}</strong> · ${new Date(h.timestamp).toLocaleString('es-MX')}<br>${escHtml(h.nombre_quien_realizo || h.realizado_por || '')}${h.motivo ? ': ' + escHtml(h.motivo) : ''}</div>`).join('')
+    : '<div class="text-muted small">Sin historial</div>';
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+
+function mostrarTabContenido(tabId) {
+  document.querySelectorAll('.tab-content-custom').forEach(t => t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelectorAll('#det-tabs .nav-link').forEach(l => l.classList.remove('active'));
+  const nombres = { 'tab-mensajes': 'Mensajes', 'tab-notas': 'Notas', 'tab-cotizaciones': 'Cotizaciones', 'tab-historial': 'Historial' };
+  document.querySelectorAll('#det-tabs .nav-link').forEach(l => {
+    if (l.textContent.trim() === nombres[tabId]) l.classList.add('active');
+  });
+}
+
+// ── Cambiar estado ────────────────────────────────────────────────────────────
+
+function abrirCambiarEstado() {
+  const sel = document.getElementById('nuevo-estado-select');
+  sel.innerHTML = Object.entries(ESTADOS).map(([k, e]) => `<option value="${k}">${e.label}</option>`).join('');
+  document.getElementById('motivo-estado').value = '';
+  new bootstrap.Modal(document.getElementById('modal-estado')).show();
+}
+
+async function confirmarCambioEstado() {
+  if (!convSeleccionada) return;
+  const estado_nuevo = document.getElementById('nuevo-estado-select').value;
+  const motivo = document.getElementById('motivo-estado').value.trim();
+  if (!motivo) { alert('El motivo es requerido'); return; }
+
+  const res = await fetch(`${API_BASE}/api/conversaciones/${convSeleccionada}/estado`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estado_nuevo, motivo }),
+  });
+  if (res.ok) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-estado')).hide();
+    await abrirDetalle(convSeleccionada);
+    cargarConversaciones();
+    cargarKpis();
+  } else {
+    alert('Error cambiando estado');
+  }
+}
+
+// ── Notas ─────────────────────────────────────────────────────────────────────
+
+async function guardarNota() {
+  if (!convSeleccionada) return;
+  const contenido = document.getElementById('nueva-nota-texto').value.trim();
+  if (!contenido) return;
+
+  const res = await fetch(`${API_BASE}/api/conversaciones/${convSeleccionada}/notas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contenido }),
+  });
+  if (res.ok) {
+    document.getElementById('nueva-nota-texto').value = '';
+    abrirDetalle(convSeleccionada);
+  }
+}
+
+// ── Cotizaciones ──────────────────────────────────────────────────────────────
+
+async function guardarCotizacion() {
+  if (!convSeleccionada) return;
+  const aseguradora = document.getElementById('cot-aseguradora').value.trim();
+  if (!aseguradora) { alert('Ingresa la aseguradora'); return; }
+
+  const body = {
+    aseguradora,
+    prima: parseFloat(document.getElementById('cot-prima').value) || null,
+    cobertura: document.getElementById('cot-cobertura').value.trim() || null,
+    estado: document.getElementById('cot-estado').value,
+  };
+
+  const res = await fetch(`${API_BASE}/api/conversaciones/${convSeleccionada}/cotizaciones`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.ok) {
+    ['cot-aseguradora','cot-prima','cot-cobertura'].forEach(id => document.getElementById(id).value = '');
+    abrirDetalle(convSeleccionada);
+  }
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
