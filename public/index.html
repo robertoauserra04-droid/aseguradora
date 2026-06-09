@@ -7,195 +7,320 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet" />
   <style>
-    body { background: #f1f5f9; font-size: 14px; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background:#f0f4f8; font-family:'Segoe UI',system-ui,sans-serif; font-size:14px; margin:0; }
 
-    /* LOGIN */
-    #login-screen { display:flex; min-height:100vh; align-items:center; justify-content:center; background: linear-gradient(135deg,#1e293b 0%,#0f172a 100%); }
-    .login-card { background:#fff; border-radius:16px; padding:40px 36px; width:360px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
-    .login-logo { font-size:28px; font-weight:800; color:#1e293b; margin-bottom:4px; }
-    .login-sub { color:#64748b; font-size:13px; margin-bottom:28px; }
+    /* ── LOGIN ── */
+    #login-screen {
+      display:flex; min-height:100vh; align-items:center; justify-content:center;
+      background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);
+    }
+    .login-card { background:#fff; border-radius:18px; padding:44px 40px; width:380px; box-shadow:0 24px 80px rgba(0,0,0,.45); }
+    .login-logo { font-size:30px; font-weight:900; color:#0f172a; letter-spacing:-1px; }
+    .login-logo span { color:#3b82f6; }
+    .login-sub { color:#64748b; font-size:13px; margin-bottom:30px; }
 
-    /* PANEL */
-    #panel-screen { display:none; }
-    .sidebar { width:240px; min-height:100vh; background:#1e293b; color:#e2e8f0; flex-shrink:0; }
-    .sidebar .brand { padding:18px 16px 12px; font-weight:700; font-size:15px; border-bottom:1px solid #334155; display:flex; align-items:center; gap:8px; }
-    .estado-item { padding:7px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
-    .estado-item:hover,.estado-item.active { background:#334155; }
-    .estado-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:7px; flex-shrink:0; }
-    .badge-count { background:#334155; color:#94a3b8; font-size:11px; padding:1px 6px; border-radius:10px; }
-    .estado-item.active .badge-count { background:#475569; color:#e2e8f0; }
-    .sidebar-footer { padding:12px 16px; border-top:1px solid #334155; margin-top:auto; }
+    /* ── LAYOUT ── */
+    #panel-screen { display:none; height:100vh; overflow:hidden; }
+    .sidebar { width:220px; height:100vh; background:#0f172a; color:#e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
+    .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .topbar { background:#fff; border-bottom:1px solid #e2e8f0; padding:0 20px; height:56px; display:flex; align-items:center; gap:12px; flex-shrink:0; }
 
-    .conv-card { background:#fff; border-radius:8px; padding:11px 13px; margin-bottom:7px; cursor:pointer; border:2px solid transparent; transition:border-color .12s; }
-    .conv-card:hover { border-color:#cbd5e1; }
-    .conv-card.selected { border-color:#3b82f6; }
-    .conv-nombre { font-weight:600; font-size:13px; }
-    .conv-preview { color:#64748b; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* ── SIDEBAR ── */
+    .s-brand { padding:18px 16px 14px; font-weight:800; font-size:16px; border-bottom:1px solid #1e293b; letter-spacing:-.3px; }
+    .s-brand span { color:#3b82f6; }
+    .s-section { padding:10px 16px 4px; font-size:10px; color:#475569; text-transform:uppercase; letter-spacing:.8px; font-weight:700; }
+    .s-item { padding:7px 16px 7px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-left:3px solid transparent; transition:all .12s; }
+    .s-item:hover { background:#1e293b; }
+    .s-item.active { background:#1e3a5f; border-left-color:#3b82f6; }
+    .s-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:8px; flex-shrink:0; }
+    .s-cnt { background:#1e293b; color:#64748b; font-size:10px; padding:1px 6px; border-radius:8px; font-weight:600; }
+    .s-item.active .s-cnt { background:#2563eb; color:#fff; }
+    .s-footer { padding:12px 16px; border-top:1px solid #1e293b; margin-top:auto; }
 
-    .prioridad-badge { font-size:10px; padding:2px 6px; border-radius:10px; font-weight:700; }
-    .p-critica { background:#fee2e2; color:#dc2626; }
-    .p-alta    { background:#fef3c7; color:#d97706; }
-    .p-normal  { background:#e0f2fe; color:#0284c7; }
-    .p-baja    { background:#f1f5f9; color:#64748b; }
+    /* ── KPIs ── */
+    .kpi-bar { background:#fff; border-bottom:1px solid #e2e8f0; display:flex; gap:1px; flex-shrink:0; }
+    .kpi-cell { flex:1; padding:12px 16px; border-right:1px solid #f1f5f9; }
+    .kpi-cell:last-child { border-right:none; }
+    .kpi-num { font-size:22px; font-weight:800; color:#0f172a; line-height:1; }
+    .kpi-lbl { font-size:11px; color:#64748b; margin-top:2px; }
+    .kpi-cell.urgente .kpi-num { color:#dc2626; }
+    .kpi-cell.propuestas .kpi-num { color:#2563eb; }
+    .kpi-cell.polizas .kpi-num { color:#16a34a; }
 
-    #mensajes-wrap { display:flex; flex-direction:column; overflow-y:auto; max-height:calc(100vh - 330px); padding:10px; background:#f8fafc; border-radius:8px; gap:4px; }
-    .burbuja { max-width:78%; padding:8px 12px; border-radius:12px; font-size:13px; word-break:break-word; }
-    .burbuja-cliente  { background:#f1f5f9; align-self:flex-start; border-bottom-left-radius:3px; }
-    .burbuja-agente   { background:#dcfce7; align-self:flex-end;   border-bottom-right-radius:3px; }
-    .burbuja-sistema  { background:#fef9c3; align-self:center; font-size:11px; color:#92400e; }
-    .burbuja-hora { font-size:10px; color:#94a3b8; margin-top:2px; }
+    /* ── ÁREA CENTRAL ── */
+    .content-area { display:flex; flex:1; overflow:hidden; }
 
-    .kpi-card { background:#fff; border-radius:10px; padding:14px 18px; text-align:center; }
-    .kpi-num  { font-size:26px; font-weight:800; color:#1e293b; }
-    .kpi-lbl  { font-size:11px; color:#64748b; margin-top:1px; }
+    /* ── LISTA ── */
+    .lista-panel { width:340px; flex-shrink:0; display:flex; flex-direction:column; background:#f8fafc; border-right:1px solid #e2e8f0; overflow:hidden; }
+    .lista-filtros { padding:10px 12px; background:#fff; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:6px; }
+    .lista-filtros .row-filtros { display:flex; gap:6px; }
+    .lista-scroll { flex:1; overflow-y:auto; padding:10px 10px; }
 
-    .tab-pane-custom { display:none; }
-    .tab-pane-custom.active { display:block; }
-    .nota-item { background:#fffbeb; border-left:3px solid #f59e0b; padding:8px 11px; border-radius:0 6px 6px 0; margin-bottom:7px; font-size:13px; }
-    .cot-item  { background:#f0fdf4; border-left:3px solid #22c55e; padding:8px 11px; border-radius:0 6px 6px 0; margin-bottom:7px; font-size:13px; }
-    .hist-item { padding:5px 0; border-bottom:1px solid #f1f5f9; font-size:12px; color:#475569; }
+    /* ── TARJETA CONVERSACIÓN ── */
+    .conv-card {
+      background:#fff; border-radius:10px; padding:11px 12px; margin-bottom:7px;
+      cursor:pointer; border:2px solid transparent; transition:all .12s;
+      border-left:4px solid #e2e8f0;
+      position:relative;
+    }
+    .conv-card:hover { border-color:#cbd5e1; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+    .conv-card.selected { border-color:#3b82f6; background:#eff6ff; }
 
-    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+    /* colores de urgencia — borde izquierdo */
+    .urg-rojo    { border-left-color:#dc2626 !important; }
+    .urg-naranja { border-left-color:#f97316 !important; }
+    .urg-amarillo{ border-left-color:#eab308 !important; }
+    .urg-verde   { border-left-color:#22c55e !important; }
+    .urg-azul    { border-left-color:#3b82f6 !important; }
+    .urg-gris    { border-left-color:#94a3b8 !important; }
+
+    .conv-nombre { font-weight:700; font-size:13px; color:#0f172a; }
+    .conv-tipo   { font-size:11px; padding:1px 6px; border-radius:8px; font-weight:600; }
+    .conv-preview{ color:#64748b; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:3px 0; }
+    .conv-estado { font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; }
+    .conv-tiempo { font-size:11px; font-weight:700; }
+    .sin-respuesta-badge { background:#fee2e2; color:#dc2626; font-size:10px; padding:2px 7px; border-radius:8px; font-weight:700; display:inline-flex; align-items:center; gap:3px; }
+    .conv-vence  { background:#fef3c7; color:#b45309; font-size:10px; padding:2px 7px; border-radius:8px; font-weight:700; }
+
+    /* tipos de seguro */
+    .tipo-vida    { background:#fee2e2; color:#dc2626; }
+    .tipo-auto    { background:#dbeafe; color:#1d4ed8; }
+    .tipo-medical { background:#dcfce7; color:#15803d; }
+    .tipo-daño    { background:#fef3c7; color:#b45309; }
+    .tipo-viaje   { background:#f3e8ff; color:#7e22ce; }
+    .tipo-null    { background:#f1f5f9; color:#64748b; }
+
+    /* ── DETALLE ── */
+    .det-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#f0f4f8; }
+    .det-empty { flex:1; display:flex; align-items:center; justify-content:center; color:#94a3b8; flex-direction:column; gap:8px; }
+
+    .det-header { background:#fff; padding:16px 20px 12px; border-bottom:1px solid #e2e8f0; flex-shrink:0; }
+    .det-nombre { font-size:18px; font-weight:800; color:#0f172a; }
+    .det-sub    { font-size:12px; color:#64748b; margin-top:1px; }
+    .det-acciones { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+
+    .det-tabs { background:#fff; border-bottom:1px solid #e2e8f0; padding:0 20px; display:flex; gap:0; flex-shrink:0; }
+    .det-tab  { padding:10px 16px; cursor:pointer; font-size:13px; font-weight:600; color:#64748b; border-bottom:2px solid transparent; white-space:nowrap; }
+    .det-tab:hover { color:#0f172a; }
+    .det-tab.active { color:#2563eb; border-bottom-color:#2563eb; }
+
+    .det-content { flex:1; overflow-y:auto; padding:16px 20px; }
+    .tab-pane { display:none; }
+    .tab-pane.active { display:block; }
+
+    /* mensajes */
+    #msgs-wrap { display:flex; flex-direction:column; gap:5px; }
+    .burbuja { max-width:75%; padding:9px 13px; border-radius:14px; font-size:13px; word-break:break-word; }
+    .burbuja-cliente  { background:#fff; border:1px solid #e2e8f0; align-self:flex-start; border-bottom-left-radius:3px; }
+    .burbuja-agente   { background:#2563eb; color:#fff; align-self:flex-end; border-bottom-right-radius:3px; }
+    .burbuja-sistema  { background:#fef9c3; align-self:center; font-size:11px; color:#92400e; padding:5px 12px; border-radius:20px; }
+    .burbuja-hora     { font-size:10px; opacity:.6; margin-top:3px; }
+
+    /* notas / cotizaciones */
+    .nota-card { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 13px; margin-bottom:8px; }
+    .nota-card .nota-meta { font-size:11px; color:#92400e; font-weight:600; margin-bottom:4px; }
+    .cot-card  { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 13px; margin-bottom:8px; }
+    .cot-card .cot-aseg { font-weight:700; font-size:14px; color:#15803d; }
+    .cot-card .cot-prima { font-size:18px; font-weight:800; color:#0f172a; }
+    .hist-row  { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid #f1f5f9; align-items:flex-start; }
+    .hist-icono { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; background:#e0f2fe; color:#0284c7; }
+
+    /* modal estado */
+    .estado-opcion { padding:9px 12px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:8px; border:2px solid #e2e8f0; margin-bottom:6px; transition:all .1s; }
+    .estado-opcion:hover { border-color:#3b82f6; background:#eff6ff; }
+    .estado-opcion.seleccionado { border-color:#2563eb; background:#eff6ff; }
+
+    ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
   </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     LOGIN
-══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════════════════
+     PANTALLA DE LOGIN
+══════════════════════════════════════════════════════════ -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo"><i class="bi bi-shield-check text-primary me-2"></i>Carguill</div>
-    <div class="login-sub">Panel de conversaciones · Seguros</div>
-    <div id="login-error" class="alert alert-danger py-2 d-none small"></div>
+    <div class="login-logo">Seguros <span>Carguill</span></div>
+    <div class="login-sub">Panel de conversaciones · Monterrey, NL</div>
+    <div id="login-err" class="alert alert-danger py-2 d-none small mb-3"></div>
     <div class="mb-3">
-      <label class="form-label small fw-semibold">Correo</label>
+      <label class="form-label small fw-semibold text-secondary">Correo electrónico</label>
       <input id="inp-email" type="email" class="form-control" placeholder="admin@carguill.com" />
     </div>
     <div class="mb-4">
-      <label class="form-label small fw-semibold">Contraseña</label>
+      <label class="form-label small fw-semibold text-secondary">Contraseña</label>
       <input id="inp-pass" type="password" class="form-control" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()" />
     </div>
-    <button class="btn btn-primary w-100 fw-semibold" onclick="login()">
-      <span id="login-spinner" class="spinner-border spinner-border-sm me-2 d-none"></span>
-      Entrar
+    <button class="btn btn-primary w-100 fw-bold" style="padding:10px;" onclick="login()">
+      <span id="login-spin" class="spinner-border spinner-border-sm me-2 d-none"></span>
+      Entrar al panel
     </button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════════════════════════
      PANEL PRINCIPAL
-══════════════════════════════════════════ -->
+══════════════════════════════════════════════════════════ -->
 <div id="panel-screen" class="d-flex">
 
   <!-- SIDEBAR -->
-  <div class="sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-shield-check text-primary"></i>Carguill</div>
-
-    <div class="px-3 pt-3 pb-1" style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Estados</div>
-    <div id="estados-lista" style="overflow-y:auto;flex:1;"></div>
-
-    <div class="sidebar-footer">
-      <div class="text-muted small mb-2" id="sidebar-user" style="font-size:11px;"></div>
-      <button class="btn btn-sm btn-outline-secondary w-100 text-start" onclick="cerrarSesion()" style="color:#94a3b8;border-color:#334155;font-size:12px;">
+  <div class="sidebar">
+    <div class="s-brand">Seguros <span>Carguill</span></div>
+    <div class="s-section">Estados</div>
+    <div id="sidebar-estados"></div>
+    <div class="s-footer">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;" id="s-user"></div>
+      <button class="btn btn-sm w-100 text-start" style="color:#64748b;font-size:12px;background:transparent;border:1px solid #1e293b;" onclick="cerrarSesion()">
         <i class="bi bi-box-arrow-left me-1"></i>Cerrar sesión
       </button>
     </div>
   </div>
 
   <!-- MAIN -->
-  <div class="flex-grow-1 p-3" style="min-width:0;overflow-y:auto;">
+  <div class="main">
 
-    <!-- KPIs -->
-    <div class="row g-2 mb-3">
-      <div class="col-3"><div class="kpi-card"><div class="kpi-num" id="kpi-nuevos">—</div><div class="kpi-lbl">Nuevos hoy</div></div></div>
-      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-warning" id="kpi-pendientes">—</div><div class="kpi-lbl">Sin respuesta</div></div></div>
-      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-primary" id="kpi-propuestas">—</div><div class="kpi-lbl">Propuestas hoy</div></div></div>
-      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-success" id="kpi-polizas">—</div><div class="kpi-lbl">Pólizas activadas</div></div></div>
+    <!-- KPI BAR -->
+    <div class="kpi-bar">
+      <div class="kpi-cell">
+        <div class="kpi-num" id="kpi-nuevos">—</div>
+        <div class="kpi-lbl"><i class="bi bi-person-plus me-1"></i>Nuevos hoy</div>
+      </div>
+      <div class="kpi-cell urgente">
+        <div class="kpi-num" id="kpi-pend">—</div>
+        <div class="kpi-lbl"><i class="bi bi-clock-history me-1"></i>Sin respuesta</div>
+      </div>
+      <div class="kpi-cell propuestas">
+        <div class="kpi-num" id="kpi-prop">—</div>
+        <div class="kpi-lbl"><i class="bi bi-send me-1"></i>Propuestas hoy</div>
+      </div>
+      <div class="kpi-cell polizas">
+        <div class="kpi-num" id="kpi-pol">—</div>
+        <div class="kpi-lbl"><i class="bi bi-shield-check me-1"></i>Pólizas activadas</div>
+      </div>
     </div>
 
-    <div class="row g-3">
+    <!-- CONTENIDO -->
+    <div class="content-area">
 
       <!-- LISTA -->
-      <div class="col-4">
-        <div class="d-flex gap-2 mb-2">
-          <input type="text" id="search-inp" class="form-control form-control-sm" placeholder="Buscar…" oninput="buscar(this.value)" />
-          <select id="sort-sel" class="form-select form-select-sm" style="width:130px;" onchange="cargarLista()">
-            <option value="mas_reciente">Recientes</option>
-            <option value="mas_urgente">Urgentes</option>
-            <option value="sin_respuesta">Sin respuesta</option>
-          </select>
+      <div class="lista-panel">
+        <div class="lista-filtros">
+          <input type="text" id="search-inp" class="form-control form-control-sm" placeholder="🔍  Buscar nombre o teléfono…" oninput="buscar(this.value)" />
+          <div class="row-filtros">
+            <select id="filtro-tipo" class="form-select form-select-sm" onchange="cargarLista()">
+              <option value="">Todos los seguros</option>
+              <option value="vida">❤️ Vida</option>
+              <option value="auto">🚗 Auto</option>
+              <option value="medical">🏥 Médico</option>
+              <option value="daño">🏠 Daños</option>
+              <option value="viaje">✈️ Viaje</option>
+            </select>
+            <select id="sort-sel" class="form-select form-select-sm" onchange="cargarLista()">
+              <option value="mas_urgente">🔴 Urgentes</option>
+              <option value="sin_respuesta">⏱ Sin respuesta</option>
+              <option value="mas_reciente">🕐 Recientes</option>
+            </select>
+          </div>
         </div>
-        <div id="filtro-badge" class="mb-2" style="min-height:22px;"></div>
-        <div id="lista-conv"></div>
-        <div id="paginacion" class="d-flex justify-content-between align-items-center mt-2"></div>
+        <div class="lista-scroll" id="lista-conv"></div>
+        <div id="paginacion" class="d-flex justify-content-between align-items-center px-3 py-2 bg-white border-top" style="font-size:12px;"></div>
       </div>
 
       <!-- DETALLE -->
-      <div class="col-8">
-        <div id="det-empty" class="d-flex align-items-center justify-content-center text-muted" style="min-height:60vh;">
-          <div class="text-center"><i class="bi bi-chat-dots" style="font-size:48px;color:#cbd5e1;"></i><p class="mt-2">Selecciona una conversación</p></div>
+      <div class="det-panel">
+        <div class="det-empty" id="det-empty">
+          <i class="bi bi-chat-dots" style="font-size:52px;"></i>
+          <span style="font-size:15px;">Selecciona una conversación</span>
         </div>
 
-        <div id="det-panel" style="display:none;">
-          <!-- Cabecera -->
-          <div class="bg-white rounded-3 p-3 mb-2">
+        <div id="det-inner" style="display:none;height:100%;display:none;flex-direction:column;">
+          <!-- Header -->
+          <div class="det-header">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
               <div>
-                <h5 class="mb-0" id="det-nombre"></h5>
-                <div class="text-muted small" id="det-tel"></div>
+                <div class="det-nombre" id="det-nombre">—</div>
+                <div class="det-sub" id="det-sub">—</div>
               </div>
-              <div class="d-flex gap-2 align-items-center flex-wrap">
-                <span id="det-tipo" class="badge bg-secondary"></span>
-                <span id="det-estado" class="badge" style="font-size:11px;"></span>
-                <span id="det-prioridad" class="prioridad-badge"></span>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span id="det-tipo-badge" class="conv-tipo"></span>
+                <span id="det-estado-badge" style="font-size:12px;padding:3px 10px;border-radius:12px;font-weight:700;"></span>
+                <span id="det-urgencia-badge"></span>
               </div>
             </div>
-            <div class="mt-2 d-flex gap-2 flex-wrap">
-              <button class="btn btn-sm btn-outline-primary" onclick="abrirModalEstado()"><i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado</button>
-              <button class="btn btn-sm btn-outline-secondary" onclick="irTab('notas')"><i class="bi bi-sticky me-1"></i>Nota</button>
-              <button class="btn btn-sm btn-outline-success" onclick="irTab('cotizaciones')"><i class="bi bi-currency-dollar me-1"></i>Cotización</button>
+            <div class="det-acciones">
+              <button class="btn btn-sm btn-primary fw-semibold" onclick="abrirModalEstado()">
+                <i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="irTab('notas')">
+                <i class="bi bi-sticky me-1"></i>+ Nota
+              </button>
+              <button class="btn btn-sm btn-outline-success" onclick="irTab('cotizaciones')">
+                <i class="bi bi-currency-dollar me-1"></i>+ Cotización
+              </button>
+              <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="recargarDetalle()" title="Actualizar">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
             </div>
           </div>
 
           <!-- Tabs -->
-          <ul class="nav nav-tabs mb-2" id="det-tabs">
-            <li class="nav-item"><a class="nav-link active" href="#" onclick="irTab('mensajes');return false">Mensajes</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" onclick="irTab('notas');return false">Notas</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" onclick="irTab('cotizaciones');return false">Cotizaciones</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" onclick="irTab('historial');return false">Historial</a></li>
-          </ul>
-
-          <div id="tab-mensajes" class="tab-pane-custom active">
-            <div id="mensajes-wrap"></div>
+          <div class="det-tabs">
+            <div class="det-tab active" id="dtab-mensajes"  onclick="irTab('mensajes')">💬 Mensajes</div>
+            <div class="det-tab"        id="dtab-notas"     onclick="irTab('notas')">📝 Notas</div>
+            <div class="det-tab"        id="dtab-cotizaciones" onclick="irTab('cotizaciones')">💰 Cotizaciones</div>
+            <div class="det-tab"        id="dtab-historial" onclick="irTab('historial')">🕐 Historial</div>
           </div>
 
-          <div id="tab-notas" class="tab-pane-custom">
-            <textarea id="txt-nota" class="form-control form-control-sm mb-2" rows="2" placeholder="Escribe una nota interna…"></textarea>
-            <button class="btn btn-sm btn-warning mb-3" onclick="guardarNota()">Guardar nota</button>
-            <div id="lista-notas"></div>
-          </div>
-
-          <div id="tab-cotizaciones" class="tab-pane-custom">
-            <div class="row g-2 mb-3">
-              <div class="col-4"><input type="text" id="cot-aseg" class="form-control form-control-sm" placeholder="Aseguradora" /></div>
-              <div class="col-3"><input type="number" id="cot-prima" class="form-control form-control-sm" placeholder="Prima MXN" /></div>
-              <div class="col-5"><input type="text" id="cot-cobertura" class="form-control form-control-sm" placeholder="Descripción cobertura" /></div>
-              <div class="col-4">
-                <select id="cot-estado" class="form-select form-select-sm">
-                  <option value="cotizando">Cotizando</option>
-                  <option value="enviada">Enviada</option>
-                  <option value="aceptada">Aceptada</option>
-                  <option value="rechazada">Rechazada</option>
-                </select>
-              </div>
-              <div class="col-8"><button class="btn btn-sm btn-success" onclick="guardarCotizacion()"><i class="bi bi-plus me-1"></i>Agregar cotización</button></div>
+          <!-- Contenido tabs -->
+          <div class="det-content">
+            <div id="tab-mensajes" class="tab-pane active">
+              <div id="msgs-wrap"></div>
             </div>
-            <div id="lista-cots"></div>
-          </div>
 
-          <div id="tab-historial" class="tab-pane-custom">
-            <div id="lista-hist"></div>
+            <div id="tab-notas" class="tab-pane">
+              <div class="bg-white border rounded-3 p-3 mb-3">
+                <textarea id="txt-nota" class="form-control form-control-sm mb-2" rows="3" placeholder="Escribe una nota interna…"></textarea>
+                <button class="btn btn-sm btn-warning fw-semibold" onclick="guardarNota()"><i class="bi bi-sticky me-1"></i>Guardar nota</button>
+              </div>
+              <div id="lista-notas"></div>
+            </div>
+
+            <div id="tab-cotizaciones" class="tab-pane">
+              <div class="bg-white border rounded-3 p-3 mb-3">
+                <div class="row g-2 mb-2">
+                  <div class="col-4">
+                    <label class="form-label small text-secondary mb-1">Aseguradora</label>
+                    <input type="text" id="cot-aseg" class="form-control form-control-sm" placeholder="GNP, AXA, Qualitas…" />
+                  </div>
+                  <div class="col-3">
+                    <label class="form-label small text-secondary mb-1">Prima (MXN)</label>
+                    <input type="number" id="cot-prima" class="form-control form-control-sm" placeholder="3200" />
+                  </div>
+                  <div class="col-5">
+                    <label class="form-label small text-secondary mb-1">Descripción</label>
+                    <input type="text" id="cot-cobertura" class="form-control form-control-sm" placeholder="Cobertura básica…" />
+                  </div>
+                  <div class="col-4">
+                    <label class="form-label small text-secondary mb-1">Estado</label>
+                    <select id="cot-estado" class="form-select form-select-sm">
+                      <option value="cotizando">Cotizando</option>
+                      <option value="enviada">Enviada</option>
+                      <option value="aceptada">Aceptada ✓</option>
+                      <option value="rechazada">Rechazada ✗</option>
+                    </select>
+                  </div>
+                  <div class="col-8 d-flex align-items-end">
+                    <button class="btn btn-sm btn-success fw-semibold" onclick="guardarCotizacion()"><i class="bi bi-plus-circle me-1"></i>Agregar cotización</button>
+                  </div>
+                </div>
+              </div>
+              <div id="lista-cots"></div>
+            </div>
+
+            <div id="tab-historial" class="tab-pane">
+              <div id="lista-hist"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -204,20 +329,35 @@
   </div>
 </div>
 
-<!-- Modal cambiar estado -->
+<!-- ══════════════════════════════════════════════════════════
+     MODAL CAMBIAR ESTADO
+══════════════════════════════════════════════════════════ -->
 <div class="modal fade" id="modal-estado" tabindex="-1">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content">
-      <div class="modal-header py-2"><h6 class="modal-title mb-0">Cambiar estado</h6><button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <label class="form-label small">Nuevo estado</label>
-        <select id="sel-estado-nuevo" class="form-select form-select-sm mb-2"></select>
-        <label class="form-label small">Motivo <span class="text-danger">*</span></label>
-        <textarea id="txt-motivo" class="form-control form-control-sm" rows="2" placeholder="¿Por qué cambia el estado?"></textarea>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+      <div class="modal-header" style="background:#0f172a;color:#fff;border:none;">
+        <div>
+          <h6 class="modal-title mb-0 fw-bold">Cambiar estado de conversación</h6>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Estado actual: <strong id="modal-estado-actual" style="color:#e2e8f0;"></strong></div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-footer py-2">
-        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-sm btn-primary" onclick="confirmarEstado()">Confirmar</button>
+      <div class="modal-body p-4">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-secondary mb-2">Selecciona el nuevo estado</label>
+          <div id="estado-opciones" style="max-height:280px;overflow-y:auto;"></div>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold text-secondary mb-1">Motivo del cambio <span class="text-danger">*</span></label>
+          <textarea id="txt-motivo" class="form-control" rows="2" placeholder="Ej: Se envió propuesta GNP al cliente, cotización $3,200/mes"></textarea>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Requerido — quedará registrado en el historial</div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid #f1f5f9;">
+        <button class="btn btn-light fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary fw-bold px-4" onclick="confirmarEstado()">
+          <i class="bi bi-check-circle me-1"></i>Confirmar cambio
+        </button>
       </div>
     </div>
   </div>
@@ -225,58 +365,75 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// ══════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════
 const ESTADOS = {
-  prospectiva:        { label:'Prospectiva',             color:'#3B82F6' },
-  diagnostico:        { label:'Levantamiento',           color:'#8B5CF6' },
-  cotizacion_proceso: { label:'Cotización en Proceso',   color:'#F59E0B' },
-  propuesta_enviada:  { label:'Propuesta Enviada',       color:'#EC4899' },
-  propuesta_final:    { label:'Propuesta Final',         color:'#F97316' },
-  documentacion:      { label:'Documentación',           color:'#6366F1' },
-  poliza_activa:      { label:'Póliza Activa',           color:'#10B981' },
-  gestion_continua:   { label:'Gestión / Mantenimiento', color:'#06B6D4' },
-  renovacion:         { label:'Renovación',              color:'#EF4444' },
-  renovado_activo:    { label:'Renovado / Activo',       color:'#22C55E' },
-  churn:              { label:'Perdido / Churn',         color:'#64748B' },
+  prospectiva:        { label:'Prospectiva',             color:'#3B82F6', icon:'👤' },
+  diagnostico:        { label:'Levantamiento',           color:'#8B5CF6', icon:'📋' },
+  cotizacion_proceso: { label:'Cotización en Proceso',   color:'#F59E0B', icon:'📊' },
+  propuesta_enviada:  { label:'Propuesta Enviada',       color:'#EC4899', icon:'📨' },
+  propuesta_final:    { label:'Propuesta Final',         color:'#F97316', icon:'🤝' },
+  documentacion:      { label:'Documentación',           color:'#6366F1', icon:'📄' },
+  poliza_activa:      { label:'Póliza Activa',           color:'#10B981', icon:'✅' },
+  gestion_continua:   { label:'Gestión / Mantenimiento', color:'#06B6D4', icon:'🔧' },
+  renovacion:         { label:'Renovación',              color:'#EF4444', icon:'🔄' },
+  renovado_activo:    { label:'Renovado / Activo',       color:'#22C55E', icon:'⭐' },
+  churn:              { label:'Perdido / Churn',         color:'#64748B', icon:'❌' },
 };
+
+const TIPOS = {
+  vida:    { label:'❤️ Vida',    cls:'tipo-vida' },
+  auto:    { label:'🚗 Auto',    cls:'tipo-auto' },
+  medical: { label:'🏥 Médico',  cls:'tipo-medical' },
+  daño:    { label:'🏠 Daños',   cls:'tipo-daño' },
+  viaje:   { label:'✈️ Viaje',  cls:'tipo-viaje' },
+};
+
+// urgencia: nivel 0=rojo,1=naranja,2=amarillo,3=verde,4=azul,5=gris
+function urgenciaClass(conv) {
+  if (conv.requiere_respuesta && ['propuesta_final','documentacion'].includes(conv.estado)) return 'urg-rojo';
+  if (conv.requiere_respuesta) return 'urg-naranja';
+  if (['renovacion'].includes(conv.estado)) return 'urg-amarillo';
+  if (['poliza_activa','renovado_activo','gestion_continua'].includes(conv.estado)) return 'urg-verde';
+  if (['churn'].includes(conv.estado)) return 'urg-gris';
+  return 'urg-azul';
+}
 
 let token = null;
 let estadoFiltro = null;
 let search = '';
 let offset = 0;
-const LIMIT = 20;
+const LIMIT = 25;
 let convId = null;
 let kpiConteos = {};
+let estadoSeleccionado = null;
 
-// ── AUTH ────────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════
 async function login() {
   const email = document.getElementById('inp-email').value.trim();
   const pass  = document.getElementById('inp-pass').value;
-  const errEl = document.getElementById('login-error');
-  const spin  = document.getElementById('login-spinner');
-
-  errEl.classList.add('d-none');
+  const err   = document.getElementById('login-err');
+  const spin  = document.getElementById('login-spin');
+  err.classList.add('d-none');
   spin.classList.remove('d-none');
-
   try {
     const r = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email, password: pass }),
     });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Error al iniciar sesión');
-
-    token = data.token;
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Credenciales incorrectas');
+    token = d.token;
     localStorage.setItem('cg_token', token);
-    localStorage.setItem('cg_nombre', data.nombre);
-    mostrarPanel(data.nombre);
-  } catch (e) {
-    errEl.textContent = e.message;
-    errEl.classList.remove('d-none');
-  } finally {
-    spin.classList.add('d-none');
-  }
+    localStorage.setItem('cg_nombre', d.nombre);
+    mostrarPanel(d.nombre);
+  } catch(e) {
+    err.textContent = e.message;
+    err.classList.remove('d-none');
+  } finally { spin.classList.add('d-none'); }
 }
 
 function cerrarSesion() {
@@ -288,23 +445,22 @@ function cerrarSesion() {
 }
 
 function mostrarPanel(nombre) {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('panel-screen').style.display = 'flex';
-  document.getElementById('sidebar-user').textContent = nombre || 'Agente';
+  document.getElementById('login-screen').style.display  = 'none';
+  document.getElementById('panel-screen').style.display  = 'flex';
+  document.getElementById('s-user').textContent = nombre || 'Agente';
   renderSidebar();
   cargarKpis();
   cargarLista();
   setInterval(cargarKpis, 60000);
+  setInterval(cargarLista, 30000); // auto-refresh cada 30s
 }
 
-function api(url, opts = {}) {
+function api(url, opts={}) {
   return fetch(url, {
     ...opts,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+    headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}`, ...(opts.headers||{}) },
   });
 }
-
-// ── INIT ────────────────────────────────────────────────────────────────────
 
 (function init() {
   const t = localStorage.getItem('cg_token');
@@ -312,244 +468,305 @@ function api(url, opts = {}) {
   if (t) { token = t; mostrarPanel(n); }
 })();
 
-// ── SIDEBAR ─────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════════════════
 function renderSidebar() {
-  const el = document.getElementById('estados-lista');
-  let html = `<div class="estado-item ${!estadoFiltro ? 'active' : ''}" onclick="filtrar(null)">
-    <span><span class="estado-dot" style="background:#94a3b8"></span>Todas</span>
-    <span class="badge-count">${Object.values(kpiConteos).reduce((a,b)=>a+b,0)||''}</span>
+  const el = document.getElementById('sidebar-estados');
+  const total = Object.values(kpiConteos).reduce((a,b)=>a+b,0);
+  let html = `<div class="s-item ${!estadoFiltro?'active':''}" onclick="filtrar(null)">
+    <span><span class="s-dot" style="background:#64748b"></span>Todas</span>
+    <span class="s-cnt">${total||''}</span>
   </div>`;
-  for (const [k, e] of Object.entries(ESTADOS)) {
-    html += `<div class="estado-item ${estadoFiltro===k?'active':''}" onclick="filtrar('${k}')">
-      <span><span class="estado-dot" style="background:${e.color}"></span>${e.label}</span>
-      <span class="badge-count">${kpiConteos[k]||''}</span>
+  for (const [k,e] of Object.entries(ESTADOS)) {
+    const cnt = kpiConteos[k] || 0;
+    html += `<div class="s-item ${estadoFiltro===k?'active':''}" onclick="filtrar('${k}')">
+      <span><span class="s-dot" style="background:${e.color}"></span>${e.label}</span>
+      <span class="s-cnt">${cnt||''}</span>
     </div>`;
   }
   el.innerHTML = html;
 }
 
-function filtrar(e) {
-  estadoFiltro = e; offset = 0;
-  renderSidebar();
-  actualizarBadgeFiltro();
-  cargarLista();
-}
+function filtrar(e) { estadoFiltro=e; offset=0; renderSidebar(); cargarLista(); }
+function buscar(v)  { search=v; offset=0; cargarLista(); }
 
-function actualizarBadgeFiltro() {
-  const el = document.getElementById('filtro-badge');
-  if (estadoFiltro) {
-    const e = ESTADOS[estadoFiltro];
-    el.innerHTML = `<span class="badge" style="background:${e.color}20;color:${e.color};border:1px solid ${e.color}40;font-size:11px;">${e.label} <span style="cursor:pointer" onclick="filtrar(null)">✕</span></span>`;
-  } else { el.innerHTML = ''; }
-}
-
-function buscar(v) { search = v; offset = 0; cargarLista(); }
-
-// ── KPIs ────────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// KPIs
+// ══════════════════════════════════════════════════════════
 async function cargarKpis() {
   try {
-    const r = await api('/api/dashboard/kpis');
-    const d = await r.json();
-    document.getElementById('kpi-nuevos').textContent     = d.hoy.nuevos_contactos;
-    document.getElementById('kpi-pendientes').textContent = d.hoy.respuestas_pendientes;
-    document.getElementById('kpi-propuestas').textContent = d.hoy.propuestas_enviadas;
-    document.getElementById('kpi-polizas').textContent    = d.hoy.polizas_activadas;
+    const d = await api('/api/dashboard/kpis').then(r=>r.json());
+    document.getElementById('kpi-nuevos').textContent = d.hoy.nuevos_contactos;
+    document.getElementById('kpi-pend').textContent   = d.hoy.respuestas_pendientes;
+    document.getElementById('kpi-prop').textContent   = d.hoy.propuestas_enviadas;
+    document.getElementById('kpi-pol').textContent    = d.hoy.polizas_activadas;
     kpiConteos = d.conversaciones_por_estado || {};
     renderSidebar();
   } catch {}
 }
 
-// ── LISTA ───────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// LISTA
+// ══════════════════════════════════════════════════════════
 async function cargarLista() {
-  const sort = document.getElementById('sort-sel')?.value || 'mas_reciente';
-  const p = new URLSearchParams({ limit: LIMIT, offset, sort_by: sort });
+  const sort = document.getElementById('sort-sel')?.value || 'mas_urgente';
+  const tipo = document.getElementById('filtro-tipo')?.value || '';
+  const p    = new URLSearchParams({ limit:LIMIT, offset, sort_by:sort });
   if (estadoFiltro) p.set('estado', estadoFiltro);
   if (search)        p.set('search', search);
+  if (tipo)          p.set('tipo_seguro', tipo);
   try {
-    const r = await api(`/api/conversaciones?${p}`);
-    const d = await r.json();
-    renderLista(d.conversaciones || []);
-    renderPag(d.total || 0);
+    const d = await api(`/api/conversaciones?${p}`).then(r=>r.json());
+    renderLista(d.conversaciones||[]);
+    renderPag(d.total||0);
   } catch {
-    document.getElementById('lista-conv').innerHTML = '<div class="text-danger small">Error cargando</div>';
+    document.getElementById('lista-conv').innerHTML = '<div class="text-danger small p-2">Error cargando conversaciones</div>';
   }
 }
 
 function renderLista(convs) {
   const el = document.getElementById('lista-conv');
-  if (!convs.length) { el.innerHTML = '<div class="text-muted small text-center py-4">Sin conversaciones</div>'; return; }
+  if (!convs.length) {
+    el.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox" style="font-size:32px;"></i><p class="mt-2 small">Sin conversaciones</p></div>';
+    return;
+  }
   el.innerHTML = convs.map(c => {
-    const e = ESTADOS[c.estado] || { label: c.estado, color: '#94a3b8' };
-    const pc = { critica:'p-critica', alta:'p-alta', normal:'p-normal', baja:'p-baja' }[c.prioridad] || 'p-normal';
-    const alerta = c.requiere_respuesta ? '<i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Requiere respuesta"></i>' : '';
-    return `<div class="conv-card ${convId===c.id?'selected':''}" onclick="abrirDetalle('${c.id}')">
-      <div class="d-flex justify-content-between mb-1">
-        <span class="conv-nombre">${esc(c.cliente_nombre)}${alerta}</span>
-        <span class="prioridad-badge ${pc}">${c.prioridad}</span>
+    const e   = ESTADOS[c.estado] || { label:c.estado, color:'#94a3b8' };
+    const t   = TIPOS[c.tipo_seguro] || { label:'Sin tipo', cls:'tipo-null' };
+    const urg = urgenciaClass(c);
+
+    // tiempo sin respuesta
+    let tiempoHtml = '';
+    if (c.requiere_respuesta && c.ultimo_mensaje?.timestamp) {
+      const hrs = Math.round((Date.now() - new Date(c.ultimo_mensaje.timestamp)) / 3600000);
+      if (hrs >= 1) {
+        tiempoHtml = `<span class="sin-respuesta-badge"><i class="bi bi-clock"></i> SIN RESPUESTA ${hrs}h</span>`;
+      }
+    }
+
+    return `<div class="conv-card ${urg} ${convId===c.id?'selected':''}" onclick="abrirDetalle('${c.id}')">
+      <div class="d-flex justify-content-between align-items-start mb-1">
+        <span class="conv-nombre">${esc(c.cliente_nombre)}</span>
+        <span class="conv-tipo ${t.cls}">${t.label}</span>
       </div>
-      <div class="conv-preview">${esc(c.ultimo_mensaje?.contenido || 'Sin mensajes')}</div>
-      <div class="d-flex justify-content-between mt-1">
-        <span style="font-size:11px;background:${e.color}20;color:${e.color};padding:1px 7px;border-radius:10px;">${e.label}</span>
-        <span style="font-size:11px;color:#94a3b8;">${c.cliente_telefono}</span>
+      <div class="conv-preview">${esc(c.ultimo_mensaje?.contenido||'Sin mensajes')}</div>
+      <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-1">
+        <span class="conv-estado" style="background:${e.color}18;color:${e.color};">${e.label}</span>
+        ${tiempoHtml}
+        <span style="font-size:10px;color:#94a3b8;">${c.cliente_telefono}</span>
       </div>
     </div>`;
   }).join('');
 }
 
 function renderPag(total) {
-  const el = document.getElementById('paginacion');
-  const totalP = Math.ceil(total / LIMIT);
-  const pag = Math.floor(offset / LIMIT) + 1;
-  if (totalP <= 1) { el.innerHTML = ''; return; }
-  el.innerHTML = `
-    <button class="btn btn-sm btn-outline-secondary" ${offset===0?'disabled':''} onclick="cambiarPag(-1)"><i class="bi bi-chevron-left"></i></button>
-    <span class="small text-muted">${pag}/${totalP} (${total})</span>
-    <button class="btn btn-sm btn-outline-secondary" ${pag>=totalP?'disabled':''} onclick="cambiarPag(1)"><i class="bi bi-chevron-right"></i></button>`;
+  const el   = document.getElementById('paginacion');
+  const tot  = Math.ceil(total/LIMIT);
+  const pag  = Math.floor(offset/LIMIT)+1;
+  if (tot<=1) { el.innerHTML=''; return; }
+  el.innerHTML = `<button class="btn btn-sm btn-light" ${offset===0?'disabled':''} onclick="cambiarPag(-1)"><i class="bi bi-chevron-left"></i></button>
+    <span class="text-muted">${pag} / ${tot} &nbsp;(${total})</span>
+    <button class="btn btn-sm btn-light" ${pag>=tot?'disabled':''} onclick="cambiarPag(1)"><i class="bi bi-chevron-right"></i></button>`;
 }
+function cambiarPag(d) { offset=Math.max(0,offset+d*LIMIT); cargarLista(); }
 
-function cambiarPag(d) { offset = Math.max(0, offset + d * LIMIT); cargarLista(); }
-
-// ── DETALLE ─────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// DETALLE
+// ══════════════════════════════════════════════════════════
 async function abrirDetalle(id) {
   convId = id;
-  document.querySelectorAll('.conv-card').forEach(c => {
-    c.classList.toggle('selected', c.getAttribute('onclick')?.includes(id));
-  });
+  document.querySelectorAll('.conv-card').forEach(c =>
+    c.classList.toggle('selected', c.getAttribute('onclick')?.includes(`'${id}'`))
+  );
   document.getElementById('det-empty').style.display = 'none';
-  document.getElementById('det-panel').style.display = 'block';
+  const inner = document.getElementById('det-inner');
+  inner.style.display = 'flex';
 
   try {
-    const r = await api(`/api/conversaciones/${id}`);
-    const d = await r.json();
+    const d = await api(`/api/conversaciones/${id}`).then(r=>r.json());
     const c = d.conversacion;
-    const e = ESTADOS[c.estado] || { label: c.estado, color: '#94a3b8' };
-    const pc = { critica:'p-critica', alta:'p-alta', normal:'p-normal', baja:'p-baja' }[c.prioridad] || 'p-normal';
+    const e = ESTADOS[c.estado]||{label:c.estado,color:'#94a3b8'};
+    const t = TIPOS[c.tipo_seguro]||{label:'Sin tipo',cls:'tipo-null'};
 
     document.getElementById('det-nombre').textContent = c.cliente_nombre;
-    document.getElementById('det-tel').textContent    = c.cliente_telefono;
-    document.getElementById('det-tipo').textContent   = c.tipo_seguro || 'Sin tipo';
-    const estBadge = document.getElementById('det-estado');
-    estBadge.textContent = e.label;
-    estBadge.style.cssText = `background:${e.color}20;color:${e.color};border:1px solid ${e.color}40;`;
-    const prioBadge = document.getElementById('det-prioridad');
-    prioBadge.textContent = c.prioridad;
-    prioBadge.className = `prioridad-badge ${pc}`;
+    document.getElementById('det-sub').textContent    = `${c.cliente_telefono}${c.numero_poliza?' · Póliza: '+c.numero_poliza:''}`;
 
-    renderMensajes(d.mensajes || []);
-    renderNotas(d.notas || []);
-    renderCots(d.cotizaciones || []);
-    renderHist(d.historial_estados || []);
+    const tipoBadge = document.getElementById('det-tipo-badge');
+    tipoBadge.textContent  = t.label;
+    tipoBadge.className    = `conv-tipo ${t.cls}`;
+
+    const estBadge = document.getElementById('det-estado-badge');
+    estBadge.textContent   = e.label;
+    estBadge.style.cssText = `background:${e.color}18;color:${e.color};border:1px solid ${e.color}40;`;
+
+    // badge urgencia
+    const urgEl = document.getElementById('det-urgencia-badge');
+    if (c.requiere_respuesta) {
+      urgEl.innerHTML = '<span class="sin-respuesta-badge"><i class="bi bi-exclamation-circle"></i> REQUIERE RESPUESTA</span>';
+    } else { urgEl.innerHTML = ''; }
+
+    renderMensajes(d.mensajes||[]);
+    renderNotas(d.notas||[]);
+    renderCots(d.cotizaciones||[]);
+    renderHist(d.historial_estados||[]);
     irTab('mensajes');
-  } catch { document.getElementById('det-nombre').textContent = 'Error'; }
+  } catch { document.getElementById('det-nombre').textContent='Error cargando'; }
 }
 
+function recargarDetalle() { if (convId) abrirDetalle(convId); }
+
 function renderMensajes(msgs) {
-  const el = document.getElementById('mensajes-wrap');
-  if (!msgs.length) { el.innerHTML = '<div class="text-muted small text-center">Sin mensajes</div>'; return; }
+  const el = document.getElementById('msgs-wrap');
+  if (!msgs.length) { el.innerHTML='<div class="text-muted small text-center py-4">Sin mensajes registrados</div>'; return; }
   el.innerHTML = msgs.map(m => {
-    const cls   = { cliente:'burbuja-cliente', agente:'burbuja-agente' }[m.autor] || 'burbuja-sistema';
-    const align = m.autor === 'agente' ? 'ms-auto' : m.autor === 'sistema' ? 'mx-auto' : '';
+    const cls   = {cliente:'burbuja-cliente',agente:'burbuja-agente'}[m.autor]||'burbuja-sistema';
+    const align = m.autor==='agente'?'ms-auto':m.autor==='sistema'?'mx-auto':'';
     const hora  = m.timestamp_mensaje ? new Date(m.timestamp_mensaje).toLocaleString('es-MX',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    return `<div class="burbuja ${cls} ${align}">${esc(m.contenido)}<div class="burbuja-hora">${hora}</div></div>`;
+    return `<div class="burbuja ${cls} ${align}">${esc(m.contenido)}<div class="burbuja-hora text-end">${hora}</div></div>`;
   }).join('');
-  el.scrollTop = el.scrollHeight;
+  // scroll al último mensaje
+  setTimeout(()=>{ el.parentElement.scrollTop=el.parentElement.scrollHeight; },50);
 }
 
 function renderNotas(notas) {
   document.getElementById('lista-notas').innerHTML = notas.length
-    ? notas.map(n=>`<div class="nota-item"><strong>${esc(n.agente_nombre||'Agente')}</strong> · ${fmt(n.created_at)}<br>${esc(n.contenido)}</div>`).join('')
-    : '<div class="text-muted small">Sin notas</div>';
+    ? notas.map(n=>`<div class="nota-card">
+        <div class="nota-meta"><i class="bi bi-person me-1"></i>${esc(n.agente_nombre||'Agente')} · ${fmt(n.created_at)}</div>
+        ${esc(n.contenido)}
+      </div>`).join('')
+    : '<div class="text-muted small text-center py-3">Sin notas internas</div>';
 }
 
 function renderCots(cots) {
   document.getElementById('lista-cots').innerHTML = cots.length
-    ? cots.map(c=>`<div class="cot-item"><strong>${esc(c.aseguradora)}</strong> · $${c.prima?Number(c.prima).toLocaleString('es-MX'):'—'} MXN · <em>${c.estado}</em><br><span class="text-muted small">${esc(c.cobertura||'')}</span></div>`).join('')
-    : '<div class="text-muted small">Sin cotizaciones</div>';
+    ? cots.map(c=>`<div class="cot-card">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="cot-aseg">${esc(c.aseguradora)}</div>
+            <div class="cot-prima">$${c.prima?Number(c.prima).toLocaleString('es-MX'):'—'} MXN</div>
+            <div style="font-size:12px;color:#64748b;margin-top:2px;">${esc(c.cobertura||'')}</div>
+          </div>
+          <span class="badge ${c.estado==='aceptada'?'bg-success':c.estado==='rechazada'?'bg-danger':c.estado==='enviada'?'bg-primary':'bg-warning text-dark'}">${c.estado}</span>
+        </div>
+      </div>`).join('')
+    : '<div class="text-muted small text-center py-3">Sin cotizaciones</div>';
 }
 
 function renderHist(hist) {
   document.getElementById('lista-hist').innerHTML = hist.length
-    ? hist.map(h=>`<div class="hist-item"><strong>${esc(h.estado_anterior||'—')} → ${esc(h.estado_nuevo)}</strong> · ${fmt(h.timestamp)}<br><span class="text-muted">${esc(h.nombre_quien_realizo||h.realizado_por||'')}${h.motivo?' — '+esc(h.motivo):''}</span></div>`).join('')
-    : '<div class="text-muted small">Sin historial</div>';
+    ? hist.map(h=>{
+        const ea = ESTADOS[h.estado_anterior]||{label:h.estado_anterior||'—',color:'#94a3b8'};
+        const en = ESTADOS[h.estado_nuevo]  ||{label:h.estado_nuevo,       color:'#94a3b8'};
+        return `<div class="hist-row">
+          <div class="hist-icono"><i class="bi bi-arrow-right"></i></div>
+          <div>
+            <div style="font-size:13px;">
+              <span style="background:${ea.color}18;color:${ea.color};padding:1px 7px;border-radius:8px;font-size:11px;">${ea.label}</span>
+              <i class="bi bi-arrow-right mx-1 text-muted" style="font-size:10px;"></i>
+              <span style="background:${en.color}18;color:${en.color};padding:1px 7px;border-radius:8px;font-size:11px;font-weight:700;">${en.label}</span>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-top:3px;">
+              ${esc(h.nombre_quien_realizo||h.realizado_por||'Sistema')} · ${fmt(h.timestamp)}
+              ${h.motivo?`<span class="text-muted"> — ${esc(h.motivo)}</span>`:''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="text-muted small text-center py-3">Sin historial</div>';
 }
 
-// ── TABS ────────────────────────────────────────────────────────────────────
-
-const TAB_NAMES = { mensajes:'Mensajes', notas:'Notas', cotizaciones:'Cotizaciones', historial:'Historial' };
+// ══════════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════════
 function irTab(tab) {
-  document.querySelectorAll('.tab-pane-custom').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.det-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(`tab-${tab}`).classList.add('active');
-  document.querySelectorAll('#det-tabs .nav-link').forEach(l => {
-    l.classList.toggle('active', l.textContent.trim() === TAB_NAMES[tab]);
-  });
+  document.getElementById(`dtab-${tab}`).classList.add('active');
 }
 
-// ── CAMBIAR ESTADO ───────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// MODAL CAMBIAR ESTADO
+// ══════════════════════════════════════════════════════════
 function abrirModalEstado() {
-  const sel = document.getElementById('sel-estado-nuevo');
-  sel.innerHTML = Object.entries(ESTADOS).map(([k,e])=>`<option value="${k}">${e.label}</option>`).join('');
+  if (!convId) return;
+  // Obtener estado actual del badge
+  const estadoActualLabel = document.getElementById('det-estado-badge').textContent;
+  document.getElementById('modal-estado-actual').textContent = estadoActualLabel;
   document.getElementById('txt-motivo').value = '';
+  estadoSeleccionado = null;
+
+  const el = document.getElementById('estado-opciones');
+  el.innerHTML = Object.entries(ESTADOS).map(([k,e])=>`
+    <div class="estado-opcion" id="eop-${k}" onclick="selEstado('${k}')">
+      <span style="font-size:18px;">${e.icon}</span>
+      <span class="fw-semibold" style="color:${e.color};">${e.label}</span>
+    </div>`).join('');
+
   new bootstrap.Modal(document.getElementById('modal-estado')).show();
 }
 
+function selEstado(k) {
+  estadoSeleccionado = k;
+  document.querySelectorAll('.estado-opcion').forEach(el=>el.classList.remove('seleccionado'));
+  document.getElementById(`eop-${k}`).classList.add('seleccionado');
+}
+
 async function confirmarEstado() {
-  const estado_nuevo = document.getElementById('sel-estado-nuevo').value;
+  if (!estadoSeleccionado) { alert('Selecciona un estado'); return; }
   const motivo = document.getElementById('txt-motivo').value.trim();
   if (!motivo) { alert('El motivo es obligatorio'); return; }
-
   const r = await api(`/api/conversaciones/${convId}/estado`, {
-    method: 'POST', body: JSON.stringify({ estado_nuevo, motivo }),
+    method:'POST', body:JSON.stringify({ estado_nuevo:estadoSeleccionado, motivo }),
   });
   if (r.ok) {
     bootstrap.Modal.getInstance(document.getElementById('modal-estado')).hide();
     abrirDetalle(convId);
     cargarLista();
     cargarKpis();
-  } else { alert('Error cambiando estado'); }
+  } else { alert('Error al cambiar estado'); }
 }
 
-// ── NOTAS ────────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// NOTAS
+// ══════════════════════════════════════════════════════════
 async function guardarNota() {
   const contenido = document.getElementById('txt-nota').value.trim();
   if (!contenido) return;
   const r = await api(`/api/conversaciones/${convId}/notas`, {
-    method: 'POST', body: JSON.stringify({ contenido }),
+    method:'POST', body:JSON.stringify({ contenido }),
   });
-  if (r.ok) { document.getElementById('txt-nota').value = ''; abrirDetalle(convId); }
+  if (r.ok) { document.getElementById('txt-nota').value=''; abrirDetalle(convId); }
 }
 
-// ── COTIZACIONES ─────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// COTIZACIONES
+// ══════════════════════════════════════════════════════════
 async function guardarCotizacion() {
   const aseguradora = document.getElementById('cot-aseg').value.trim();
   if (!aseguradora) { alert('Ingresa la aseguradora'); return; }
   const r = await api(`/api/conversaciones/${convId}/cotizaciones`, {
-    method: 'POST', body: JSON.stringify({
+    method:'POST', body:JSON.stringify({
       aseguradora,
-      prima:     parseFloat(document.getElementById('cot-prima').value) || null,
-      cobertura: document.getElementById('cot-cobertura').value.trim() || null,
+      prima:     parseFloat(document.getElementById('cot-prima').value)||null,
+      cobertura: document.getElementById('cot-cobertura').value.trim()||null,
       estado:    document.getElementById('cot-estado').value,
     }),
   });
   if (r.ok) {
-    ['cot-aseg','cot-prima','cot-cobertura'].forEach(i => document.getElementById(i).value = '');
+    ['cot-aseg','cot-prima','cot-cobertura'].forEach(i=>document.getElementById(i).value='');
     abrirDetalle(convId);
   }
 }
 
-// ── UTILS ────────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-
 function fmt(ts) {
   if (!ts) return '';
   return new Date(ts).toLocaleString('es-MX',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
