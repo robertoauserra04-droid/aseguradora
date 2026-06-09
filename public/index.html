@@ -3,165 +3,203 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seguros Carguill — Panel de Conversaciones</title>
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css"
-    rel="stylesheet"
-  />
+  <title>Seguros Carguill</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet" />
   <style>
     body { background: #f1f5f9; font-size: 14px; }
-    .sidebar { width: 260px; min-height: 100vh; background: #1e293b; color: #e2e8f0; }
-    .sidebar .brand { padding: 20px 16px 12px; font-weight: 700; font-size: 16px; border-bottom: 1px solid #334155; }
-    .estado-item { padding: 8px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-radius: 0; }
-    .estado-item:hover, .estado-item.active { background: #334155; }
-    .estado-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-    .badge-count { background: #334155; color: #94a3b8; font-size: 11px; padding: 2px 7px; border-radius: 10px; }
-    .estado-item.active .badge-count { background: #475569; color: #e2e8f0; }
-    .conv-card { background: #fff; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; border: 2px solid transparent; transition: border-color .15s; }
-    .conv-card:hover { border-color: #cbd5e1; }
-    .conv-card.selected { border-color: #3b82f6; }
-    .conv-card .nombre { font-weight: 600; font-size: 14px; }
-    .conv-card .preview { color: #64748b; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
-    .prioridad-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
-    .prioridad-critica { background: #fee2e2; color: #dc2626; }
-    .prioridad-alta { background: #fef3c7; color: #d97706; }
-    .prioridad-normal { background: #e0f2fe; color: #0284c7; }
-    .prioridad-baja { background: #f1f5f9; color: #64748b; }
-    .msg-burbuja { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 13px; margin-bottom: 6px; word-break: break-word; }
-    .msg-cliente { background: #f1f5f9; align-self: flex-start; border-bottom-left-radius: 2px; }
-    .msg-agente { background: #dcfce7; align-self: flex-end; border-bottom-right-radius: 2px; }
-    .msg-sistema { background: #fef9c3; align-self: center; font-size: 11px; color: #92400e; }
-    .msg-hora { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-    #mensajes-container { display: flex; flex-direction: column; overflow-y: auto; max-height: calc(100vh - 340px); padding: 12px; background: #f8fafc; border-radius: 8px; }
-    .kpi-card { background: #fff; border-radius: 10px; padding: 16px 20px; text-align: center; }
-    .kpi-num { font-size: 28px; font-weight: 700; color: #1e293b; }
-    .kpi-label { font-size: 12px; color: #64748b; margin-top: 2px; }
-    .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: .5px; margin-bottom: 8px; }
-    .badge-estado { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
-    #detail-panel { display: none; }
-    #detail-panel.visible { display: block; }
-    .tab-content-custom { display: none; }
-    .tab-content-custom.active { display: block; }
-    .nota-item { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 8px; font-size: 13px; }
-    .cotizacion-item { background: #f0fdf4; border-left: 3px solid #22c55e; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 8px; font-size: 13px; }
-    .historial-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #475569; }
-    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+    /* LOGIN */
+    #login-screen { display:flex; min-height:100vh; align-items:center; justify-content:center; background: linear-gradient(135deg,#1e293b 0%,#0f172a 100%); }
+    .login-card { background:#fff; border-radius:16px; padding:40px 36px; width:360px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
+    .login-logo { font-size:28px; font-weight:800; color:#1e293b; margin-bottom:4px; }
+    .login-sub { color:#64748b; font-size:13px; margin-bottom:28px; }
+
+    /* PANEL */
+    #panel-screen { display:none; }
+    .sidebar { width:240px; min-height:100vh; background:#1e293b; color:#e2e8f0; flex-shrink:0; }
+    .sidebar .brand { padding:18px 16px 12px; font-weight:700; font-size:15px; border-bottom:1px solid #334155; display:flex; align-items:center; gap:8px; }
+    .estado-item { padding:7px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+    .estado-item:hover,.estado-item.active { background:#334155; }
+    .estado-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:7px; flex-shrink:0; }
+    .badge-count { background:#334155; color:#94a3b8; font-size:11px; padding:1px 6px; border-radius:10px; }
+    .estado-item.active .badge-count { background:#475569; color:#e2e8f0; }
+    .sidebar-footer { padding:12px 16px; border-top:1px solid #334155; margin-top:auto; }
+
+    .conv-card { background:#fff; border-radius:8px; padding:11px 13px; margin-bottom:7px; cursor:pointer; border:2px solid transparent; transition:border-color .12s; }
+    .conv-card:hover { border-color:#cbd5e1; }
+    .conv-card.selected { border-color:#3b82f6; }
+    .conv-nombre { font-weight:600; font-size:13px; }
+    .conv-preview { color:#64748b; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .prioridad-badge { font-size:10px; padding:2px 6px; border-radius:10px; font-weight:700; }
+    .p-critica { background:#fee2e2; color:#dc2626; }
+    .p-alta    { background:#fef3c7; color:#d97706; }
+    .p-normal  { background:#e0f2fe; color:#0284c7; }
+    .p-baja    { background:#f1f5f9; color:#64748b; }
+
+    #mensajes-wrap { display:flex; flex-direction:column; overflow-y:auto; max-height:calc(100vh - 330px); padding:10px; background:#f8fafc; border-radius:8px; gap:4px; }
+    .burbuja { max-width:78%; padding:8px 12px; border-radius:12px; font-size:13px; word-break:break-word; }
+    .burbuja-cliente  { background:#f1f5f9; align-self:flex-start; border-bottom-left-radius:3px; }
+    .burbuja-agente   { background:#dcfce7; align-self:flex-end;   border-bottom-right-radius:3px; }
+    .burbuja-sistema  { background:#fef9c3; align-self:center; font-size:11px; color:#92400e; }
+    .burbuja-hora { font-size:10px; color:#94a3b8; margin-top:2px; }
+
+    .kpi-card { background:#fff; border-radius:10px; padding:14px 18px; text-align:center; }
+    .kpi-num  { font-size:26px; font-weight:800; color:#1e293b; }
+    .kpi-lbl  { font-size:11px; color:#64748b; margin-top:1px; }
+
+    .tab-pane-custom { display:none; }
+    .tab-pane-custom.active { display:block; }
+    .nota-item { background:#fffbeb; border-left:3px solid #f59e0b; padding:8px 11px; border-radius:0 6px 6px 0; margin-bottom:7px; font-size:13px; }
+    .cot-item  { background:#f0fdf4; border-left:3px solid #22c55e; padding:8px 11px; border-radius:0 6px 6px 0; margin-bottom:7px; font-size:13px; }
+    .hist-item { padding:5px 0; border-bottom:1px solid #f1f5f9; font-size:12px; color:#475569; }
+
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
   </style>
 </head>
 <body>
-<div class="d-flex">
+
+<!-- ══════════════════════════════════════════
+     LOGIN
+══════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo"><i class="bi bi-shield-check text-primary me-2"></i>Carguill</div>
+    <div class="login-sub">Panel de conversaciones · Seguros</div>
+    <div id="login-error" class="alert alert-danger py-2 d-none small"></div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Correo</label>
+      <input id="inp-email" type="email" class="form-control" placeholder="admin@carguill.com" />
+    </div>
+    <div class="mb-4">
+      <label class="form-label small fw-semibold">Contraseña</label>
+      <input id="inp-pass" type="password" class="form-control" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()" />
+    </div>
+    <button class="btn btn-primary w-100 fw-semibold" onclick="login()">
+      <span id="login-spinner" class="spinner-border spinner-border-sm me-2 d-none"></span>
+      Entrar
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PANEL PRINCIPAL
+══════════════════════════════════════════ -->
+<div id="panel-screen" class="d-flex">
 
   <!-- SIDEBAR -->
-  <div class="sidebar flex-shrink-0">
-    <div class="brand"><i class="bi bi-shield-check me-2"></i>Carguill</div>
-    <div class="px-3 pt-3 pb-1" style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Estados</div>
-    <div id="estados-lista"></div>
-    <div class="px-3 pt-3 mt-2" style="border-top:1px solid #334155;">
-      <button class="btn btn-sm btn-outline-secondary w-100 text-start" onclick="filtrarEstado(null)" style="color:#94a3b8;border-color:#334155;">
-        <i class="bi bi-grid me-1"></i> Todas
+  <div class="sidebar d-flex flex-column">
+    <div class="brand"><i class="bi bi-shield-check text-primary"></i>Carguill</div>
+
+    <div class="px-3 pt-3 pb-1" style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Estados</div>
+    <div id="estados-lista" style="overflow-y:auto;flex:1;"></div>
+
+    <div class="sidebar-footer">
+      <div class="text-muted small mb-2" id="sidebar-user" style="font-size:11px;"></div>
+      <button class="btn btn-sm btn-outline-secondary w-100 text-start" onclick="cerrarSesion()" style="color:#94a3b8;border-color:#334155;font-size:12px;">
+        <i class="bi bi-box-arrow-left me-1"></i>Cerrar sesión
       </button>
     </div>
   </div>
 
   <!-- MAIN -->
-  <div class="flex-grow-1 p-3" style="min-width:0;">
+  <div class="flex-grow-1 p-3" style="min-width:0;overflow-y:auto;">
 
     <!-- KPIs -->
-    <div class="row g-2 mb-3" id="kpis-row">
-      <div class="col-3"><div class="kpi-card"><div class="kpi-num" id="kpi-nuevos">—</div><div class="kpi-label">Nuevos hoy</div></div></div>
-      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-warning" id="kpi-pendientes">—</div><div class="kpi-label">Sin respuesta</div></div></div>
-      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-primary" id="kpi-propuestas">—</div><div class="kpi-label">Propuestas hoy</div></div></div>
-      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-success" id="kpi-polizas">—</div><div class="kpi-label">Pólizas activadas</div></div></div>
+    <div class="row g-2 mb-3">
+      <div class="col-3"><div class="kpi-card"><div class="kpi-num" id="kpi-nuevos">—</div><div class="kpi-lbl">Nuevos hoy</div></div></div>
+      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-warning" id="kpi-pendientes">—</div><div class="kpi-lbl">Sin respuesta</div></div></div>
+      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-primary" id="kpi-propuestas">—</div><div class="kpi-lbl">Propuestas hoy</div></div></div>
+      <div class="col-3"><div class="kpi-card"><div class="kpi-num text-success" id="kpi-polizas">—</div><div class="kpi-lbl">Pólizas activadas</div></div></div>
     </div>
 
     <div class="row g-3">
+
       <!-- LISTA -->
       <div class="col-4">
-        <div class="d-flex align-items-center mb-2 gap-2">
-          <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Buscar nombre o teléfono…" oninput="buscar(this.value)" />
-          <select id="sort-select" class="form-select form-select-sm" style="width:auto;" onchange="cargarConversaciones()">
+        <div class="d-flex gap-2 mb-2">
+          <input type="text" id="search-inp" class="form-control form-control-sm" placeholder="Buscar…" oninput="buscar(this.value)" />
+          <select id="sort-sel" class="form-select form-select-sm" style="width:130px;" onchange="cargarLista()">
             <option value="mas_reciente">Recientes</option>
             <option value="mas_urgente">Urgentes</option>
             <option value="sin_respuesta">Sin respuesta</option>
           </select>
         </div>
-        <div id="filtro-activo" class="mb-2" style="min-height:24px;"></div>
-        <div id="lista-conversaciones"></div>
-        <div id="paginacion" class="d-flex justify-content-between mt-2"></div>
+        <div id="filtro-badge" class="mb-2" style="min-height:22px;"></div>
+        <div id="lista-conv"></div>
+        <div id="paginacion" class="d-flex justify-content-between align-items-center mt-2"></div>
       </div>
 
       <!-- DETALLE -->
-      <div class="col-8" id="detail-panel">
-        <div class="bg-white rounded-3 p-3 mb-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <h5 class="mb-0" id="det-nombre"></h5>
-              <div class="text-muted small" id="det-telefono"></div>
+      <div class="col-8">
+        <div id="det-empty" class="d-flex align-items-center justify-content-center text-muted" style="min-height:60vh;">
+          <div class="text-center"><i class="bi bi-chat-dots" style="font-size:48px;color:#cbd5e1;"></i><p class="mt-2">Selecciona una conversación</p></div>
+        </div>
+
+        <div id="det-panel" style="display:none;">
+          <!-- Cabecera -->
+          <div class="bg-white rounded-3 p-3 mb-2">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+              <div>
+                <h5 class="mb-0" id="det-nombre"></h5>
+                <div class="text-muted small" id="det-tel"></div>
+              </div>
+              <div class="d-flex gap-2 align-items-center flex-wrap">
+                <span id="det-tipo" class="badge bg-secondary"></span>
+                <span id="det-estado" class="badge" style="font-size:11px;"></span>
+                <span id="det-prioridad" class="prioridad-badge"></span>
+              </div>
             </div>
-            <div class="d-flex gap-2 align-items-center">
-              <span id="det-tipo" class="badge bg-secondary"></span>
-              <span id="det-estado-badge" class="badge-estado"></span>
-              <span id="det-prioridad" class="prioridad-badge"></span>
+            <div class="mt-2 d-flex gap-2 flex-wrap">
+              <button class="btn btn-sm btn-outline-primary" onclick="abrirModalEstado()"><i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado</button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="irTab('notas')"><i class="bi bi-sticky me-1"></i>Nota</button>
+              <button class="btn btn-sm btn-outline-success" onclick="irTab('cotizaciones')"><i class="bi bi-currency-dollar me-1"></i>Cotización</button>
             </div>
           </div>
-          <div class="mt-2 d-flex gap-2 flex-wrap">
-            <button class="btn btn-sm btn-outline-primary" onclick="abrirCambiarEstado()"><i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado</button>
-            <button class="btn btn-sm btn-outline-secondary" onclick="mostrarTabContenido('tab-notas')"><i class="bi bi-sticky me-1"></i>Nota</button>
-            <button class="btn btn-sm btn-outline-success" onclick="mostrarTabContenido('tab-cotizaciones')"><i class="bi bi-currency-dollar me-1"></i>Cotización</button>
+
+          <!-- Tabs -->
+          <ul class="nav nav-tabs mb-2" id="det-tabs">
+            <li class="nav-item"><a class="nav-link active" href="#" onclick="irTab('mensajes');return false">Mensajes</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" onclick="irTab('notas');return false">Notas</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" onclick="irTab('cotizaciones');return false">Cotizaciones</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" onclick="irTab('historial');return false">Historial</a></li>
+          </ul>
+
+          <div id="tab-mensajes" class="tab-pane-custom active">
+            <div id="mensajes-wrap"></div>
           </div>
-        </div>
 
-        <!-- Tabs -->
-        <ul class="nav nav-tabs mb-2" id="det-tabs">
-          <li class="nav-item"><a class="nav-link active" href="#" onclick="mostrarTabContenido('tab-mensajes');return false">Mensajes</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarTabContenido('tab-notas');return false">Notas</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarTabContenido('tab-cotizaciones');return false">Cotizaciones</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarTabContenido('tab-historial');return false">Historial</a></li>
-        </ul>
-
-        <div id="tab-mensajes" class="tab-content-custom active">
-          <div id="mensajes-container"></div>
-        </div>
-
-        <div id="tab-notas" class="tab-content-custom">
-          <div class="mb-2">
-            <textarea id="nueva-nota-texto" class="form-control form-control-sm" rows="2" placeholder="Escribe una nota interna…"></textarea>
-            <button class="btn btn-sm btn-warning mt-1" onclick="guardarNota()">Guardar nota</button>
+          <div id="tab-notas" class="tab-pane-custom">
+            <textarea id="txt-nota" class="form-control form-control-sm mb-2" rows="2" placeholder="Escribe una nota interna…"></textarea>
+            <button class="btn btn-sm btn-warning mb-3" onclick="guardarNota()">Guardar nota</button>
+            <div id="lista-notas"></div>
           </div>
-          <div id="lista-notas"></div>
-        </div>
 
-        <div id="tab-cotizaciones" class="tab-content-custom">
-          <div class="row g-2 mb-3">
-            <div class="col-4"><input type="text" id="cot-aseguradora" class="form-control form-control-sm" placeholder="Aseguradora" /></div>
-            <div class="col-2"><input type="number" id="cot-prima" class="form-control form-control-sm" placeholder="Prima" /></div>
-            <div class="col-3"><input type="text" id="cot-cobertura" class="form-control form-control-sm" placeholder="Cobertura" /></div>
-            <div class="col-3">
-              <select id="cot-estado" class="form-select form-select-sm">
-                <option value="cotizando">Cotizando</option>
-                <option value="enviada">Enviada</option>
-                <option value="aceptada">Aceptada</option>
-                <option value="rechazada">Rechazada</option>
-              </select>
+          <div id="tab-cotizaciones" class="tab-pane-custom">
+            <div class="row g-2 mb-3">
+              <div class="col-4"><input type="text" id="cot-aseg" class="form-control form-control-sm" placeholder="Aseguradora" /></div>
+              <div class="col-3"><input type="number" id="cot-prima" class="form-control form-control-sm" placeholder="Prima MXN" /></div>
+              <div class="col-5"><input type="text" id="cot-cobertura" class="form-control form-control-sm" placeholder="Descripción cobertura" /></div>
+              <div class="col-4">
+                <select id="cot-estado" class="form-select form-select-sm">
+                  <option value="cotizando">Cotizando</option>
+                  <option value="enviada">Enviada</option>
+                  <option value="aceptada">Aceptada</option>
+                  <option value="rechazada">Rechazada</option>
+                </select>
+              </div>
+              <div class="col-8"><button class="btn btn-sm btn-success" onclick="guardarCotizacion()"><i class="bi bi-plus me-1"></i>Agregar cotización</button></div>
             </div>
-            <div class="col-12"><button class="btn btn-sm btn-success" onclick="guardarCotizacion()">Agregar cotización</button></div>
+            <div id="lista-cots"></div>
           </div>
-          <div id="lista-cotizaciones"></div>
-        </div>
 
-        <div id="tab-historial" class="tab-content-custom">
-          <div id="lista-historial"></div>
+          <div id="tab-historial" class="tab-pane-custom">
+            <div id="lista-hist"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Placeholder -->
-      <div class="col-8 d-flex align-items-center justify-content-center text-muted" id="detail-placeholder" style="min-height:300px;">
-        <div class="text-center"><i class="bi bi-chat-dots" style="font-size:40px;color:#cbd5e1;"></i><br>Selecciona una conversación</div>
-      </div>
     </div>
   </div>
 </div>
@@ -172,11 +210,14 @@
     <div class="modal-content">
       <div class="modal-header py-2"><h6 class="modal-title mb-0">Cambiar estado</h6><button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
-        <select id="nuevo-estado-select" class="form-select form-select-sm mb-2"></select>
-        <textarea id="motivo-estado" class="form-control form-control-sm" rows="2" placeholder="Motivo del cambio (requerido)"></textarea>
+        <label class="form-label small">Nuevo estado</label>
+        <select id="sel-estado-nuevo" class="form-select form-select-sm mb-2"></select>
+        <label class="form-label small">Motivo <span class="text-danger">*</span></label>
+        <textarea id="txt-motivo" class="form-control form-control-sm" rows="2" placeholder="¿Por qué cambia el estado?"></textarea>
       </div>
       <div class="modal-footer py-2">
-        <button class="btn btn-sm btn-primary" onclick="confirmarCambioEstado()">Confirmar</button>
+        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-sm btn-primary" onclick="confirmarEstado()">Confirmar</button>
       </div>
     </div>
   </div>
@@ -184,315 +225,335 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Detectar URL base automáticamente (funciona en local y en Railway)
-const API_BASE = '';
-
 const ESTADOS = {
-  prospectiva:       { label: 'Prospectiva',               color: '#3B82F6' },
-  diagnostico:       { label: 'Levantamiento',              color: '#8B5CF6' },
-  cotizacion_proceso:{ label: 'Cotización en Proceso',      color: '#F59E0B' },
-  propuesta_enviada: { label: 'Propuesta Enviada',          color: '#EC4899' },
-  propuesta_final:   { label: 'Propuesta Final',            color: '#F97316' },
-  documentacion:     { label: 'Documentación',              color: '#6366F1' },
-  poliza_activa:     { label: 'Póliza Activa',              color: '#10B981' },
-  gestion_continua:  { label: 'Gestión / Mantenimiento',    color: '#06B6D4' },
-  renovacion:        { label: 'Renovación - Retención',     color: '#EF4444' },
-  renovado_activo:   { label: 'Renovado / Activo',          color: '#22C55E' },
-  churn:             { label: 'Perdido / Churn',            color: '#64748B' },
+  prospectiva:        { label:'Prospectiva',             color:'#3B82F6' },
+  diagnostico:        { label:'Levantamiento',           color:'#8B5CF6' },
+  cotizacion_proceso: { label:'Cotización en Proceso',   color:'#F59E0B' },
+  propuesta_enviada:  { label:'Propuesta Enviada',       color:'#EC4899' },
+  propuesta_final:    { label:'Propuesta Final',         color:'#F97316' },
+  documentacion:      { label:'Documentación',           color:'#6366F1' },
+  poliza_activa:      { label:'Póliza Activa',           color:'#10B981' },
+  gestion_continua:   { label:'Gestión / Mantenimiento', color:'#06B6D4' },
+  renovacion:         { label:'Renovación',              color:'#EF4444' },
+  renovado_activo:    { label:'Renovado / Activo',       color:'#22C55E' },
+  churn:              { label:'Perdido / Churn',         color:'#64748B' },
 };
 
+let token = null;
 let estadoFiltro = null;
-let searchQuery = '';
-let offsetActual = 0;
+let search = '';
+let offset = 0;
 const LIMIT = 20;
-let convSeleccionada = null;
-let kpisCounts = {};
+let convId = null;
+let kpiConteos = {};
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// ── AUTH ────────────────────────────────────────────────────────────────────
 
-async function init() {
-  renderEstadosSidebar();
-  await Promise.all([cargarKpis(), cargarConversaciones()]);
-  setInterval(cargarKpis, 60000);
-}
+async function login() {
+  const email = document.getElementById('inp-email').value.trim();
+  const pass  = document.getElementById('inp-pass').value;
+  const errEl = document.getElementById('login-error');
+  const spin  = document.getElementById('login-spinner');
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
+  errEl.classList.add('d-none');
+  spin.classList.remove('d-none');
 
-function renderEstadosSidebar() {
-  const el = document.getElementById('estados-lista');
-  el.innerHTML = Object.entries(ESTADOS).map(([key, e]) => `
-    <div class="estado-item ${estadoFiltro === key ? 'active' : ''}" onclick="filtrarEstado('${key}')">
-      <span><span class="estado-dot" style="background:${e.color}"></span>${e.label}</span>
-      <span class="badge-count" id="cnt-${key}">${kpisCounts[key] ?? ''}</span>
-    </div>
-  `).join('');
-}
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error al iniciar sesión');
 
-function filtrarEstado(estado) {
-  estadoFiltro = estado;
-  offsetActual = 0;
-  renderEstadosSidebar();
-  actualizarFiltroBadge();
-  cargarConversaciones();
-}
-
-function actualizarFiltroBadge() {
-  const el = document.getElementById('filtro-activo');
-  if (estadoFiltro) {
-    el.innerHTML = `<span class="badge" style="background:${ESTADOS[estadoFiltro]?.color}20;color:${ESTADOS[estadoFiltro]?.color};border:1px solid ${ESTADOS[estadoFiltro]?.color}40;">${ESTADOS[estadoFiltro]?.label} <span onclick="filtrarEstado(null)" style="cursor:pointer;">✕</span></span>`;
-  } else {
-    el.innerHTML = '';
+    token = data.token;
+    localStorage.setItem('cg_token', token);
+    localStorage.setItem('cg_nombre', data.nombre);
+    mostrarPanel(data.nombre);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.classList.remove('d-none');
+  } finally {
+    spin.classList.add('d-none');
   }
 }
 
-function buscar(val) {
-  searchQuery = val;
-  offsetActual = 0;
-  cargarConversaciones();
+function cerrarSesion() {
+  localStorage.removeItem('cg_token');
+  localStorage.removeItem('cg_nombre');
+  token = null;
+  document.getElementById('panel-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
 }
 
-// ── KPIs ─────────────────────────────────────────────────────────────────────
+function mostrarPanel(nombre) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('panel-screen').style.display = 'flex';
+  document.getElementById('sidebar-user').textContent = nombre || 'Agente';
+  renderSidebar();
+  cargarKpis();
+  cargarLista();
+  setInterval(cargarKpis, 60000);
+}
+
+function api(url, opts = {}) {
+  return fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+  });
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+
+(function init() {
+  const t = localStorage.getItem('cg_token');
+  const n = localStorage.getItem('cg_nombre');
+  if (t) { token = t; mostrarPanel(n); }
+})();
+
+// ── SIDEBAR ─────────────────────────────────────────────────────────────────
+
+function renderSidebar() {
+  const el = document.getElementById('estados-lista');
+  let html = `<div class="estado-item ${!estadoFiltro ? 'active' : ''}" onclick="filtrar(null)">
+    <span><span class="estado-dot" style="background:#94a3b8"></span>Todas</span>
+    <span class="badge-count">${Object.values(kpiConteos).reduce((a,b)=>a+b,0)||''}</span>
+  </div>`;
+  for (const [k, e] of Object.entries(ESTADOS)) {
+    html += `<div class="estado-item ${estadoFiltro===k?'active':''}" onclick="filtrar('${k}')">
+      <span><span class="estado-dot" style="background:${e.color}"></span>${e.label}</span>
+      <span class="badge-count">${kpiConteos[k]||''}</span>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function filtrar(e) {
+  estadoFiltro = e; offset = 0;
+  renderSidebar();
+  actualizarBadgeFiltro();
+  cargarLista();
+}
+
+function actualizarBadgeFiltro() {
+  const el = document.getElementById('filtro-badge');
+  if (estadoFiltro) {
+    const e = ESTADOS[estadoFiltro];
+    el.innerHTML = `<span class="badge" style="background:${e.color}20;color:${e.color};border:1px solid ${e.color}40;font-size:11px;">${e.label} <span style="cursor:pointer" onclick="filtrar(null)">✕</span></span>`;
+  } else { el.innerHTML = ''; }
+}
+
+function buscar(v) { search = v; offset = 0; cargarLista(); }
+
+// ── KPIs ────────────────────────────────────────────────────────────────────
 
 async function cargarKpis() {
   try {
-    const data = await fetch(`${API_BASE}/api/dashboard/kpis`).then(r => r.json());
-    document.getElementById('kpi-nuevos').textContent = data.hoy.nuevos_contactos;
-    document.getElementById('kpi-pendientes').textContent = data.hoy.respuestas_pendientes;
-    document.getElementById('kpi-propuestas').textContent = data.hoy.propuestas_enviadas;
-    document.getElementById('kpi-polizas').textContent = data.hoy.polizas_activadas;
-    kpisCounts = data.conversaciones_por_estado || {};
-    // Actualizar conteos en sidebar
-    Object.entries(kpisCounts).forEach(([k, v]) => {
-      const el = document.getElementById(`cnt-${k}`);
-      if (el) el.textContent = v || '';
-    });
+    const r = await api('/api/dashboard/kpis');
+    const d = await r.json();
+    document.getElementById('kpi-nuevos').textContent     = d.hoy.nuevos_contactos;
+    document.getElementById('kpi-pendientes').textContent = d.hoy.respuestas_pendientes;
+    document.getElementById('kpi-propuestas').textContent = d.hoy.propuestas_enviadas;
+    document.getElementById('kpi-polizas').textContent    = d.hoy.polizas_activadas;
+    kpiConteos = d.conversaciones_por_estado || {};
+    renderSidebar();
   } catch {}
 }
 
-// ── Lista de conversaciones ────────────────────────────────────────────────────
+// ── LISTA ───────────────────────────────────────────────────────────────────
 
-async function cargarConversaciones() {
-  const sort = document.getElementById('sort-select')?.value || 'mas_reciente';
-  const params = new URLSearchParams({ limit: LIMIT, offset: offsetActual, sort_by: sort });
-  if (estadoFiltro) params.set('estado', estadoFiltro);
-  if (searchQuery) params.set('search', searchQuery);
-
+async function cargarLista() {
+  const sort = document.getElementById('sort-sel')?.value || 'mas_reciente';
+  const p = new URLSearchParams({ limit: LIMIT, offset, sort_by: sort });
+  if (estadoFiltro) p.set('estado', estadoFiltro);
+  if (search)        p.set('search', search);
   try {
-    const data = await fetch(`${API_BASE}/api/conversaciones?${params}`).then(r => r.json());
-    renderLista(data.conversaciones || []);
-    renderPaginacion(data.total || 0);
-  } catch (err) {
-    document.getElementById('lista-conversaciones').innerHTML = '<div class="text-danger small">Error cargando conversaciones</div>';
+    const r = await api(`/api/conversaciones?${p}`);
+    const d = await r.json();
+    renderLista(d.conversaciones || []);
+    renderPag(d.total || 0);
+  } catch {
+    document.getElementById('lista-conv').innerHTML = '<div class="text-danger small">Error cargando</div>';
   }
 }
 
 function renderLista(convs) {
-  const el = document.getElementById('lista-conversaciones');
-  if (!convs.length) {
-    el.innerHTML = '<div class="text-muted small text-center py-3">Sin conversaciones</div>';
-    return;
-  }
+  const el = document.getElementById('lista-conv');
+  if (!convs.length) { el.innerHTML = '<div class="text-muted small text-center py-4">Sin conversaciones</div>'; return; }
   el.innerHTML = convs.map(c => {
-    const estado = ESTADOS[c.estado] || { label: c.estado, color: '#94a3b8' };
-    const prioClass = { critica: 'prioridad-critica', alta: 'prioridad-alta', normal: 'prioridad-normal', baja: 'prioridad-baja' }[c.prioridad] || 'prioridad-normal';
-    const urgente = c.requiere_respuesta ? '<i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Requiere respuesta"></i>' : '';
-    return `
-      <div class="conv-card ${convSeleccionada === c.id ? 'selected' : ''}" onclick="abrirDetalle('${c.id}')">
-        <div class="d-flex justify-content-between align-items-start mb-1">
-          <span class="nombre">${c.cliente_nombre}${urgente}</span>
-          <span class="prioridad-badge ${prioClass}">${c.prioridad}</span>
-        </div>
-        <div class="preview">${c.ultimo_mensaje?.contenido || 'Sin mensajes'}</div>
-        <div class="d-flex justify-content-between mt-1">
-          <span style="font-size:11px;background:${estado.color}20;color:${estado.color};padding:1px 6px;border-radius:10px;">${estado.label}</span>
-          <span style="font-size:11px;color:#94a3b8;">${c.cliente_telefono}</span>
-        </div>
-      </div>`;
+    const e = ESTADOS[c.estado] || { label: c.estado, color: '#94a3b8' };
+    const pc = { critica:'p-critica', alta:'p-alta', normal:'p-normal', baja:'p-baja' }[c.prioridad] || 'p-normal';
+    const alerta = c.requiere_respuesta ? '<i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Requiere respuesta"></i>' : '';
+    return `<div class="conv-card ${convId===c.id?'selected':''}" onclick="abrirDetalle('${c.id}')">
+      <div class="d-flex justify-content-between mb-1">
+        <span class="conv-nombre">${esc(c.cliente_nombre)}${alerta}</span>
+        <span class="prioridad-badge ${pc}">${c.prioridad}</span>
+      </div>
+      <div class="conv-preview">${esc(c.ultimo_mensaje?.contenido || 'Sin mensajes')}</div>
+      <div class="d-flex justify-content-between mt-1">
+        <span style="font-size:11px;background:${e.color}20;color:${e.color};padding:1px 7px;border-radius:10px;">${e.label}</span>
+        <span style="font-size:11px;color:#94a3b8;">${c.cliente_telefono}</span>
+      </div>
+    </div>`;
   }).join('');
 }
 
-function renderPaginacion(total) {
+function renderPag(total) {
   const el = document.getElementById('paginacion');
-  const totalPaginas = Math.ceil(total / LIMIT);
-  const paginaActual = Math.floor(offsetActual / LIMIT) + 1;
-  if (totalPaginas <= 1) { el.innerHTML = ''; return; }
+  const totalP = Math.ceil(total / LIMIT);
+  const pag = Math.floor(offset / LIMIT) + 1;
+  if (totalP <= 1) { el.innerHTML = ''; return; }
   el.innerHTML = `
-    <button class="btn btn-sm btn-outline-secondary" ${offsetActual === 0 ? 'disabled' : ''} onclick="cambiarPagina(-1)"><i class="bi bi-chevron-left"></i></button>
-    <span class="small text-muted">${paginaActual} / ${totalPaginas} (${total})</span>
-    <button class="btn btn-sm btn-outline-secondary" ${paginaActual >= totalPaginas ? 'disabled' : ''} onclick="cambiarPagina(1)"><i class="bi bi-chevron-right"></i></button>`;
+    <button class="btn btn-sm btn-outline-secondary" ${offset===0?'disabled':''} onclick="cambiarPag(-1)"><i class="bi bi-chevron-left"></i></button>
+    <span class="small text-muted">${pag}/${totalP} (${total})</span>
+    <button class="btn btn-sm btn-outline-secondary" ${pag>=totalP?'disabled':''} onclick="cambiarPag(1)"><i class="bi bi-chevron-right"></i></button>`;
 }
 
-function cambiarPagina(dir) {
-  offsetActual = Math.max(0, offsetActual + dir * LIMIT);
-  cargarConversaciones();
-}
+function cambiarPag(d) { offset = Math.max(0, offset + d * LIMIT); cargarLista(); }
 
-// ── Detalle ───────────────────────────────────────────────────────────────────
+// ── DETALLE ─────────────────────────────────────────────────────────────────
 
 async function abrirDetalle(id) {
-  convSeleccionada = id;
-  // Marcar tarjeta seleccionada
-  document.querySelectorAll('.conv-card').forEach(c => c.classList.remove('selected'));
+  convId = id;
   document.querySelectorAll('.conv-card').forEach(c => {
-    if (c.getAttribute('onclick')?.includes(id)) c.classList.add('selected');
+    c.classList.toggle('selected', c.getAttribute('onclick')?.includes(id));
   });
-
-  document.getElementById('detail-panel').classList.add('visible');
-  document.getElementById('detail-placeholder').style.display = 'none';
+  document.getElementById('det-empty').style.display = 'none';
+  document.getElementById('det-panel').style.display = 'block';
 
   try {
-    const data = await fetch(`${API_BASE}/api/conversaciones/${id}`).then(r => r.json());
-    const c = data.conversacion;
-    const estado = ESTADOS[c.estado] || { label: c.estado, color: '#94a3b8' };
+    const r = await api(`/api/conversaciones/${id}`);
+    const d = await r.json();
+    const c = d.conversacion;
+    const e = ESTADOS[c.estado] || { label: c.estado, color: '#94a3b8' };
+    const pc = { critica:'p-critica', alta:'p-alta', normal:'p-normal', baja:'p-baja' }[c.prioridad] || 'p-normal';
 
     document.getElementById('det-nombre').textContent = c.cliente_nombre;
-    document.getElementById('det-telefono').textContent = c.cliente_telefono;
-    document.getElementById('det-tipo').textContent = c.tipo_seguro || 'Sin tipo';
-    document.getElementById('det-estado-badge').textContent = estado.label;
-    document.getElementById('det-estado-badge').style.cssText = `background:${estado.color}20;color:${estado.color};border:1px solid ${estado.color}40;`;
-    const prioClass = { critica: 'prioridad-critica', alta: 'prioridad-alta', normal: 'prioridad-normal', baja: 'prioridad-baja' }[c.prioridad] || 'prioridad-normal';
-    document.getElementById('det-prioridad').textContent = c.prioridad;
-    document.getElementById('det-prioridad').className = `prioridad-badge ${prioClass}`;
+    document.getElementById('det-tel').textContent    = c.cliente_telefono;
+    document.getElementById('det-tipo').textContent   = c.tipo_seguro || 'Sin tipo';
+    const estBadge = document.getElementById('det-estado');
+    estBadge.textContent = e.label;
+    estBadge.style.cssText = `background:${e.color}20;color:${e.color};border:1px solid ${e.color}40;`;
+    const prioBadge = document.getElementById('det-prioridad');
+    prioBadge.textContent = c.prioridad;
+    prioBadge.className = `prioridad-badge ${pc}`;
 
-    renderMensajes(data.mensajes || []);
-    renderNotas(data.notas || []);
-    renderCotizaciones(data.cotizaciones || []);
-    renderHistorial(data.historial_estados || []);
-    mostrarTabContenido('tab-mensajes');
-  } catch {
-    document.getElementById('det-nombre').textContent = 'Error cargando detalle';
-  }
+    renderMensajes(d.mensajes || []);
+    renderNotas(d.notas || []);
+    renderCots(d.cotizaciones || []);
+    renderHist(d.historial_estados || []);
+    irTab('mensajes');
+  } catch { document.getElementById('det-nombre').textContent = 'Error'; }
 }
 
-function renderMensajes(mensajes) {
-  const el = document.getElementById('mensajes-container');
-  if (!mensajes.length) { el.innerHTML = '<div class="text-muted small text-center">Sin mensajes</div>'; return; }
-  el.innerHTML = mensajes.map(m => {
-    const cls = m.autor === 'cliente' ? 'msg-cliente' : m.autor === 'agente' ? 'msg-agente' : 'msg-sistema';
+function renderMensajes(msgs) {
+  const el = document.getElementById('mensajes-wrap');
+  if (!msgs.length) { el.innerHTML = '<div class="text-muted small text-center">Sin mensajes</div>'; return; }
+  el.innerHTML = msgs.map(m => {
+    const cls   = { cliente:'burbuja-cliente', agente:'burbuja-agente' }[m.autor] || 'burbuja-sistema';
     const align = m.autor === 'agente' ? 'ms-auto' : m.autor === 'sistema' ? 'mx-auto' : '';
-    const hora = m.timestamp_mensaje ? new Date(m.timestamp_mensaje).toLocaleString('es-MX', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
-    return `<div class="msg-burbuja ${cls} ${align}">
-      ${escHtml(m.contenido)}
-      <div class="msg-hora text-end">${hora}</div>
-    </div>`;
+    const hora  = m.timestamp_mensaje ? new Date(m.timestamp_mensaje).toLocaleString('es-MX',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="burbuja ${cls} ${align}">${esc(m.contenido)}<div class="burbuja-hora">${hora}</div></div>`;
   }).join('');
   el.scrollTop = el.scrollHeight;
 }
 
 function renderNotas(notas) {
-  const el = document.getElementById('lista-notas');
-  el.innerHTML = notas.length
-    ? notas.map(n => `<div class="nota-item"><strong>${escHtml(n.agente_nombre || 'Agente')}</strong> · ${new Date(n.created_at).toLocaleString('es-MX')}<br>${escHtml(n.contenido)}</div>`).join('')
+  document.getElementById('lista-notas').innerHTML = notas.length
+    ? notas.map(n=>`<div class="nota-item"><strong>${esc(n.agente_nombre||'Agente')}</strong> · ${fmt(n.created_at)}<br>${esc(n.contenido)}</div>`).join('')
     : '<div class="text-muted small">Sin notas</div>';
 }
 
-function renderCotizaciones(cots) {
-  const el = document.getElementById('lista-cotizaciones');
-  el.innerHTML = cots.length
-    ? cots.map(c => `<div class="cotizacion-item"><strong>${escHtml(c.aseguradora)}</strong> · $${c.prima ? Number(c.prima).toLocaleString('es-MX') : '—'} ${c.moneda} · <em>${c.estado}</em><br><span class="text-muted">${c.cobertura || ''}</span></div>`).join('')
+function renderCots(cots) {
+  document.getElementById('lista-cots').innerHTML = cots.length
+    ? cots.map(c=>`<div class="cot-item"><strong>${esc(c.aseguradora)}</strong> · $${c.prima?Number(c.prima).toLocaleString('es-MX'):'—'} MXN · <em>${c.estado}</em><br><span class="text-muted small">${esc(c.cobertura||'')}</span></div>`).join('')
     : '<div class="text-muted small">Sin cotizaciones</div>';
 }
 
-function renderHistorial(hist) {
-  const el = document.getElementById('lista-historial');
-  el.innerHTML = hist.length
-    ? hist.map(h => `<div class="historial-item"><strong>${escHtml(h.estado_anterior || '—')} → ${escHtml(h.estado_nuevo)}</strong> · ${new Date(h.timestamp).toLocaleString('es-MX')}<br>${escHtml(h.nombre_quien_realizo || h.realizado_por || '')}${h.motivo ? ': ' + escHtml(h.motivo) : ''}</div>`).join('')
+function renderHist(hist) {
+  document.getElementById('lista-hist').innerHTML = hist.length
+    ? hist.map(h=>`<div class="hist-item"><strong>${esc(h.estado_anterior||'—')} → ${esc(h.estado_nuevo)}</strong> · ${fmt(h.timestamp)}<br><span class="text-muted">${esc(h.nombre_quien_realizo||h.realizado_por||'')}${h.motivo?' — '+esc(h.motivo):''}</span></div>`).join('')
     : '<div class="text-muted small">Sin historial</div>';
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
+// ── TABS ────────────────────────────────────────────────────────────────────
 
-function mostrarTabContenido(tabId) {
-  document.querySelectorAll('.tab-content-custom').forEach(t => t.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
-  document.querySelectorAll('#det-tabs .nav-link').forEach(l => l.classList.remove('active'));
-  const nombres = { 'tab-mensajes': 'Mensajes', 'tab-notas': 'Notas', 'tab-cotizaciones': 'Cotizaciones', 'tab-historial': 'Historial' };
+const TAB_NAMES = { mensajes:'Mensajes', notas:'Notas', cotizaciones:'Cotizaciones', historial:'Historial' };
+function irTab(tab) {
+  document.querySelectorAll('.tab-pane-custom').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
   document.querySelectorAll('#det-tabs .nav-link').forEach(l => {
-    if (l.textContent.trim() === nombres[tabId]) l.classList.add('active');
+    l.classList.toggle('active', l.textContent.trim() === TAB_NAMES[tab]);
   });
 }
 
-// ── Cambiar estado ────────────────────────────────────────────────────────────
+// ── CAMBIAR ESTADO ───────────────────────────────────────────────────────────
 
-function abrirCambiarEstado() {
-  const sel = document.getElementById('nuevo-estado-select');
-  sel.innerHTML = Object.entries(ESTADOS).map(([k, e]) => `<option value="${k}">${e.label}</option>`).join('');
-  document.getElementById('motivo-estado').value = '';
+function abrirModalEstado() {
+  const sel = document.getElementById('sel-estado-nuevo');
+  sel.innerHTML = Object.entries(ESTADOS).map(([k,e])=>`<option value="${k}">${e.label}</option>`).join('');
+  document.getElementById('txt-motivo').value = '';
   new bootstrap.Modal(document.getElementById('modal-estado')).show();
 }
 
-async function confirmarCambioEstado() {
-  if (!convSeleccionada) return;
-  const estado_nuevo = document.getElementById('nuevo-estado-select').value;
-  const motivo = document.getElementById('motivo-estado').value.trim();
-  if (!motivo) { alert('El motivo es requerido'); return; }
+async function confirmarEstado() {
+  const estado_nuevo = document.getElementById('sel-estado-nuevo').value;
+  const motivo = document.getElementById('txt-motivo').value.trim();
+  if (!motivo) { alert('El motivo es obligatorio'); return; }
 
-  const res = await fetch(`${API_BASE}/api/conversaciones/${convSeleccionada}/estado`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ estado_nuevo, motivo }),
+  const r = await api(`/api/conversaciones/${convId}/estado`, {
+    method: 'POST', body: JSON.stringify({ estado_nuevo, motivo }),
   });
-  if (res.ok) {
+  if (r.ok) {
     bootstrap.Modal.getInstance(document.getElementById('modal-estado')).hide();
-    await abrirDetalle(convSeleccionada);
-    cargarConversaciones();
+    abrirDetalle(convId);
+    cargarLista();
     cargarKpis();
-  } else {
-    alert('Error cambiando estado');
-  }
+  } else { alert('Error cambiando estado'); }
 }
 
-// ── Notas ─────────────────────────────────────────────────────────────────────
+// ── NOTAS ────────────────────────────────────────────────────────────────────
 
 async function guardarNota() {
-  if (!convSeleccionada) return;
-  const contenido = document.getElementById('nueva-nota-texto').value.trim();
+  const contenido = document.getElementById('txt-nota').value.trim();
   if (!contenido) return;
-
-  const res = await fetch(`${API_BASE}/api/conversaciones/${convSeleccionada}/notas`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contenido }),
+  const r = await api(`/api/conversaciones/${convId}/notas`, {
+    method: 'POST', body: JSON.stringify({ contenido }),
   });
-  if (res.ok) {
-    document.getElementById('nueva-nota-texto').value = '';
-    abrirDetalle(convSeleccionada);
-  }
+  if (r.ok) { document.getElementById('txt-nota').value = ''; abrirDetalle(convId); }
 }
 
-// ── Cotizaciones ──────────────────────────────────────────────────────────────
+// ── COTIZACIONES ─────────────────────────────────────────────────────────────
 
 async function guardarCotizacion() {
-  if (!convSeleccionada) return;
-  const aseguradora = document.getElementById('cot-aseguradora').value.trim();
+  const aseguradora = document.getElementById('cot-aseg').value.trim();
   if (!aseguradora) { alert('Ingresa la aseguradora'); return; }
-
-  const body = {
-    aseguradora,
-    prima: parseFloat(document.getElementById('cot-prima').value) || null,
-    cobertura: document.getElementById('cot-cobertura').value.trim() || null,
-    estado: document.getElementById('cot-estado').value,
-  };
-
-  const res = await fetch(`${API_BASE}/api/conversaciones/${convSeleccionada}/cotizaciones`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+  const r = await api(`/api/conversaciones/${convId}/cotizaciones`, {
+    method: 'POST', body: JSON.stringify({
+      aseguradora,
+      prima:     parseFloat(document.getElementById('cot-prima').value) || null,
+      cobertura: document.getElementById('cot-cobertura').value.trim() || null,
+      estado:    document.getElementById('cot-estado').value,
+    }),
   });
-  if (res.ok) {
-    ['cot-aseguradora','cot-prima','cot-cobertura'].forEach(id => document.getElementById(id).value = '');
-    abrirDetalle(convSeleccionada);
+  if (r.ok) {
+    ['cot-aseg','cot-prima','cot-cobertura'].forEach(i => document.getElementById(i).value = '');
+    abrirDetalle(convId);
   }
 }
 
-// ── Utils ─────────────────────────────────────────────────────────────────────
+// ── UTILS ────────────────────────────────────────────────────────────────────
 
-function escHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-init();
+function fmt(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString('es-MX',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
 </script>
 </body>
 </html>

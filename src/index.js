@@ -11,6 +11,8 @@ const dashboardRouter = require('./routes/dashboard');
 const { errorHandler } = require('./middleware/errorHandler');
 const { iniciarJobs } = require('./services/jobsService');
 const { runMigrations } = require('./db/migrate');
+const { runSeed } = require('./db/seed');
+const authRouter = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +29,7 @@ app.use('/api', express.json());
 
 // Rutas
 app.use('/api', healthRouter);
+app.use('/api', authRouter);
 app.use('/api', conversacionesRouter);
 app.use('/api', dashboardRouter);
 app.use('/', webhookRouter); // El webhook tiene su propio express.json()
@@ -37,6 +40,7 @@ app.use(errorHandler);
 // Arrancar: primero migraciones, luego servidor
 async function start() {
   await runMigrations();
+  await runSeed();
   app.listen(PORT, () => {
     console.log(`Servidor Carguill corriendo en puerto ${PORT}`);
     iniciarJobs();
