@@ -563,6 +563,15 @@
         <button class="btn btn-sm btn-primary fw-semibold" onclick="abrirModalEstado()">
           <i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado
         </button>
+        <select id="det-tipo-sel" class="form-select form-select-sm" style="width:auto;font-size:12px;"
+          onchange="cambiarTipoSeguro(this.value)">
+          <option value="">Sin tipo</option>
+          <option value="vida">Vida</option>
+          <option value="auto">Auto</option>
+          <option value="medical">Gastos Medicos</option>
+          <option value="daño">Daños</option>
+          <option value="viaje">Viaje</option>
+        </select>
         <button class="btn btn-sm btn-outline-secondary" onclick="irTab('notas')">
           <i class="bi bi-sticky me-1"></i>Nota
         </button>
@@ -1023,6 +1032,10 @@ async function abrirDetalle(id) {
     estPill.textContent = e.label;
     estPill.style.cssText = `background:${e.color}18;color:${e.color};`;
 
+    // Tipo select
+    const tipoSel = document.getElementById('det-tipo-sel');
+    if (tipoSel) tipoSel.value = c.tipo_seguro || '';
+
     // Alerta badge
     const alertaBadge = document.getElementById('det-alerta-badge');
     if (c.requiere_respuesta) {
@@ -1200,6 +1213,18 @@ function abrirEditarCliente() {
   document.getElementById('edit-nombre').value =
     document.getElementById('det-nombre').textContent;
   new bootstrap.Modal(document.getElementById('modal-cliente')).show();
+}
+
+async function cambiarTipoSeguro(tipo) {
+  if (!convId) return;
+  const r = await api(`/api/conversaciones/${convId}/cliente`, {
+    method: 'PATCH',
+    body: JSON.stringify({ tipo_seguro: tipo || null }),
+  });
+  if (r.ok) {
+    await abrirDetalle(convId);
+    if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
+  }
 }
 
 async function guardarCliente() {

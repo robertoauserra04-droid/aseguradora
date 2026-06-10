@@ -277,11 +277,24 @@ router.post('/conversaciones/:id/cotizaciones', authenticateAgent, async (req, r
   }
 });
 
-// PATCH /api/conversaciones/:id/cliente — editar nombre del cliente
+// PATCH /api/conversaciones/:id/cliente — editar datos del cliente
 router.patch('/conversaciones/:id/cliente', authenticateAgent, async (req, res) => {
   try {
     const { id } = req.params;
-    const { cliente_nombre, cliente_email } = req.body;
+    const { cliente_nombre, cliente_email, tipo_seguro } = req.body;
+
+    // Solo tipo_seguro
+    if (tipo_seguro !== undefined && !cliente_nombre) {
+      const TIPOS_VALIDOS = ['vida', 'auto', 'medical', 'daño', 'viaje'];
+      if (tipo_seguro && !TIPOS_VALIDOS.includes(tipo_seguro)) {
+        return res.status(400).json({ error: 'Tipo de seguro no válido' });
+      }
+      await db.query(
+        `UPDATE conversaciones SET tipo_seguro = $1, updated_at = NOW() WHERE id = $2`,
+        [tipo_seguro || null, id]
+      );
+      return res.json({ success: true });
+    }
 
     if (!cliente_nombre) {
       return res.status(400).json({ error: 'cliente_nombre es requerido' });
