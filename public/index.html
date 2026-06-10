@@ -339,10 +339,15 @@
     <div id="sb-estados"></div>
     <div class="sb-footer">
       <div class="sb-user" id="sb-user"></div>
-      <button class="btn btn-sm w-100 text-start"
+      <button class="btn btn-sm w-100 text-start mb-2"
         style="color:#64748b;font-size:12px;background:transparent;border:1px solid #334155;"
         onclick="cerrarSesion()">
-        <i class="bi bi-box-arrow-left me-1"></i>Cerrar sesión
+        <i class="bi bi-box-arrow-left me-1"></i>Cerrar sesion
+      </button>
+      <button class="btn btn-sm w-100 text-start"
+        style="color:#475569;font-size:11px;background:transparent;border:1px solid #1e293b;"
+        onclick="cargarDatosPrueba(this)">
+        <i class="bi bi-database me-1"></i>Cargar datos de prueba
       </button>
     </div>
   </div>
@@ -1148,6 +1153,29 @@ function esc(s) {
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;');
+}
+
+async function cargarDatosPrueba(btn) {
+  if (!confirm('Esto borrara los datos de prueba actuales e insertara 15 conversaciones nuevas. Continuar?')) return;
+  const texto = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Cargando...';
+  try {
+    const r = await api('/api/admin/seed', { method: 'POST' });
+    const d = await r.json();
+    if (r.ok) {
+      alert(d.mensaje);
+      cargarKpis();
+      cargarLista();
+    } else {
+      alert('Error: ' + (d.error || 'Intenta de nuevo'));
+    }
+  } catch {
+    alert('Error de conexion');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = texto;
+  }
 }
 
 function fmtHora(ts) {

@@ -192,15 +192,17 @@ const conversacionesPrueba = [
   },
 ];
 
-async function runSeed() {
-  try {
-    const existe = await db.query('SELECT COUNT(*) FROM conversaciones');
-    if (parseInt(existe.rows[0].count, 10) > 0) {
-      console.log('[Seed] Ya hay datos, omitiendo seed');
-      return;
-    }
+async function limpiarDatos() {
+  await db.query('DELETE FROM idempotencia_webhooks');
+  await db.query('DELETE FROM cambios_estado_historico');
+  await db.query('DELETE FROM cotizaciones');
+  await db.query('DELETE FROM notas_internas');
+  await db.query('DELETE FROM mensajes');
+  await db.query('DELETE FROM conversaciones WHERE cliente_telefono LIKE \'+52811234560%\'');
+}
 
-    console.log('[Seed] Insertando datos de prueba...');
+async function insertarDatos() {
+  console.log('[Seed] Insertando datos de prueba...');
 
     for (const conv of conversacionesPrueba) {
       const hoy = new Date();
@@ -258,9 +260,29 @@ async function runSeed() {
     }
 
     console.log(`[Seed] ${conversacionesPrueba.length} conversaciones de prueba insertadas`);
+}
+
+async function runSeed() {
+  try {
+    const existe = await db.query('SELECT COUNT(*) FROM conversaciones');
+    if (parseInt(existe.rows[0].count, 10) > 0) {
+      console.log('[Seed] Ya hay datos, omitiendo seed');
+      return;
+    }
+    await insertarDatos();
   } catch (err) {
     console.error('[Seed] Error:', err.message);
   }
 }
 
-module.exports = { runSeed };
+async function runSeedForce() {
+  try {
+    await limpiarDatos();
+    await insertarDatos();
+  } catch (err) {
+    console.error('[Seed] Error forzado:', err.message);
+    throw err;
+  }
+}
+
+module.exports = { runSeed, runSeedForce };
