@@ -314,27 +314,8 @@
     }
     .vista-btn.active { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 
-    /* ─── SIDEBAR ETAPAS ────────────────────────────────── */
-    .sb-etapa-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 14px; cursor: pointer;
-      font-size: 12px; font-weight: 600; color: #94a3b8;
-      transition: background .1s;
-    }
-    .sb-etapa-header:hover { background: #273549; }
-    .sb-etapa-header.active-group { color: #f1f5f9; }
-    .sb-subestados { overflow: hidden; }
-    .sb-subestado {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 5px 14px 5px 30px; cursor: pointer;
-      font-size: 12px; color: #94a3b8;
-      border-left: 3px solid transparent;
-      transition: background .1s;
-    }
-    .sb-subestado:hover { background: #273549; color: #cbd5e1; }
-    .sb-subestado.active { background: #1d3557; border-left-color: #3b82f6; color: #f1f5f9; }
 
-    /* ─── KANBAN ────────────────────────────────────────── */
+/* ─── KANBAN ────────────────────────────────────────── */
     #kanban-view {
       display: none; flex: 1; overflow-x: auto; overflow-y: hidden;
       padding: 16px; gap: 14px;
@@ -388,18 +369,7 @@
       border-radius: 8px; margin-top: 5px; display: inline-block;
     }
 
-    /* ─── MODAL SUBESTADO (kanban drop) ────────────────── */
-    #modal-subestado .modal-content { border-radius: 12px; }
-    .sub-btn {
-      display: block; width: 100%; text-align: left;
-      padding: 8px 12px; border: 1.5px solid #e2e8f0;
-      border-radius: 8px; background: #fff; cursor: pointer;
-      font-size: 13px; color: #334155; margin-bottom: 6px;
-      transition: all .1s;
-    }
-    .sub-btn:hover { border-color: #93c5fd; background: #f0f9ff; }
-
-    /* ─── LISTA VIEW ─────────────────────────────────────── */
+/* ─── LISTA VIEW ─────────────────────────────────────── */
     #lista-view {
       display: none; flex: 1; flex-direction: column; overflow: hidden;
     }
@@ -424,14 +394,8 @@
     }
     #det-drawer.open { transform: translateX(0); }
 
-    /* ─── MODAL ESTADO — nuevo layout por grupos ────────── */
-    .estado-grupo { margin-bottom: 14px; }
-    .estado-grupo-title {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .6px; color: #64748b; margin-bottom: 6px;
-      padding-bottom: 3px; border-bottom: 1px solid #f1f5f9;
-    }
-    .estado-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    /* ─── MODAL ESTADO ──────────────────────────────────── */
+.estado-grid { display: flex; flex-wrap: wrap; gap: 6px; }
     .estado-btn {
       border: 1.5px solid #e2e8f0; border-radius: 8px;
       padding: 7px 10px; cursor: pointer;
@@ -680,20 +644,6 @@
 </div><!-- /det-drawer -->
 
 
-<!-- ════════════════════════════════════
-     MODAL: ELEGIR SUBESTADO (drag kanban)
-════════════════════════════════════ -->
-<div class="modal fade" id="modal-subestado" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content border-0 shadow" id="modal-subestado-content" style="border-radius:12px;">
-      <div class="modal-header border-0 pb-0">
-        <h6 class="modal-title fw-bold" id="modal-subestado-titulo">Elige el subestado</h6>
-        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body pt-2" id="modal-subestado-body"></div>
-    </div>
-  </div>
-</div>
 
 <!-- ════════════════════════════════════
      MODAL: CAMBIAR ESTADO
@@ -765,104 +715,20 @@
 // ════════════════════════════════════════════════════
 // CONFIGURACION
 // ════════════════════════════════════════════════════
+// 8 etapas = 8 estados, sin subestados
 const ETAPAS = {
-  inicio: {
-    key: 'inicio', label: 'Inicio', color: '#3B82F6',
-    estados: [
-      { key: 'solicitud_recibida',    label: 'Solicitud recibida' },
-      { key: 'prospecto_creado',      label: 'Prospecto creado' },
-      { key: 'informacion_pendiente', label: 'Información pendiente' },
-    ],
-  },
-  cotizacion: {
-    key: 'cotizacion', label: 'Cotización', color: '#8B5CF6',
-    estados: [
-      { key: 'cotizando',            label: 'Cotizando' },
-      { key: 'propuestas_recibidas', label: 'Propuestas recibidas' },
-      { key: 'presentada_cliente',   label: 'Presentada al cliente' },
-    ],
-  },
-  tramite_oficina: {
-    key: 'tramite_oficina', label: 'Trámite Oficina', color: '#F59E0B',
-    estados: [
-      { key: 'documentacion_completa', label: 'Documentación completa' },
-      { key: 'solicitud_firmada',      label: 'Solicitud firmada' },
-      { key: 'integracion_expediente', label: 'Integración de expediente' },
-    ],
-  },
-  tramite_aseguradora: {
-    key: 'tramite_aseguradora', label: 'Trámite Aseguradora', color: '#EC4899',
-    estados: [
-      { key: 'en_emision',            label: 'En emisión' },
-      { key: 'en_dictamen',           label: 'En dictamen' },
-      { key: 'requisitos_pendientes', label: 'Requisitos pendientes' },
-      { key: 'emitida',               label: 'Emitida' },
-    ],
-  },
-  entrega: {
-    key: 'entrega', label: 'Entrega', color: '#F97316',
-    estados: [
-      { key: 'pago_pendiente',    label: 'Pago pendiente' },
-      { key: 'pago_confirmado',   label: 'Pago confirmado' },
-      { key: 'entrega_realizada', label: 'Entrega realizada' },
-      { key: 'acuse_recibido',    label: 'Acuse recibido' },
-    ],
-  },
-  vigente: {
-    key: 'vigente', label: 'Vigente', color: '#10B981',
-    estados: [
-      { key: 'poliza_activa',        label: 'Póliza activa' },
-      { key: 'sin_eventos_abiertos', label: 'Sin eventos abiertos' },
-    ],
-  },
-  servicio: {
-    key: 'servicio', label: 'Servicio / Siniestro', color: '#06B6D4',
-    estados: [
-      { key: 'endoso',                label: 'Endoso' },
-      { key: 'cambio_datos',          label: 'Cambio de datos' },
-      { key: 'alta_baja_asegurados',  label: 'Alta/Baja de asegurados' },
-      { key: 'reclamacion',           label: 'Reclamación' },
-      { key: 'seguimiento_siniestro', label: 'Seguimiento de siniestro' },
-    ],
-  },
-  renovacion: {
-    key: 'renovacion', label: 'Renovación', color: '#EF4444',
-    estados: [
-      { key: 'renovacion_90dias',     label: '90 días antes' },
-      { key: 'cotizacion_renovacion', label: 'Cotización renovación' },
-      { key: 'negociacion',           label: 'Negociación' },
-      { key: 'renovada',              label: 'Renovada' },
-      { key: 'no_renovada',           label: 'No renovada' },
-      { key: 'cancelada',             label: 'Cancelada' },
-    ],
-  },
-};
-
-// Mapa plano para lookup rápido por key de estado
-const ESTADOS = {};
-for (const etapa of Object.values(ETAPAS)) {
-  for (const est of etapa.estados) {
-    ESTADOS[est.key] = { label: est.label, color: etapa.color, etapa: etapa.key, etapaLabel: etapa.label };
-  }
-}
-
-// Compatibilidad con estados viejos en DB que no se hayan migrado
-const ESTADOS_LEGACY = {
-  prospectiva:        { label: 'Prospectiva',           color: '#3b82f6', etapa: 'inicio' },
-  diagnostico:        { label: 'Levantamiento',         color: '#8b5cf6', etapa: 'cotizacion' },
-  cotizacion_proceso: { label: 'Cotiz. en proceso',     color: '#f59e0b', etapa: 'cotizacion' },
-  propuesta_enviada:  { label: 'Propuesta enviada',     color: '#ec4899', etapa: 'cotizacion' },
-  propuesta_final:    { label: 'Propuesta final',       color: '#f97316', etapa: 'tramite_oficina' },
-  documentacion:      { label: 'Documentacion',         color: '#6366f1', etapa: 'tramite_oficina' },
-  poliza_activa:      { label: 'Poliza activa',         color: '#10b981', etapa: 'vigente' },
-  gestion_continua:   { label: 'Gestion continua',      color: '#06b6d4', etapa: 'vigente' },
-  renovacion:         { label: 'Renovacion',            color: '#ef4444', etapa: 'renovacion' },
-  renovado_activo:    { label: 'Renovado / Activo',     color: '#22c55e', etapa: 'renovacion' },
-  churn:              { label: 'Perdido',               color: '#64748b', etapa: 'renovacion' },
+  inicio:              { key: 'inicio',              label: 'Inicio',               color: '#3B82F6' },
+  cotizacion:          { key: 'cotizacion',          label: 'Cotización',           color: '#8B5CF6' },
+  tramite_oficina:     { key: 'tramite_oficina',     label: 'Trámite Oficina',      color: '#F59E0B' },
+  tramite_aseguradora: { key: 'tramite_aseguradora', label: 'Trámite Aseguradora',  color: '#EC4899' },
+  entrega:             { key: 'entrega',             label: 'Entrega',              color: '#F97316' },
+  vigente:             { key: 'vigente',             label: 'Vigente',              color: '#10B981' },
+  servicio:            { key: 'servicio',            label: 'Servicio / Siniestro', color: '#06B6D4' },
+  renovacion:          { key: 'renovacion',          label: 'Renovación',           color: '#EF4444' },
 };
 
 function getEstado(key) {
-  return ESTADOS[key] || ESTADOS_LEGACY[key] || { label: key, color: '#94a3b8', etapa: 'inicio' };
+  return ETAPAS[key] || { key, label: key, color: '#94a3b8' };
 }
 
 const TIPOS = {
@@ -875,14 +741,12 @@ const TIPOS = {
 };
 
 function urgClase(c) {
-  const est = getEstado(c.estado);
   if (c.requiere_respuesta) {
-    if (['tramite_oficina','tramite_aseguradora','entrega'].includes(est.etapa)) return 'u-critico';
+    if (['tramite_oficina','tramite_aseguradora','entrega'].includes(c.estado)) return 'u-critico';
     return 'u-alto';
   }
-  if (['renovacion_90dias','negociacion'].includes(c.estado)) return 'u-medio';
-  if (est.etapa === 'vigente' || est.etapa === 'servicio') return 'u-activo';
-  if (['no_renovada','cancelada'].includes(c.estado)) return 'u-cerrado';
+  if (c.estado === 'renovacion') return 'u-medio';
+  if (c.estado === 'vigente' || c.estado === 'servicio') return 'u-activo';
   return 'u-normal';
 }
 
@@ -1025,10 +889,7 @@ async function cargarLista() {
   const tipo     = document.getElementById('filtro-tipo')?.value || '';
   const urgencia = document.getElementById('filtro-urgencia')?.value || '';
   const p = new URLSearchParams({ limit: LIMIT, offset, sort_by: sort });
-  if (etapaFiltro && ETAPAS[etapaFiltro]) {
-    const keys = ETAPAS[etapaFiltro].estados.map(e => e.key).join(',');
-    p.set('estados', keys);
-  }
+  if (etapaFiltro) p.set('estados', etapaFiltro);
   if (search)   p.set('search', search);
   if (tipo)     p.set('tipo_seguro', tipo);
   if (urgencia === 'sin_respuesta') p.set('requiere_respuesta', 'true');
@@ -1293,20 +1154,14 @@ function abrirModalEstado() {
   document.getElementById('txt-motivo').value = '';
 
   const grid = document.getElementById('estado-grid');
-  grid.innerHTML = Object.values(ETAPAS).map(etapa => {
-    const btns = etapa.estados.map(est => {
-      const isActual = est.key === estadoActualConv;
-      return `<div class="estado-btn ${isActual ? 'actual' : ''}" id="ebtn-${est.key}"
-        onclick="${isActual ? '' : `selEstado('${est.key}')`}">
-        <span class="btn-dot" style="background:${etapa.color};"></span>${est.label}
-        ${isActual ? '<br><small style="color:#94a3b8">actual</small>' : ''}
-      </div>`;
-    }).join('');
-    return `<div class="estado-grupo">
-      <div class="estado-grupo-title" style="color:${etapa.color};">${etapa.label}</div>
-      <div class="estado-grid">${btns}</div>
+  grid.innerHTML = `<div class="estado-grid">${Object.values(ETAPAS).map(etapa => {
+    const isActual = etapa.key === estadoActualConv;
+    return `<div class="estado-btn ${isActual ? 'actual' : ''}" id="ebtn-${etapa.key}"
+      onclick="${isActual ? '' : `selEstado('${etapa.key}')`}">
+      <span class="btn-dot" style="background:${etapa.color};"></span>${etapa.label}
+      ${isActual ? '<br><small style="color:#94a3b8">actual</small>' : ''}
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
 
   new bootstrap.Modal(document.getElementById('modal-estado')).show();
 }
@@ -1478,9 +1333,8 @@ function renderKanban() {
   for (const k of Object.keys(ETAPAS)) porEtapa[k] = [];
 
   for (const conv of datos) {
-    const est = getEstado(conv.estado);
-    const ek  = est.etapa || 'inicio';
-    if (porEtapa[ek]) porEtapa[ek].push(conv);
+    const ek = ETAPAS[conv.estado] ? conv.estado : 'inicio';
+    porEtapa[ek].push(conv);
   }
 
   el.innerHTML = Object.values(ETAPAS).map(etapa => {
@@ -1537,65 +1391,20 @@ function renderKanban() {
         const cardEl     = evt.item;
         const cId        = cardEl.dataset.id;
         const nuevaEtapa = evt.to.dataset.etapa;
-        const estadoActual   = cardEl.dataset.estado;
-        const estActualEtapa = getEstado(estadoActual).etapa;
+        const estadoActual = cardEl.dataset.estado;
 
-        if (nuevaEtapa === estActualEtapa) return;
+        if (nuevaEtapa === estadoActual) return;
 
         const etapaObj = ETAPAS[nuevaEtapa];
         if (!etapaObj) return;
 
-        if (etapaObj.estados.length === 1) {
-          // Solo un subestado posible: cambiar directo con motivo automático
-          ejecutarCambioEstado(cId, etapaObj.estados[0].key, `Movido a ${etapaObj.label} desde Kanban`);
-        } else {
-          // Varios subestados: mostrar mini-modal
-          mostrarModalSubestado(cId, etapaObj, cardEl, estadoActual);
-        }
+        ejecutarCambioEstado(cId, nuevaEtapa, `Movido a ${etapaObj.label} desde Kanban`);
       },
     });
     kanbanSortables.push(s);
   }
 }
 
-function mostrarModalSubestado(cId, etapaObj, cardEl, estadoOriginal) {
-  const titulo = document.getElementById('modal-subestado-titulo');
-  const body   = document.getElementById('modal-subestado-body');
-
-  titulo.textContent = `Subestado en ${etapaObj.label}`;
-  body.innerHTML = etapaObj.estados.map(est =>
-    `<button class="sub-btn" onclick="confirmarSubestado('${cId}','${est.key}','${etapaObj.label}')">
-      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${etapaObj.color};margin-right:8px;"></span>
-      ${est.label}
-    </button>`
-  ).join('');
-
-  // Guardar referencia al card para revertir si cancela
-  body.dataset.convId       = cId;
-  body.dataset.estadoOrig   = estadoOriginal;
-  body.dataset.cardEl       = ''; // no podemos guardar DOM, pero lo buscamos luego
-
-  const modal = new bootstrap.Modal(document.getElementById('modal-subestado'));
-
-  // Si cierra sin elegir, revertir el kanban
-  document.getElementById('modal-subestado').addEventListener('hidden.bs.modal', function onHide() {
-    this.removeEventListener('hidden.bs.modal', onHide);
-    if (!body.dataset.confirmado) {
-      // Recargar para revertir posición visual
-      renderKanban();
-    }
-    delete body.dataset.confirmado;
-  }, { once: true });
-
-  modal.show();
-}
-
-function confirmarSubestado(cId, estadoNuevo, etapaLabel) {
-  const body = document.getElementById('modal-subestado-body');
-  body.dataset.confirmado = '1';
-  bootstrap.Modal.getInstance(document.getElementById('modal-subestado')).hide();
-  ejecutarCambioEstado(cId, estadoNuevo, `Movido a ${etapaLabel} desde Kanban`);
-}
 
 async function ejecutarCambioEstado(cId, estadoNuevo, motivo) {
   try {
