@@ -1,9 +1,10 @@
 const express = require('express');
 const db = require('../config/database');
+const { authenticateAgent } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/dashboard/kpis', async (req, res) => {
+router.get('/dashboard/kpis', authenticateAgent, async (req, res) => {
   try {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -13,7 +14,7 @@ router.get('/dashboard/kpis', async (req, res) => {
       hoyNuevos,
       hoyPropuestas,
       hoyPolizas,
-      pendientesRespuesta,
+      pendientesAhora,
       criticas,
     ] = await Promise.all([
       db.query(
@@ -64,7 +65,7 @@ router.get('/dashboard/kpis', async (req, res) => {
     res.json({
       hoy: {
         nuevos_contactos: parseInt(hoyNuevos.rows[0].total, 10),
-        respuestas_pendientes: parseInt(pendientesRespuesta.rows[0].total, 10),
+        pendientes_ahora: parseInt(pendientesAhora.rows[0].total, 10),
         propuestas_enviadas: parseInt(hoyPropuestas.rows[0].total, 10),
         polizas_activadas: parseInt(hoyPolizas.rows[0].total, 10),
       },
@@ -73,7 +74,7 @@ router.get('/dashboard/kpis', async (req, res) => {
         id: r.id,
         cliente_nombre: r.cliente_nombre,
         estado: r.estado,
-        dias_sin_respuesta: Math.round(parseFloat(r.horas_sin_respuesta) / 24),
+        horas_sin_respuesta: Math.round(parseFloat(r.horas_sin_respuesta)),
         prioridad: r.prioridad,
         ultimo_mensaje: r.ultimo_mensaje,
       })),

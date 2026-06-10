@@ -1,11 +1,12 @@
 const express = require('express');
 const db = require('../config/database');
 const { esEstadoValido } = require('../utils/helpers');
+const { authenticateAgent } = require('../middleware/auth');
 
 const router = express.Router();
 
 // GET /api/conversaciones — lista con filtros
-router.get('/conversaciones', async (req, res) => {
+router.get('/conversaciones', authenticateAgent, async (req, res) => {
   try {
     const {
       estado,
@@ -115,7 +116,7 @@ router.get('/conversaciones', async (req, res) => {
 });
 
 // GET /api/conversaciones/:id — detalle completo
-router.get('/conversaciones/:id', async (req, res) => {
+router.get('/conversaciones/:id', authenticateAgent, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -163,7 +164,7 @@ router.get('/conversaciones/:id', async (req, res) => {
 });
 
 // POST /api/conversaciones/:id/estado — cambiar estado
-router.post('/conversaciones/:id/estado', async (req, res) => {
+router.post('/conversaciones/:id/estado', authenticateAgent, async (req, res) => {
   try {
     const { id } = req.params;
     const { estado_nuevo, motivo } = req.body;
@@ -212,7 +213,7 @@ router.post('/conversaciones/:id/estado', async (req, res) => {
 });
 
 // POST /api/conversaciones/:id/notas
-router.post('/conversaciones/:id/notas', async (req, res) => {
+router.post('/conversaciones/:id/notas', authenticateAgent, async (req, res) => {
   try {
     const { id } = req.params;
     const { contenido } = req.body;
@@ -238,7 +239,7 @@ router.post('/conversaciones/:id/notas', async (req, res) => {
 });
 
 // POST /api/conversaciones/:id/cotizaciones
-router.post('/conversaciones/:id/cotizaciones', async (req, res) => {
+router.post('/conversaciones/:id/cotizaciones', authenticateAgent, async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -264,6 +265,28 @@ router.post('/conversaciones/:id/cotizaciones', async (req, res) => {
     res.status(201).json({ success: true, cotizacion_id: result.rows[0].id });
   } catch (err) {
     console.error('Error POST /conversaciones/:id/cotizaciones:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// PATCH /api/conversaciones/:id/cliente — editar nombre del cliente
+router.patch('/conversaciones/:id/cliente', authenticateAgent, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { cliente_nombre, cliente_email } = req.body;
+
+    if (!cliente_nombre) {
+      return res.status(400).json({ error: 'cliente_nombre es requerido' });
+    }
+
+    await db.query(
+      `UPDATE conversaciones SET cliente_nombre = $1, cliente_email = $2, updated_at = NOW() WHERE id = $3`,
+      [cliente_nombre.trim(), cliente_email || null, id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error PATCH /conversaciones/:id/cliente:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
