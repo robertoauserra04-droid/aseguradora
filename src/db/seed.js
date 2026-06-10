@@ -5,7 +5,7 @@ const conversacionesPrueba = [
     nombre: 'Carlos Méndez Ruiz',
     telefono: '+528112345601',
     tipo: 'vida',
-    estado: 'solicitud_recibida',
+    estado: 'inicio',
     prioridad: 'normal',
     mensajes: [
       { autor: 'cliente', contenido: 'Hola, quiero información sobre seguros de vida', horas: 5 },
@@ -15,7 +15,7 @@ const conversacionesPrueba = [
     nombre: 'María González López',
     telefono: '+528112345602',
     tipo: 'medical',
-    estado: 'informacion_pendiente',
+    estado: 'inicio',
     prioridad: 'alta',
     mensajes: [
       { autor: 'cliente', contenido: 'Buenos días, me interesa un seguro de gastos médicos para mi familia', horas: 10 },
@@ -29,7 +29,7 @@ const conversacionesPrueba = [
     nombre: 'Roberto Salinas',
     telefono: '+528112345603',
     tipo: 'auto',
-    estado: 'cotizando',
+    estado: 'cotizacion',
     prioridad: 'normal',
     mensajes: [
       { autor: 'cliente', contenido: 'Necesito asegurar mi carro, es un Nissan Versa 2022', horas: 24 },
@@ -42,7 +42,7 @@ const conversacionesPrueba = [
     nombre: 'Alejandra Torres',
     telefono: '+528112345604',
     tipo: 'vida',
-    estado: 'presentada_cliente',
+    estado: 'cotizacion',
     prioridad: 'alta',
     requiere_respuesta: true,
     mensajes: [
@@ -56,7 +56,7 @@ const conversacionesPrueba = [
     nombre: 'Fernando Ibarra Castillo',
     telefono: '+528112345605',
     tipo: 'auto',
-    estado: 'solicitud_firmada',
+    estado: 'tramite_oficina',
     prioridad: 'critica',
     mensajes: [
       { autor: 'cliente', contenido: 'Ya revisé las cotizaciones, me convence la de Qualitas', horas: 72 },
@@ -70,7 +70,7 @@ const conversacionesPrueba = [
     nombre: 'Lucía Ramírez Vega',
     telefono: '+528112345606',
     tipo: 'medical',
-    estado: 'pago_pendiente',
+    estado: 'entrega',
     prioridad: 'alta',
     mensajes: [
       { autor: 'cliente', contenido: 'Ya firmé los documentos que me mandaron', horas: 96 },
@@ -83,7 +83,7 @@ const conversacionesPrueba = [
     nombre: 'Jorge Herrera Muñoz',
     telefono: '+528112345607',
     tipo: 'vida',
-    estado: 'poliza_activa',
+    estado: 'vigente',
     prioridad: 'normal',
     numero_poliza: 'MET-2024-789456',
     mensajes: [
@@ -96,7 +96,7 @@ const conversacionesPrueba = [
     nombre: 'Sofía Morales',
     telefono: '+528112345608',
     tipo: 'medical',
-    estado: 'sin_eventos_abiertos',
+    estado: 'vigente',
     prioridad: 'normal',
     numero_poliza: 'GNP-2023-112233',
     mensajes: [
@@ -109,7 +109,7 @@ const conversacionesPrueba = [
     nombre: 'Patricio Domínguez',
     telefono: '+528112345609',
     tipo: 'auto',
-    estado: 'renovacion_90dias',
+    estado: 'renovacion',
     prioridad: 'alta',
     requiere_respuesta: true,
     numero_poliza: 'QUA-2023-445566',
@@ -123,7 +123,7 @@ const conversacionesPrueba = [
     nombre: 'Daniela Fuentes',
     telefono: '+528112345610',
     tipo: 'vida',
-    estado: 'renovada',
+    estado: 'renovacion',
     prioridad: 'baja',
     numero_poliza: 'MET-2024-998877',
     mensajes: [
@@ -135,7 +135,7 @@ const conversacionesPrueba = [
     nombre: 'Andrés Castillo Peña',
     telefono: '+528112345611',
     tipo: 'auto',
-    estado: 'no_renovada',
+    estado: 'renovacion',
     prioridad: 'baja',
     mensajes: [
       { autor: 'agente', contenido: 'Hola Andrés, tu póliza venció hace 30 días. ¿Te gustaría renovarla?', horas: 720 },
@@ -146,7 +146,7 @@ const conversacionesPrueba = [
     nombre: 'Valentina Cruz',
     telefono: '+528112345612',
     tipo: 'viaje',
-    estado: 'prospecto_creado',
+    estado: 'inicio',
     prioridad: 'normal',
     requiere_respuesta: true,
     mensajes: [
@@ -157,7 +157,7 @@ const conversacionesPrueba = [
     nombre: 'Miguel Ángel Reyes',
     telefono: '+528112345613',
     tipo: 'daño',
-    estado: 'propuestas_recibidas',
+    estado: 'cotizacion',
     prioridad: 'normal',
     mensajes: [
       { autor: 'cliente', contenido: 'Quiero asegurar mi negocio, es una taquería en Monterrey', horas: 36 },
@@ -170,7 +170,7 @@ const conversacionesPrueba = [
     nombre: 'Isabel Navarro',
     telefono: '+528112345614',
     tipo: 'medical',
-    estado: 'presentada_cliente',
+    estado: 'cotizacion',
     prioridad: 'normal',
     mensajes: [
       { autor: 'cliente', contenido: 'Soy freelancer y necesito seguro médico individual', horas: 60 },
@@ -182,7 +182,7 @@ const conversacionesPrueba = [
     nombre: 'Héctor Villanueva',
     telefono: '+528112345615',
     tipo: 'vida',
-    estado: 'pago_confirmado',
+    estado: 'entrega',
     prioridad: 'critica',
     requiere_respuesta: true,
     mensajes: [
@@ -198,7 +198,7 @@ async function limpiarDatos() {
   await db.query('DELETE FROM cotizaciones');
   await db.query('DELETE FROM notas_internas');
   await db.query('DELETE FROM mensajes');
-  await db.query('DELETE FROM conversaciones WHERE cliente_telefono LIKE \'+52811234560%\'');
+  await db.query('DELETE FROM conversaciones WHERE cliente_telefono LIKE \'+5281123456%\'');
 }
 
 async function insertarDatos() {
