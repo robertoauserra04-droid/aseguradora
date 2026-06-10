@@ -399,6 +399,31 @@
     }
     .sub-btn:hover { border-color: #93c5fd; background: #f0f9ff; }
 
+    /* ─── LISTA VIEW ─────────────────────────────────────── */
+    #lista-view {
+      display: none; flex: 1; flex-direction: column; overflow: hidden;
+    }
+    #lista-view.visible { display: flex; }
+
+    /* ─── DETAIL DRAWER ─────────────────────────────────── */
+    #det-drawer-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,.35);
+      z-index: 1045; display: none;
+    }
+    #det-drawer-overlay.open { display: block; }
+    #det-drawer {
+      position: fixed; top: 0; right: 0;
+      width: 520px; max-width: 100vw; height: 100vh;
+      background: #fff;
+      box-shadow: -6px 0 32px rgba(0,0,0,.15);
+      z-index: 1046;
+      transform: translateX(110%);
+      transition: transform .24s cubic-bezier(.4,0,.2,1);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    #det-drawer.open { transform: translateX(0); }
+
     /* ─── MODAL ESTADO — nuevo layout por grupos ────────── */
     .estado-grupo { margin-bottom: 14px; }
     .estado-grupo-title {
@@ -456,7 +481,7 @@
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sb-brand">Seguros <span>Carguill</span></div>
-    <div class="sb-section">Por estado</div>
+    <div class="sb-section">Etapas</div>
     <div id="sb-estados"></div>
     <div class="sb-footer">
       <div class="sb-user" id="sb-user"></div>
@@ -481,191 +506,178 @@
   <!-- MAIN -->
   <div class="main">
 
-    <!-- KPI BAR -->
-    <div class="kpi-bar" style="align-items:center;">
-      <div class="kpi-cell">
-        <div class="kpi-num" id="kpi-nuevos">—</div>
-        <div class="kpi-lbl"><i class="bi bi-person-plus me-1"></i>Nuevos hoy</div>
-      </div>
-      <div class="kpi-cell">
-        <div class="kpi-num rojo" id="kpi-pend">—</div>
-        <div class="kpi-lbl"><i class="bi bi-clock-history me-1"></i>Sin respuesta</div>
-      </div>
-      <div class="kpi-cell">
-        <div class="kpi-num azul" id="kpi-prop">—</div>
-        <div class="kpi-lbl"><i class="bi bi-send me-1"></i>Propuestas hoy</div>
-      </div>
-      <div class="kpi-cell">
-        <div class="kpi-num verde" id="kpi-pol">—</div>
-        <div class="kpi-lbl"><i class="bi bi-shield-check me-1"></i>Polizas hoy</div>
-      </div>
-      <div class="kpi-cell" style="flex:0;padding:0 16px;">
-        <div class="vista-toggle">
-          <button class="vista-btn active" id="btn-vista-lista" onclick="cambiarVista('lista')">
-            <i class="bi bi-list-ul me-1"></i>Lista
-          </button>
-          <button class="vista-btn" id="btn-vista-kanban" onclick="cambiarVista('kanban')">
-            <i class="bi bi-kanban me-1"></i>Kanban
-          </button>
+    <!-- TOPBAR: búsqueda + filtros + toggle de vista -->
+    <div class="topbar">
+      <div class="d-flex align-items-center gap-2 flex-fill" style="min-width:0;">
+        <div class="input-group input-group-sm" style="max-width:200px;flex-shrink:0;">
+          <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input type="text" id="search-inp" class="form-control border-start-0 ps-0"
+            placeholder="Buscar..." oninput="buscarGlobal(this.value)" />
         </div>
+        <select id="filtro-tipo" class="form-select form-select-sm" style="max-width:130px;flex-shrink:0;" onchange="aplicarFiltros()">
+          <option value="">Todos los seguros</option>
+          <option value="vida">Vida</option>
+          <option value="auto">Auto</option>
+          <option value="medical">Medico</option>
+          <option value="dano">Danos</option>
+          <option value="viaje">Viaje</option>
+        </select>
+        <select id="filtro-urgencia" class="form-select form-select-sm" style="max-width:150px;flex-shrink:0;" onchange="aplicarFiltros()">
+          <option value="">Toda urgencia</option>
+          <option value="sin_respuesta">Sin respuesta</option>
+          <option value="alta">Alta prioridad</option>
+        </select>
+        <select id="sort-sel" class="form-select form-select-sm" style="max-width:140px;flex-shrink:0;" onchange="aplicarFiltros()">
+          <option value="mas_urgente">Más urgentes</option>
+          <option value="sin_respuesta">Sin respuesta</option>
+          <option value="mas_reciente">Más recientes</option>
+        </select>
+      </div>
+      <div class="vista-toggle flex-shrink-0">
+        <button class="vista-btn active" id="btn-vista-kanban" onclick="cambiarVista('kanban')">
+          <i class="bi bi-kanban me-1"></i>Kanban
+        </button>
+        <button class="vista-btn" id="btn-vista-lista" onclick="cambiarVista('lista')">
+          <i class="bi bi-list-ul me-1"></i>Lista
+        </button>
       </div>
     </div>
 
-    <!-- CONTENIDO -->
-    <div class="content-row">
+    <!-- KANBAN (pantalla principal) -->
+    <div id="kanban-view" class="visible"></div>
 
-      <!-- LISTA -->
-      <div class="lista-col">
-        <div class="lista-filtros">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white border-end-0">
-              <i class="bi bi-search text-muted"></i>
-            </span>
-            <input type="text" id="search-inp"
-              class="form-control border-start-0 ps-0"
-              placeholder="Buscar nombre o telefono..."
-              oninput="buscar(this.value)" />
-          </div>
-          <div class="d-flex gap-2">
-            <select id="filtro-tipo" class="form-select form-select-sm" onchange="cargarLista()">
-              <option value="">Todos los seguros</option>
-              <option value="vida">Vida</option>
-              <option value="auto">Auto</option>
-              <option value="medical">Medico</option>
-              <option value="dano">Danos</option>
-              <option value="viaje">Viaje</option>
-            </select>
-            <select id="sort-sel" class="form-select form-select-sm" onchange="cargarLista()">
-              <option value="mas_urgente">Mas urgentes</option>
-              <option value="sin_respuesta">Sin respuesta</option>
-              <option value="mas_reciente">Mas recientes</option>
-            </select>
-          </div>
-        </div>
-        <div class="lista-scroll" id="lista-conv"></div>
-        <div id="paginacion"
-          class="d-flex justify-content-between align-items-center px-3 py-2 bg-white border-top"
-          style="font-size:11px; min-height:36px;">
-        </div>
+    <!-- LISTA VIEW -->
+    <div id="lista-view">
+      <div class="lista-scroll" id="lista-conv"></div>
+      <div id="paginacion"
+        class="d-flex justify-content-between align-items-center px-3 py-2 bg-white border-top"
+        style="font-size:11px; min-height:36px; flex-shrink:0;">
       </div>
-
-      <!-- DETALLE -->
-      <div class="det-col">
-
-        <div class="det-empty" id="det-empty">
-          <i class="bi bi-chat-left-text" style="font-size:40px;"></i>
-          <span style="font-size:14px;">Selecciona una conversacion para ver el detalle</span>
-        </div>
-
-        <div id="det-inner" style="display:none; height:100%; flex-direction:column;">
-
-          <!-- Header detalle -->
-          <div class="det-header">
-            <div class="d-flex justify-content-between align-items-start gap-3">
-              <div style="min-width:0;">
-                <div class="det-nombre" id="det-nombre">—</div>
-                <div class="det-meta" id="det-meta">—</div>
-              </div>
-              <button class="btn btn-sm btn-light border" onclick="abrirEditarCliente()" title="Editar nombre">
-                <i class="bi bi-pencil"></i>
-              </button>
-            </div>
-            <div class="det-badges">
-              <span id="det-tipo-pill" class="pill-tipo"></span>
-              <span id="det-estado-pill" class="pill-estado"></span>
-              <span id="det-alerta-badge"></span>
-            </div>
-            <div class="det-acciones">
-              <button class="btn btn-sm btn-primary fw-semibold" onclick="abrirModalEstado()">
-                <i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado
-              </button>
-              <button class="btn btn-sm btn-outline-secondary" onclick="irTab('notas')">
-                <i class="bi bi-sticky me-1"></i>Agregar nota
-              </button>
-              <button class="btn btn-sm btn-outline-secondary" onclick="irTab('cotizaciones')">
-                <i class="bi bi-currency-dollar me-1"></i>Cotizacion
-              </button>
-            </div>
-          </div>
-
-          <!-- Tabs -->
-          <div class="det-tabs">
-            <div class="det-tab active" id="dtab-mensajes"     onclick="irTab('mensajes')">Mensajes</div>
-            <div class="det-tab"        id="dtab-notas"        onclick="irTab('notas')">Notas</div>
-            <div class="det-tab"        id="dtab-cotizaciones" onclick="irTab('cotizaciones')">Cotizaciones</div>
-            <div class="det-tab"        id="dtab-historial"    onclick="irTab('historial')">Historial</div>
-          </div>
-
-          <!-- Contenido tabs -->
-          <div class="det-body">
-
-            <div id="tab-mensajes" class="tab-pane active">
-              <div id="msgs-wrap"></div>
-            </div>
-
-            <div id="tab-notas" class="tab-pane">
-              <div class="bg-white border rounded-3 p-3 mb-3">
-                <textarea id="txt-nota" class="form-control form-control-sm mb-2"
-                  rows="3" placeholder="Nota interna — no es visible para el cliente"></textarea>
-                <button class="btn btn-sm btn-warning fw-semibold" onclick="guardarNota()">
-                  <i class="bi bi-sticky me-1"></i>Guardar nota
-                </button>
-              </div>
-              <div id="lista-notas"></div>
-            </div>
-
-            <div id="tab-cotizaciones" class="tab-pane">
-              <div class="bg-white border rounded-3 p-3 mb-3">
-                <div class="row g-2 mb-2">
-                  <div class="col-sm-4">
-                    <label class="form-label small text-secondary mb-1">Aseguradora</label>
-                    <input type="text" id="cot-aseg" class="form-control form-control-sm"
-                      placeholder="GNP, AXA, Qualitas..." />
-                  </div>
-                  <div class="col-sm-3">
-                    <label class="form-label small text-secondary mb-1">Prima (MXN / mes)</label>
-                    <input type="number" id="cot-prima" class="form-control form-control-sm"
-                      placeholder="3200" min="0" />
-                  </div>
-                  <div class="col-sm-5">
-                    <label class="form-label small text-secondary mb-1">Descripcion de cobertura</label>
-                    <input type="text" id="cot-cobertura" class="form-control form-control-sm"
-                      placeholder="Cobertura amplia, suma $500k..." />
-                  </div>
-                  <div class="col-sm-4">
-                    <label class="form-label small text-secondary mb-1">Estado</label>
-                    <select id="cot-estado" class="form-select form-select-sm">
-                      <option value="cotizando">Cotizando</option>
-                      <option value="enviada">Enviada al cliente</option>
-                      <option value="aceptada">Aceptada</option>
-                      <option value="rechazada">Rechazada</option>
-                    </select>
-                  </div>
-                  <div class="col-sm-8 d-flex align-items-end">
-                    <button class="btn btn-sm btn-success fw-semibold" onclick="guardarCotizacion()">
-                      <i class="bi bi-plus-circle me-1"></i>Agregar cotizacion
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div id="lista-cots"></div>
-            </div>
-
-            <div id="tab-historial" class="tab-pane">
-              <div id="lista-hist"></div>
-            </div>
-
-          </div><!-- /det-body -->
-        </div><!-- /det-inner -->
-
-      </div><!-- /det-col -->
-    </div><!-- /content-row -->
-
-    <!-- KANBAN VIEW -->
-    <div id="kanban-view"></div>
+    </div>
 
   </div><!-- /main -->
 </div><!-- /panel-screen -->
+
+<!-- ════════════════════════════════════
+     OVERLAY + DRAWER DE DETALLE
+════════════════════════════════════ -->
+<div id="det-drawer-overlay" onclick="cerrarDrawer()"></div>
+
+<div id="det-drawer">
+
+  <div class="det-empty" id="det-empty">
+    <i class="bi bi-chat-left-text" style="font-size:40px;"></i>
+    <span style="font-size:14px;">Selecciona una conversacion</span>
+  </div>
+
+  <div id="det-inner" style="display:none; height:100%; flex-direction:column;">
+
+    <!-- Header detalle -->
+    <div class="det-header">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div style="min-width:0;">
+          <div class="det-nombre" id="det-nombre">—</div>
+          <div class="det-meta" id="det-meta">—</div>
+        </div>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm btn-light border" onclick="abrirEditarCliente()" title="Editar">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-light border" onclick="cerrarDrawer()" title="Cerrar">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+      <div class="det-badges">
+        <span id="det-tipo-pill" class="pill-tipo"></span>
+        <span id="det-estado-pill" class="pill-estado"></span>
+        <span id="det-alerta-badge"></span>
+      </div>
+      <div class="det-acciones">
+        <button class="btn btn-sm btn-primary fw-semibold" onclick="abrirModalEstado()">
+          <i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="irTab('notas')">
+          <i class="bi bi-sticky me-1"></i>Nota
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="irTab('cotizaciones')">
+          <i class="bi bi-currency-dollar me-1"></i>Cotizacion
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="det-tabs">
+      <div class="det-tab active" id="dtab-mensajes"     onclick="irTab('mensajes')">Mensajes</div>
+      <div class="det-tab"        id="dtab-notas"        onclick="irTab('notas')">Notas</div>
+      <div class="det-tab"        id="dtab-cotizaciones" onclick="irTab('cotizaciones')">Cotizaciones</div>
+      <div class="det-tab"        id="dtab-historial"    onclick="irTab('historial')">Historial</div>
+    </div>
+
+    <!-- Contenido tabs -->
+    <div class="det-body">
+
+      <div id="tab-mensajes" class="tab-pane active">
+        <div id="msgs-wrap"></div>
+      </div>
+
+      <div id="tab-notas" class="tab-pane">
+        <div class="bg-white border rounded-3 p-3 mb-3">
+          <textarea id="txt-nota" class="form-control form-control-sm mb-2"
+            rows="3" placeholder="Nota interna — no es visible para el cliente"></textarea>
+          <button class="btn btn-sm btn-warning fw-semibold" onclick="guardarNota()">
+            <i class="bi bi-sticky me-1"></i>Guardar nota
+          </button>
+        </div>
+        <div id="lista-notas"></div>
+      </div>
+
+      <div id="tab-cotizaciones" class="tab-pane">
+        <div class="bg-white border rounded-3 p-3 mb-3">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small text-secondary mb-1">Aseguradora</label>
+              <input type="text" id="cot-aseg" class="form-control form-control-sm"
+                placeholder="GNP, AXA, Qualitas..." />
+            </div>
+            <div class="col-6">
+              <label class="form-label small text-secondary mb-1">Prima (MXN / mes)</label>
+              <input type="number" id="cot-prima" class="form-control form-control-sm"
+                placeholder="3200" min="0" />
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-secondary mb-1">Descripcion de cobertura</label>
+              <input type="text" id="cot-cobertura" class="form-control form-control-sm"
+                placeholder="Cobertura amplia, suma $500k..." />
+            </div>
+            <div class="col-6">
+              <label class="form-label small text-secondary mb-1">Estado</label>
+              <select id="cot-estado" class="form-select form-select-sm">
+                <option value="cotizando">Cotizando</option>
+                <option value="enviada">Enviada al cliente</option>
+                <option value="aceptada">Aceptada</option>
+                <option value="rechazada">Rechazada</option>
+              </select>
+            </div>
+            <div class="col-6 d-flex align-items-end">
+              <button class="btn btn-sm btn-success fw-semibold w-100" onclick="guardarCotizacion()">
+                <i class="bi bi-plus-circle me-1"></i>Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="lista-cots"></div>
+      </div>
+
+      <div id="tab-historial" class="tab-pane">
+        <div id="lista-hist"></div>
+      </div>
+
+    </div><!-- /det-body -->
+  </div><!-- /det-inner -->
+</div><!-- /det-drawer -->
 
 
 <!-- ════════════════════════════════════
@@ -887,7 +899,7 @@ let convId       = null;
 let kpiConteos   = {};
 let estadoSel    = null;
 let estadoActualConv = null;
-let vistaActual  = 'lista';
+let vistaActual  = 'kanban';
 let kanbanData   = [];
 let kanbanSortables = [];
 
@@ -936,12 +948,12 @@ function mostrarPanel(nombre) {
   document.getElementById('panel-screen').style.display = 'flex';
   document.getElementById('sb-user').textContent = nombre || 'Agente';
   renderSidebar();
-  cargarKpis();
-  cargarLista();
-  setInterval(cargarKpis, 60000);
-  // Refrescar al volver al tab
+  cambiarVista('kanban');
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) { cargarKpis(); cargarLista(); }
+    if (!document.hidden) {
+      if (vistaActual === 'kanban') cargarKanban();
+      else cargarLista();
+    }
   });
 }
 
@@ -968,46 +980,19 @@ function api(url, opts = {}) {
 // ════════════════════════════════════════════════════
 function renderSidebar() {
   const el = document.getElementById('sb-estados');
-  const total = Object.values(kpiConteos).reduce((a, b) => a + b, 0);
 
-  let html = `<div class="sb-item ${!estadoFiltro && !etapaFiltro ? 'active' : ''}" onclick="filtrar(null,null)">
+  let html = `<div class="sb-item ${!etapaFiltro ? 'active' : ''}" onclick="filtrarEtapa(null)">
     <span><span class="sb-dot" style="background:#475569"></span>Todas</span>
-    <span class="sb-cnt">${total || ''}</span>
   </div>`;
 
   for (const etapa of Object.values(ETAPAS)) {
-    // Suma de conteos de todos los subestados de esta etapa
-    const cntEtapa = etapa.estados.reduce((s, e) => s + (kpiConteos[e.key] || 0), 0);
-    const etapaActiva = etapaFiltro === etapa.key;
-
-    html += `<div class="sb-etapa-header ${etapaActiva ? 'active-group' : ''}"
-      style="border-left:3px solid ${etapaActiva ? etapa.color : 'transparent'};"
-      onclick="filtrarEtapa('${etapa.key}')">
+    const activa = etapaFiltro === etapa.key;
+    html += `<div class="sb-item ${activa ? 'active' : ''}" onclick="filtrarEtapa('${etapa.key}')">
       <span><span class="sb-dot" style="background:${etapa.color}"></span>${etapa.label}</span>
-      <span class="sb-cnt">${cntEtapa || ''}</span>
     </div>`;
-
-    // Subestados — siempre visibles para fácil filtrado
-    for (const est of etapa.estados) {
-      const cnt = kpiConteos[est.key] || 0;
-      const activo = estadoFiltro === est.key;
-      html += `<div class="sb-subestado ${activo ? 'active' : ''}" onclick="filtrar('${est.key}','${etapa.key}')">
-        <span>${est.label}</span>
-        <span class="sb-cnt">${cnt || ''}</span>
-      </div>`;
-    }
   }
 
   el.innerHTML = html;
-}
-
-function filtrar(estado, etapa) {
-  estadoFiltro = estado;
-  etapaFiltro  = etapa || null;
-  offset = 0;
-  renderSidebar();
-  if (vistaActual === 'lista') cargarLista();
-  else cargarKanban();
 }
 
 function filtrarEtapa(etapaKey) {
@@ -1015,47 +1000,38 @@ function filtrarEtapa(etapaKey) {
   estadoFiltro = null;
   offset = 0;
   renderSidebar();
-  if (vistaActual === 'lista') cargarLista();
-  else cargarKanban();
+  if (vistaActual === 'kanban') renderKanban();
+  else cargarLista();
 }
 
-function buscar(v) {
+function buscarGlobal(v) {
   search = v;
   offset = 0;
-  cargarLista();
+  if (vistaActual === 'kanban') cargarKanban();
+  else cargarLista();
 }
 
-// ════════════════════════════════════════════════════
-// KPIs
-// ════════════════════════════════════════════════════
-async function cargarKpis() {
-  try {
-    const d = await api('/api/dashboard/kpis').then(r => r.json());
-    document.getElementById('kpi-nuevos').textContent = d.hoy.nuevos_contactos;
-    document.getElementById('kpi-pend').textContent   = d.hoy.pendientes_ahora;
-    document.getElementById('kpi-prop').textContent   = d.hoy.propuestas_enviadas;
-    document.getElementById('kpi-pol').textContent    = d.hoy.polizas_activadas;
-    kpiConteos = d.conversaciones_por_estado || {};
-    renderSidebar();
-  } catch {}
+function aplicarFiltros() {
+  offset = 0;
+  if (vistaActual === 'kanban') cargarKanban();
+  else cargarLista();
 }
 
 // ════════════════════════════════════════════════════
 // LISTA
 // ════════════════════════════════════════════════════
 async function cargarLista() {
-  const sort = document.getElementById('sort-sel')?.value || 'mas_urgente';
-  const tipo = document.getElementById('filtro-tipo')?.value || '';
+  const sort     = document.getElementById('sort-sel')?.value || 'mas_urgente';
+  const tipo     = document.getElementById('filtro-tipo')?.value || '';
+  const urgencia = document.getElementById('filtro-urgencia')?.value || '';
   const p = new URLSearchParams({ limit: LIMIT, offset, sort_by: sort });
-  if (estadoFiltro) {
-    p.set('estado', estadoFiltro);
-  } else if (etapaFiltro && ETAPAS[etapaFiltro]) {
-    // Filtrar por todos los subestados de la etapa
+  if (etapaFiltro && ETAPAS[etapaFiltro]) {
     const keys = ETAPAS[etapaFiltro].estados.map(e => e.key).join(',');
     p.set('estados', keys);
   }
-  if (search) p.set('search', search);
-  if (tipo)   p.set('tipo_seguro', tipo);
+  if (search)   p.set('search', search);
+  if (tipo)     p.set('tipo_seguro', tipo);
+  if (urgencia === 'sin_respuesta') p.set('requiere_respuesta', 'true');
 
   try {
     const d = await api(`/api/conversaciones?${p}`).then(r => r.json());
@@ -1104,7 +1080,7 @@ function renderLista(convs) {
       : '';
 
     return `<div class="conv-card ${urg} ${convId === c.id ? 'selected' : ''}"
-      onclick="abrirDetalle('${c.id}')">
+      data-id="${c.id}" onclick="abrirDetalle('${c.id}')">
       <div class="d-flex justify-content-between align-items-start">
         <div style="min-width:0;">
           <div class="card-nombre">${esc(c.cliente_nombre)}</div>
@@ -1147,13 +1123,14 @@ function cambiarPag(d) { offset = Math.max(0, offset + d * LIMIT); cargarLista()
 async function abrirDetalle(id) {
   convId = id;
 
-  document.querySelectorAll('.conv-card').forEach(c =>
-    c.classList.toggle('selected', c.getAttribute('onclick')?.includes(`'${id}'`))
+  document.querySelectorAll('.kb-card,.conv-card').forEach(c =>
+    c.classList.toggle('selected', c.dataset.id === id)
   );
 
-  document.getElementById('det-empty').style.display  = 'none';
+  document.getElementById('det-empty').style.display = 'none';
   const inner = document.getElementById('det-inner');
   inner.style.display = 'flex';
+  abrirDrawer();
 
   try {
     const d = await api(`/api/conversaciones/${id}`).then(r => r.json());
@@ -1354,8 +1331,8 @@ async function confirmarEstado() {
   if (r.ok) {
     bootstrap.Modal.getInstance(document.getElementById('modal-estado')).hide();
     await abrirDetalle(convId);
-    cargarLista();
-    cargarKpis();
+    if (vistaActual === 'kanban') cargarKanban();
+    else cargarLista();
   } else {
     alert('Error al cambiar estado');
   }
@@ -1383,7 +1360,6 @@ async function guardarCliente() {
   if (r.ok) {
     bootstrap.Modal.getInstance(document.getElementById('modal-cliente')).hide();
     abrirDetalle(convId);
-    cargarLista();
   }
 }
 
@@ -1429,23 +1405,23 @@ async function guardarCotizacion() {
 }
 
 // ════════════════════════════════════════════════════
-// TOGGLE VISTA
+// TOGGLE VISTA + DRAWER
 // ════════════════════════════════════════════════════
 function cambiarVista(vista) {
   vistaActual = vista;
-  const contentRow   = document.querySelector('.content-row');
-  const kanbanView   = document.getElementById('kanban-view');
-  const btnLista     = document.getElementById('btn-vista-lista');
-  const btnKanban    = document.getElementById('btn-vista-kanban');
+  const kanbanView = document.getElementById('kanban-view');
+  const listaView  = document.getElementById('lista-view');
+  const btnLista   = document.getElementById('btn-vista-lista');
+  const btnKanban  = document.getElementById('btn-vista-kanban');
 
   if (vista === 'kanban') {
-    contentRow.style.display = 'none';
     kanbanView.classList.add('visible');
+    listaView.classList.remove('visible');
     btnKanban.classList.add('active');
     btnLista.classList.remove('active');
     cargarKanban();
   } else {
-    contentRow.style.display = 'flex';
+    listaView.classList.add('visible');
     kanbanView.classList.remove('visible');
     btnLista.classList.add('active');
     btnKanban.classList.remove('active');
@@ -1453,11 +1429,22 @@ function cambiarVista(vista) {
   }
 }
 
+function cerrarDrawer() {
+  document.getElementById('det-drawer').classList.remove('open');
+  document.getElementById('det-drawer-overlay').classList.remove('open');
+  convId = null;
+  document.querySelectorAll('.kb-card,.conv-card').forEach(c => c.classList.remove('selected'));
+}
+
+function abrirDrawer() {
+  document.getElementById('det-drawer').classList.add('open');
+  document.getElementById('det-drawer-overlay').classList.add('open');
+}
+
 // ════════════════════════════════════════════════════
 // KANBAN
 // ════════════════════════════════════════════════════
 async function cargarKanban() {
-  // Traer todas las conversaciones (sin paginacion, hasta 200)
   const sort = document.getElementById('sort-sel')?.value || 'mas_urgente';
   const tipo = document.getElementById('filtro-tipo')?.value || '';
   const p = new URLSearchParams({ limit: 200, offset: 0, sort_by: sort });
@@ -1476,49 +1463,62 @@ async function cargarKanban() {
 
 function renderKanban() {
   const el = document.getElementById('kanban-view');
+  const urgencia = document.getElementById('filtro-urgencia')?.value || '';
 
-  // Destruir sortables anteriores
   kanbanSortables.forEach(s => s.destroy());
   kanbanSortables = [];
 
-  // Agrupar conversaciones por etapa
-  const porEtapa = {};
-  for (const etapaKey of Object.keys(ETAPAS)) porEtapa[etapaKey] = [];
+  // Aplicar filtros client-side
+  let datos = kanbanData;
+  if (urgencia === 'sin_respuesta') datos = datos.filter(c => c.requiere_respuesta);
+  if (urgencia === 'alta') datos = datos.filter(c => ['alta','critica'].includes(c.prioridad));
 
-  for (const conv of kanbanData) {
+  // Agrupar por etapa, respetando filtro de sidebar
+  const porEtapa = {};
+  for (const k of Object.keys(ETAPAS)) porEtapa[k] = [];
+
+  for (const conv of datos) {
     const est = getEstado(conv.estado);
-    const etapaKey = est.etapa || 'inicio';
-    if (porEtapa[etapaKey]) porEtapa[etapaKey].push(conv);
-    else if (porEtapa['inicio']) porEtapa['inicio'].push(conv);
+    const ek  = est.etapa || 'inicio';
+    if (porEtapa[ek]) porEtapa[ek].push(conv);
   }
 
   el.innerHTML = Object.values(ETAPAS).map(etapa => {
-    const convs = porEtapa[etapa.key] || [];
+    // Si hay filtro de etapa activo y no coincide, mostrar columna vacía pero visible
+    const convs = etapaFiltro && etapaFiltro !== etapa.key ? [] : (porEtapa[etapa.key] || []);
+    const oculta = etapaFiltro && etapaFiltro !== etapa.key;
+
     const cards = convs.map(c => {
       const est = getEstado(c.estado);
       const t   = TIPOS[c.tipo_seguro];
-      const tipoHtml = t ? `<span class="pill-tipo ${t.cls}" style="font-size:10px;">${t.label}</span>` : '';
-      return `<div class="kb-card" data-id="${c.id}" data-estado="${c.estado}"
-        style="--etapa-color:${etapa.color};"
-        onclick="abrirDetalle('${c.id}')">
-        <div class="kb-card-nombre">${esc(c.cliente_nombre)}</div>
+      const urgCls = urgClase(c);
+      const tipoHtml = t ? `<span class="pill-tipo ${t.cls}">${t.label}</span>` : '';
+      const alertaHtml = c.requiere_respuesta ? `<span class="badge-alerta ms-1"><i class="bi bi-clock"></i></span>` : '';
+      return `<div class="kb-card ${convId === c.id ? 'selected' : ''}"
+        data-id="${c.id}" data-estado="${c.estado}"
+        style="--etapa-color:${etapa.color};">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="kb-card-nombre">${esc(c.cliente_nombre)}</div>
+          ${alertaHtml}
+        </div>
         <div class="kb-card-tel">${esc(c.cliente_telefono)}</div>
-        ${tipoHtml}
-        <div class="kb-card-sub" style="background:${etapa.color}18;color:${etapa.color};">
+        ${tipoHtml ? `<div style="margin-top:5px;">${tipoHtml}</div>` : ''}
+        <div class="kb-card-sub" style="background:${etapa.color}18;color:${etapa.color};margin-top:5px;">
           ${est.label}
         </div>
       </div>`;
     }).join('');
 
-    return `<div class="kb-col" style="--etapa-color:${etapa.color};">
+    const col = `<div class="kb-col${oculta ? ' opacity-25' : ''}" style="--etapa-color:${etapa.color};">
       <div class="kb-col-header">
         <div class="kb-col-title">${etapa.label}</div>
-        <div class="kb-col-count">${convs.length} conversacion${convs.length !== 1 ? 'es' : ''}</div>
+        <div class="kb-col-count">${convs.length}</div>
       </div>
       <div class="kb-cards" id="kb-col-${etapa.key}" data-etapa="${etapa.key}">
         ${cards}
       </div>
     </div>`;
+    return col;
   }).join('');
 
   // Inicializar SortableJS en cada columna
@@ -1531,13 +1531,12 @@ function renderKanban() {
       ghostClass: 'sortable-ghost',
       dragClass:  'sortable-drag',
       onEnd: function(evt) {
-        const cardEl    = evt.item;
-        const cId       = cardEl.dataset.id;
+        const cardEl     = evt.item;
+        const cId        = cardEl.dataset.id;
         const nuevaEtapa = evt.to.dataset.etapa;
-        const estadoActual = cardEl.dataset.estado;
+        const estadoActual   = cardEl.dataset.estado;
         const estActualEtapa = getEstado(estadoActual).etapa;
 
-        // Si no cambio de etapa, no hacer nada
         if (nuevaEtapa === estActualEtapa) return;
 
         const etapaObj = ETAPAS[nuevaEtapa];
@@ -1602,15 +1601,12 @@ async function ejecutarCambioEstado(cId, estadoNuevo, motivo) {
       body: JSON.stringify({ estado_nuevo: estadoNuevo, motivo }),
     });
     if (r.ok) {
-      // Actualizar el card en kanbanData sin recargar todo
       const conv = kanbanData.find(c => c.id === cId);
       if (conv) conv.estado = estadoNuevo;
       renderKanban();
-      cargarKpis();
-      // Si el detalle abierto es este conv, refrescarlo
       if (convId === cId) abrirDetalle(cId);
     } else {
-      renderKanban(); // revertir en caso de error
+      renderKanban();
     }
   } catch {
     renderKanban();
@@ -1638,8 +1634,7 @@ async function migrarEstados(btn) {
     const d = await r.json();
     if (r.ok) {
       alert(d.mensaje);
-      cargarKpis();
-      cargarLista();
+      if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
     } else {
       alert('Error: ' + (d.error || 'Intenta de nuevo'));
     }
@@ -1661,8 +1656,7 @@ async function cargarDatosPrueba(btn) {
     const d = await r.json();
     if (r.ok) {
       alert(d.mensaje);
-      cargarKpis();
-      cargarLista();
+      if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
     } else {
       alert('Error: ' + (d.error || 'Intenta de nuevo'));
     }
