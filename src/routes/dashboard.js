@@ -29,17 +29,18 @@ router.get('/dashboard/kpis', authenticateAgent, async (req, res) => {
       ),
       db.query(
         `SELECT COUNT(*) AS total FROM cambios_estado_historico
-         WHERE estado_nuevo = 'propuesta_enviada' AND timestamp >= $1`,
+         WHERE estado_nuevo IN ('presentada_cliente','propuesta_enviada') AND timestamp >= $1`,
         [hoy]
       ),
       db.query(
         `SELECT COUNT(*) AS total FROM cambios_estado_historico
-         WHERE estado_nuevo = 'poliza_activa' AND timestamp >= $1`,
+         WHERE estado_nuevo IN ('poliza_activa','emitida') AND timestamp >= $1`,
         [hoy]
       ),
       db.query(
         `SELECT COUNT(*) AS total FROM conversaciones
-         WHERE requiere_respuesta = true AND activo = true AND estado != 'churn'`
+         WHERE requiere_respuesta = true AND activo = true
+           AND estado NOT IN ('no_renovada','cancelada','churn')`
       ),
       db.query(
         `SELECT c.id, c.cliente_nombre, c.estado, c.prioridad,
@@ -51,7 +52,8 @@ router.get('/dashboard/kpis', authenticateAgent, async (req, res) => {
            WHERE conversacion_id = c.id
            ORDER BY timestamp_mensaje DESC LIMIT 1
          ) m ON true
-         WHERE c.requiere_respuesta = true AND c.activo = true AND c.estado != 'churn'
+         WHERE c.requiere_respuesta = true AND c.activo = true
+           AND c.estado NOT IN ('no_renovada','cancelada','churn')
          ORDER BY horas_sin_respuesta DESC
          LIMIT 10`
       ),

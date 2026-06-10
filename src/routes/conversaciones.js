@@ -10,6 +10,7 @@ router.get('/conversaciones', authenticateAgent, async (req, res) => {
   try {
     const {
       estado,
+      estados, // lista separada por coma para filtro por etapa
       tipo_seguro,
       agente_asignado,
       requiere_respuesta,
@@ -26,6 +27,13 @@ router.get('/conversaciones', authenticateAgent, async (req, res) => {
     if (estado) {
       conditions.push(`c.estado = $${idx++}`);
       params.push(estado);
+    } else if (estados) {
+      const estadosList = estados.split(',').map(s => s.trim()).filter(Boolean);
+      if (estadosList.length > 0) {
+        const placeholders = estadosList.map(() => `$${idx++}`).join(', ');
+        conditions.push(`c.estado IN (${placeholders})`);
+        params.push(...estadosList);
+      }
     }
     if (tipo_seguro) {
       conditions.push(`c.tipo_seguro = $${idx++}`);
