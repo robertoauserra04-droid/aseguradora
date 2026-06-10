@@ -1496,7 +1496,8 @@ function renderKanban() {
       const alertaHtml = c.requiere_respuesta ? `<span class="badge-alerta ms-1"><i class="bi bi-clock"></i></span>` : '';
       return `<div class="kb-card ${convId === c.id ? 'selected' : ''}"
         data-id="${c.id}" data-estado="${c.estado}"
-        style="--etapa-color:${etapa.color};">
+        style="--etapa-color:${etapa.color};"
+        onclick="abrirDetalle('${c.id}')">
         <div class="d-flex justify-content-between align-items-start">
           <div class="kb-card-nombre">${esc(c.cliente_nombre)}</div>
           ${alertaHtml}
@@ -1526,10 +1527,12 @@ function renderKanban() {
     const colEl = document.getElementById(`kb-col-${etapa.key}`);
     if (!colEl) continue;
     const s = Sortable.create(colEl, {
-      group:     'kanban-convs',
-      animation: 150,
+      group:      'kanban-convs',
+      animation:  150,
       ghostClass: 'sortable-ghost',
       dragClass:  'sortable-drag',
+      delay:      80,
+      delayOnTouchOnly: true,
       onEnd: function(evt) {
         const cardEl     = evt.item;
         const cId        = cardEl.dataset.id;
