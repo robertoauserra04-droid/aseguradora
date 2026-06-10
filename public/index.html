@@ -1443,11 +1443,30 @@ async function ejecutarCambioEstado(cId, estadoNuevo, motivo) {
       renderKanban();
       if (convId === cId) abrirDetalle(cId);
     } else {
+      const err = await r.json().catch(() => ({}));
+      mostrarToast('Error al mover: ' + (err.error || `HTTP ${r.status}`), 'danger');
       renderKanban();
     }
-  } catch {
+  } catch(e) {
+    mostrarToast('Error de conexion al mover tarjeta', 'danger');
     renderKanban();
   }
+}
+
+function mostrarToast(msg, tipo = 'danger') {
+  let wrap = document.getElementById('toast-wrap');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'toast-wrap';
+    wrap.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+    document.body.appendChild(wrap);
+  }
+  const t = document.createElement('div');
+  t.className = `alert alert-${tipo} py-2 px-3 mb-0 shadow-sm`;
+  t.style.cssText = 'font-size:13px;min-width:220px;';
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
 }
 
 // ════════════════════════════════════════════════════
