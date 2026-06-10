@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticateAgent } = require('../middleware/auth');
 const { runSeedForce } = require('../db/seed');
 const { MIGRACION_ESTADOS } = require('../utils/helpers');
+
 const db = require('../config/database');
 
 const router = express.Router();
