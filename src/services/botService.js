@@ -11,12 +11,43 @@ function getOpenAI() {
   return openaiClient;
 }
 
+function compilarSystemPrompt(cfg) {
+  const c = cfg.contexto || {};
+  const partes = [];
+
+  // Identidad
+  let identidad = `Eres el asistente virtual de ${c.empresa || 'la empresa'}`;
+  if (c.ciudad) identidad += ` en ${c.ciudad}`;
+  identidad += '. Responde siempre en español.';
+  partes.push(identidad);
+
+  if (c.descripcion) partes.push(c.descripcion);
+
+  const seguros = Array.isArray(c.seguros) ? c.seguros : [];
+  if (seguros.length > 0) partes.push(`Seguros que ofrecemos: ${seguros.join(', ')}.`);
+  if (c.aseguradoras) partes.push(`Aseguradoras con las que trabajamos: ${c.aseguradoras}.`);
+  if (c.horario) partes.push(`Horario de atención: ${c.horario}.`);
+
+  const tonos = {
+    formal:   'Responde en tono formal y profesional.',
+    amigable: 'Responde en tono amigable y cercano.',
+    ambos:    'Responde en tono formal pero amigable y cálido.',
+  };
+  if (c.tono && tonos[c.tono]) partes.push(tonos[c.tono]);
+
+  if (c.bienvenida) partes.push(`Cuando un cliente llegue por primera vez salúdalo así: "${c.bienvenida}"`);
+  if (c.restricciones) partes.push(`Lo que NO debes hacer o decir:\n${c.restricciones}`);
+  if ((cfg.instrucciones || '').trim()) partes.push(cfg.instrucciones.trim());
+
+  return partes.join('\n\n');
+}
+
 async function generarRespuesta(conversacionId) {
   const openai = getOpenAI();
   if (!openai) return null;
 
   // 1. Config global del bot
-  const cfgResult = await db.query('SELECT instrucciones, activo_global FROM bot_config LIMIT 1');
+  const cfgResult = await db.query('SELECT instrucciones, activo_global, contexto FROM bot_config LIMIT 1');
   const cfg = cfgResult.rows[0];
   if (!cfg || !cfg.activo_global) return null;
 
@@ -49,7 +80,7 @@ async function generarRespuesta(conversacionId) {
     ? '\n\n' + slotsInfo.texto + '\nSi el cliente quiere agendar una cita, usa la función agendar_cita con el índice del slot elegido (0-based).'
     : '';
 
-  const systemPrompt = (cfg.instrucciones || '').trim() + faqText + calText;
+  const systemPrompt = compilarSystemPrompt(cfg) + faqText + calText;
 
   // 6. Historial en formato OpenAI (cronológico)
   const messages = [{ role: 'system', content: systemPrompt }];

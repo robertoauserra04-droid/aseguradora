@@ -7,8 +7,9 @@ const router = express.Router();
 // GET /api/bot/config
 router.get('/bot/config', authenticateAgent, async (req, res) => {
   try {
-    const r = await db.query('SELECT instrucciones, activo_global FROM bot_config LIMIT 1');
-    res.json(r.rows[0] || { instrucciones: '', activo_global: true });
+    const r = await db.query('SELECT instrucciones, activo_global, contexto FROM bot_config LIMIT 1');
+    const row = r.rows[0] || { instrucciones: '', activo_global: true, contexto: {} };
+    res.json({ ...row, contexto: row.contexto || {} });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -17,14 +18,19 @@ router.get('/bot/config', authenticateAgent, async (req, res) => {
 // PUT /api/bot/config
 router.put('/bot/config', authenticateAgent, async (req, res) => {
   try {
-    const { instrucciones, activo_global } = req.body;
+    const { instrucciones, activo_global, contexto } = req.body;
     await db.query(
       `UPDATE bot_config SET
         instrucciones = COALESCE($1, instrucciones),
         activo_global = COALESCE($2, activo_global),
-        updated_at = NOW()
+        contexto      = COALESCE($3, contexto),
+        updated_at    = NOW()
        WHERE id = 1`,
-      [instrucciones ?? null, activo_global ?? null]
+      [
+        instrucciones ?? null,
+        activo_global ?? null,
+        contexto !== undefined ? JSON.stringify(contexto) : null,
+      ]
     );
     res.json({ ok: true });
   } catch (err) {
