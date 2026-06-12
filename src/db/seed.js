@@ -488,4 +488,4 @@ async function runSeedForce() {
   }
 }
 
-module.exports = { runSeed, runSeedForce };
+module.exports = { runSeed, runSeedForce, limpiarDatos };

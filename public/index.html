@@ -519,6 +519,11 @@
         onclick="cargarDatosPrueba(this)">
         <i class="bi bi-database me-1"></i>Cargar datos de prueba
       </button>
+      <button class="btn btn-sm w-100 text-start mb-2"
+        style="color:#ef4444;font-size:11px;background:transparent;border:1px solid #450a0a;"
+        onclick="limpiarDatosPrueba(this)">
+        <i class="bi bi-trash me-1"></i>Quitar datos de prueba
+      </button>
       <button class="btn btn-sm w-100 text-start"
         style="color:#64748b;font-size:11px;background:transparent;border:1px solid #1e293b;"
         onclick="migrarEstados(this)">
@@ -1813,6 +1818,28 @@ async function cargarDatosPrueba(btn) {
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Cargando...';
   try {
     const r = await api('/api/admin/seed', { method: 'POST' });
+    const d = await r.json();
+    if (r.ok) {
+      alert(d.mensaje);
+      if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
+    } else {
+      alert('Error: ' + (d.error || 'Intenta de nuevo'));
+    }
+  } catch {
+    alert('Error de conexion');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = texto;
+  }
+}
+
+async function limpiarDatosPrueba(btn) {
+  if (!confirm('Esto eliminará todos los datos de prueba. ¿Continuar?')) return;
+  const texto = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Limpiando...';
+  try {
+    const r = await api('/api/admin/datos-prueba', { method: 'DELETE' });
     const d = await r.json();
     if (r.ok) {
       alert(d.mensaje);

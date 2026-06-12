@@ -1,11 +1,21 @@
 const express = require('express');
 const { authenticateAgent } = require('../middleware/auth');
-const { runSeedForce } = require('../db/seed');
+const { runSeedForce, limpiarDatos } = require('../db/seed');
 const { MIGRACION_ESTADOS } = require('../utils/helpers');
 
 const db = require('../config/database');
 
 const router = express.Router();
+
+// DELETE /api/admin/datos-prueba — elimina todos los datos de prueba
+router.delete('/admin/datos-prueba', authenticateAgent, async (req, res) => {
+  try {
+    await limpiarDatos();
+    res.json({ success: true, mensaje: 'Datos de prueba eliminados correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al limpiar datos', detalle: err.message });
+  }
+});
 
 // POST /api/admin/seed — recarga datos de prueba (solo con token valido)
 router.post('/admin/seed', authenticateAgent, async (req, res) => {
