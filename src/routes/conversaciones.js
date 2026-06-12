@@ -214,6 +214,18 @@ router.post('/conversaciones/:id/estado', authenticateAgent, async (req, res) =>
     );
 
     res.json({ success: true, conversacion_id: id });
+
+    // Evento automático en Google Calendar para ciertas etapas (no bloquea respuesta)
+    setImmediate(async () => {
+      try {
+        const { crearEventoEtapa } = require('../services/googleCalendarService');
+        const convFull = await db.query(
+          'SELECT cliente_nombre, cliente_telefono, tipo_seguro FROM conversaciones WHERE id = $1', [id]
+        );
+        if (convFull.rows[0]) await crearEventoEtapa(estado_nuevo, convFull.rows[0]);
+      } catch {}
+    });
+
   } catch (err) {
     console.error('Error POST /conversaciones/:id/estado:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
