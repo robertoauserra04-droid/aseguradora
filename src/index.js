@@ -14,6 +14,7 @@ const { runMigrations } = require('./db/migrate');
 const { runSeed } = require('./db/seed');
 const authRouter  = require('./routes/auth');
 const adminRouter = require('./routes/admin');
+const botRouter   = require('./routes/bot');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,6 +35,7 @@ app.use('/api', authRouter);
 app.use('/api', adminRouter);
 app.use('/api', conversacionesRouter);
 app.use('/api', dashboardRouter);
+app.use('/api', botRouter);
 app.use('/', webhookRouter); // El webhook tiene su propio express.json()
 
 // Error handler

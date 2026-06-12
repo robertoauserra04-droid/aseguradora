@@ -191,3 +191,31 @@ CREATE INDEX IF NOT EXISTS idx_idempotencia_processed ON idempotencia_webhooks(p
 INSERT INTO agentes (nombre, email, rol)
 VALUES ('Sistema', 'sistema@carguill.com', 'admin')
 ON CONFLICT (email) DO NOTHING;
+
+-- =============================================
+-- TABLA: bot_config (singleton de configuración del bot)
+-- =============================================
+CREATE TABLE IF NOT EXISTS bot_config (
+  id SERIAL PRIMARY KEY,
+  instrucciones TEXT NOT NULL DEFAULT '',
+  activo_global BOOLEAN DEFAULT true,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+INSERT INTO bot_config (instrucciones, activo_global)
+VALUES ('Eres el asistente virtual de Seguros Carguill. Responde en español formal y amable. Solo habla de seguros y citas. Si el cliente quiere una cita, ofrece horarios disponibles.', true)
+ON CONFLICT DO NOTHING;
+
+-- =============================================
+-- TABLA: bot_faq (base de conocimiento Q&A)
+-- =============================================
+CREATE TABLE IF NOT EXISTS bot_faq (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pregunta TEXT NOT NULL,
+  respuesta TEXT NOT NULL,
+  activo BOOLEAN DEFAULT true,
+  orden INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Campo bot_activo por conversación
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS bot_activo BOOLEAN DEFAULT true;
