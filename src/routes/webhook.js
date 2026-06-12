@@ -1,34 +1,20 @@
 const express = require('express');
 const db = require('../config/database');
-const { verifyKapsoSignature, detectarTipoSeguro } = require('../utils/helpers');
+const { detectarTipoSeguro } = require('../utils/helpers');
 const { generarRespuesta } = require('../services/botService');
 const { enviarMensaje } = require('../services/kapsoService');
 
 const router = express.Router();
 
-// Kapso envía JSON; necesitamos el raw body para verificar la firma
 router.post(
   '/webhook/kapso/mensaje',
-  express.json({
-    verify: (req, res, buf) => {
-      req.rawBody = buf;
-    },
-  }),
+  express.json(),
   async (req, res) => {
     try {
-      const signature     = req.headers['x-webhook-signature'];
       const idempotencyKey = req.headers['x-idempotency-key'];
       const isTestEvent   = req.body?.test === true;
 
-      // 1. Verificar firma (omitir en eventos de prueba de Kapso)
-      if (process.env.KAPSO_WEBHOOK_SECRET && !isTestEvent) {
-        const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
-        if (!signature || !verifyKapsoSignature(rawBody, signature, process.env.KAPSO_WEBHOOK_SECRET)) {
-          return res.status(401).json({ error: 'Firma inválida' });
-        }
-      }
-
-      // 2. Verificar idempotencia (evitar duplicados)
+      // 1. Verificar idempotencia (evitar duplicados)
       if (idempotencyKey) {
         const existe = await db.query(
           'SELECT idempotency_key FROM idempotencia_webhooks WHERE idempotency_key = $1',
@@ -57,10 +43,12 @@ router.post(
           : rawMsg.created_at ? new Date(rawMsg.created_at) : new Date(),
       };
 
-      // Teléfono: Kapso envía "+52 1 81 2884 1191" con espacios
+      // Teléfono: normalizar — quitar espacios, garantizar que empieza con +
+      const rawPhone = (rawConv.phone_number ?? rawMsg.from ?? '').replace(/\s+/g, '');
+      const phone = rawPhone.startsWith('+') ? rawPhone : `+${rawPhone}`;
       const conversation = {
-        phone_number:  (rawConv.phone_number ?? '').replace(/\s+/g, ''),
-        metadata:      rawConv.metadata || { customer_name: rawConv.username || 'Cliente' },
+        phone_number:  phone,
+        metadata:      rawConv.metadata || { customer_name: rawConv.contact_name || rawConv.username || 'Cliente' },
       };
 
       if (!conversation.phone_number) {
