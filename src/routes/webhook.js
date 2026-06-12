@@ -16,13 +16,14 @@ router.post(
   }),
   async (req, res) => {
     try {
-      const signature = req.headers['x-webhook-signature'];
+      const signature     = req.headers['x-webhook-signature'];
       const idempotencyKey = req.headers['x-idempotency-key'];
+      const isTestEvent   = req.body?.test === true;
 
-      // 1. Verificar firma Kapso
-      if (process.env.KAPSO_WEBHOOK_SECRET) {
+      // 1. Verificar firma (omitir en eventos de prueba de Kapso)
+      if (process.env.KAPSO_WEBHOOK_SECRET && !isTestEvent) {
         const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
-        if (!verifyKapsoSignature(rawBody, signature, process.env.KAPSO_WEBHOOK_SECRET)) {
+        if (!signature || !verifyKapsoSignature(rawBody, signature, process.env.KAPSO_WEBHOOK_SECRET)) {
           return res.status(401).json({ error: 'Firma inválida' });
         }
       }
@@ -38,25 +39,47 @@ router.post(
         }
       }
 
-      const { message, conversation } = req.body;
+      // 3. Normalizar payload — Kapso usa estructura diferente a lo esperado
+      const rawMsg  = req.body.message      || {};
+      const rawConv = req.body.conversation || {};
 
-      if (!message || !conversation) {
+      if (!rawMsg || !rawConv) {
         return res.status(400).json({ error: 'Payload inválido: faltan message o conversation' });
       }
 
-      // 3. Obtener o crear conversación
-      let conversacion = await db.query(
+      const message = {
+        content:             rawMsg.text?.body          ?? rawMsg.content          ?? '',
+        direction:           rawMsg.kapso?.direction    ?? rawMsg.direction         ?? 'inbound',
+        whatsapp_message_id: rawMsg.id                  ?? rawMsg.whatsapp_message_id ?? null,
+        message_type:        rawMsg.type                ?? rawMsg.message_type      ?? 'text',
+        created_at:          rawMsg.timestamp
+          ? new Date(parseInt(rawMsg.timestamp) * 1000)
+          : rawMsg.created_at ? new Date(rawMsg.created_at) : new Date(),
+      };
+
+      // Teléfono: Kapso envía "+52 1 81 2884 1191" con espacios
+      const conversation = {
+        phone_number:  (rawConv.phone_number ?? '').replace(/\s+/g, ''),
+        metadata:      rawConv.metadata || { customer_name: rawConv.username || 'Cliente' },
+      };
+
+      if (!conversation.phone_number) {
+        return res.status(400).json({ error: 'Payload inválido: falta phone_number' });
+      }
+
+      // 4. Obtener o crear conversación
+      let convRow = await db.query(
         'SELECT id FROM conversaciones WHERE cliente_whatsapp_id = $1',
         [conversation.phone_number]
       );
 
       let conversacion_id;
 
-      if (conversacion.rows.length === 0) {
+      if (convRow.rows.length === 0) {
         const insert = await db.query(
           `INSERT INTO conversaciones
             (cliente_telefono, cliente_whatsapp_id, cliente_nombre, estado, requiere_respuesta, created_at, ultimo_mensaje_at)
-           VALUES ($1, $2, $3, 'prospectiva', false, NOW(), NOW())
+           VALUES ($1, $2, $3, 'inicio', false, NOW(), NOW())
            RETURNING id`,
           [
             conversation.phone_number,
@@ -66,21 +89,17 @@ router.post(
         );
         conversacion_id = insert.rows[0].id;
       } else {
-        conversacion_id = conversacion.rows[0].id;
+        conversacion_id = convRow.rows[0].id;
       }
 
-      // 4. Guardar mensaje (ignorar si ya existe el whatsapp_message_id)
+      // 5. Guardar mensaje (ignorar si ya existe el whatsapp_message_id)
       const mensajeExiste = message.whatsapp_message_id
-        ? await db.query('SELECT id FROM mensajes WHERE whatsapp_message_id = $1', [
-            message.whatsapp_message_id,
-          ])
+        ? await db.query('SELECT id FROM mensajes WHERE whatsapp_message_id = $1', [message.whatsapp_message_id])
         : { rows: [] };
 
       if (mensajeExiste.rows.length === 0) {
         const requiereMensaje =
-          message.direction === 'inbound' &&
-          message.content &&
-          message.content.includes('?');
+          message.direction === 'inbound' && message.content && message.content.includes('?');
 
         await db.query(
           `INSERT INTO mensajes
@@ -92,14 +111,14 @@ router.post(
             message.direction === 'inbound' ? 'cliente' : 'agente',
             message.direction === 'inbound' ? 'Cliente' : 'Agente',
             message.content || '',
-            message.message_type || 'text',
+            message.message_type,
             message.whatsapp_message_id || null,
-            new Date(message.created_at),
+            message.created_at,
             requiereMensaje,
           ]
         );
 
-        // 5. Detectar tipo de seguro
+        // 6. Detectar tipo de seguro
         const tipoSeguro = detectarTipoSeguro(message.content);
         if (tipoSeguro) {
           await db.query(
@@ -108,18 +127,15 @@ router.post(
           );
         }
 
-        // 6. Actualizar último mensaje y requiere_respuesta si es del cliente
+        // 7. Actualizar último mensaje
         if (message.direction === 'inbound') {
           await db.query(
             `UPDATE conversaciones
-             SET ultimo_mensaje_at = NOW(),
-                 updated_at = NOW(),
-                 requiere_respuesta = $1
+             SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = $1
              WHERE id = $2`,
             [requiereMensaje, conversacion_id]
           );
         } else {
-          // Mensaje del agente: ya no requiere respuesta
           await db.query(
             'UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false WHERE id = $1',
             [conversacion_id]
@@ -127,7 +143,7 @@ router.post(
         }
       }
 
-      // 7. Registrar idempotencia
+      // 8. Registrar idempotencia
       if (idempotencyKey) {
         await db.query(
           'INSERT INTO idempotencia_webhooks (idempotency_key, event_type) VALUES ($1, $2) ON CONFLICT DO NOTHING',
@@ -135,8 +151,8 @@ router.post(
         );
       }
 
-      // 8. Respuesta automática del bot (solo mensajes inbound, no bloquea el 200)
-      if (message.direction === 'inbound' && process.env.OPENAI_API_KEY) {
+      // 9. Respuesta automática del bot (solo mensajes inbound reales, no bloquea el 200)
+      if (message.direction === 'inbound' && !isTestEvent && process.env.OPENAI_API_KEY) {
         setImmediate(async () => {
           try {
             const convBot = await db.query(

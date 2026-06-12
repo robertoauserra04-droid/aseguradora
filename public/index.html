@@ -495,7 +495,7 @@
     <!-- BOT TOGGLE GLOBAL -->
     <div class="sb-bot-section">
       <div class="sb-bot-toggle">
-        <div class="sb-bot-label" onclick="cambiarVista('bot')" title="Configurar bot">
+        <div class="sb-bot-label" onclick="abrirModalBot()" title="Configurar bot">
           <i class="bi bi-robot"></i>
           <span>Bot IA</span>
         </div>
@@ -509,25 +509,10 @@
 
     <div class="sb-footer">
       <div class="sb-user" id="sb-user"></div>
-      <button class="btn btn-sm w-100 text-start mb-2"
+      <button class="btn btn-sm w-100 text-start"
         style="color:#64748b;font-size:12px;background:transparent;border:1px solid #334155;"
         onclick="cerrarSesion()">
-        <i class="bi bi-box-arrow-left me-1"></i>Cerrar sesion
-      </button>
-      <button class="btn btn-sm w-100 text-start mb-2"
-        style="color:#475569;font-size:11px;background:transparent;border:1px solid #1e293b;"
-        onclick="cargarDatosPrueba(this)">
-        <i class="bi bi-database me-1"></i>Cargar datos de prueba
-      </button>
-      <button class="btn btn-sm w-100 text-start mb-2"
-        style="color:#ef4444;font-size:11px;background:transparent;border:1px solid #450a0a;"
-        onclick="limpiarDatosPrueba(this)">
-        <i class="bi bi-trash me-1"></i>Quitar datos de prueba
-      </button>
-      <button class="btn btn-sm w-100 text-start"
-        style="color:#64748b;font-size:11px;background:transparent;border:1px solid #1e293b;"
-        onclick="migrarEstados(this)">
-        <i class="bi bi-arrow-repeat me-1"></i>Migrar estados viejos
+        <i class="bi bi-box-arrow-left me-1"></i>Cerrar sesión
       </button>
     </div>
   </div>
@@ -586,32 +571,40 @@
       </div>
     </div>
 
-    <!-- BOT VIEW -->
-    <div id="bot-view">
-      <div class="bot-panel">
+  </div><!-- /main -->
+</div><!-- /panel-screen -->
 
-        <div class="d-flex align-items-center gap-3 mb-4">
-          <div>
-            <h5 class="mb-0 fw-bold" style="color:#0f172a;">
-              <i class="bi bi-robot me-2" style="color:#8b5cf6;"></i>Configuración del Bot IA
-            </h5>
-            <p class="text-muted small mb-0 mt-1">Entrena al bot con instrucciones y una base de conocimiento de preguntas frecuentes.</p>
+<!-- ════════════════════════════════════
+     MODAL BOT IA
+════════════════════════════════════ -->
+<div class="modal fade" id="modal-bot" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content" style="border:none;">
+      <div class="modal-header" style="background:#1e293b;color:#f1f5f9;border:none;padding:16px 20px;">
+        <h5 class="modal-title mb-0">
+          <i class="bi bi-robot me-2" style="color:#8b5cf6;"></i>Configuración del Bot IA
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="background:#f8fafc;padding:0;">
+        <div class="bot-panel">
+
+          <p class="text-muted small mb-4">
+            Entrena al bot con instrucciones de personalidad y una base de conocimiento de preguntas frecuentes.
+          </p>
+
+          <!-- Tabs -->
+          <div class="d-flex gap-2 mb-4">
+            <button class="bot-tab-btn active" id="tab-btn-instrucciones" onclick="botTab('instrucciones')">
+              <i class="bi bi-pencil-square me-1"></i>Instrucciones
+            </button>
+            <button class="bot-tab-btn" id="tab-btn-conocimiento" onclick="botTab('conocimiento')">
+              <i class="bi bi-book me-1"></i>Base de conocimiento
+            </button>
           </div>
-        </div>
 
-        <!-- Tabs -->
-        <div class="d-flex gap-2 mb-4">
-          <button class="bot-tab-btn active" id="tab-btn-instrucciones" onclick="botTab('instrucciones')">
-            <i class="bi bi-pencil-square me-1"></i>Instrucciones
-          </button>
-          <button class="bot-tab-btn" id="tab-btn-conocimiento" onclick="botTab('conocimiento')">
-            <i class="bi bi-book me-1"></i>Base de conocimiento
-          </button>
-        </div>
-
-        <!-- TAB: Instrucciones -->
-        <div id="bot-tab-instrucciones">
-          <div class="mb-2">
+          <!-- TAB: Instrucciones -->
+          <div id="bot-tab-instrucciones">
             <label class="form-label fw-semibold mb-1">System prompt del bot</label>
             <p class="text-muted small mb-2">
               Define la personalidad, tono y qué puede o no puede decir el bot.
@@ -619,50 +612,48 @@
             </p>
             <textarea id="bot-instrucciones" class="form-control" rows="12"
               style="font-size:13px;font-family:inherit;resize:vertical;"
-              placeholder="Ej: Eres el asistente virtual de Seguros Carguill. Responde en español formal y amable. Solo habla de seguros y citas. Si el cliente quiere agendar una cita, ofrece horarios disponibles..."></textarea>
-          </div>
-          <div class="d-flex align-items-center gap-3 mt-3">
-            <button class="btn btn-primary px-4" onclick="guardarInstrucciones()">
-              <i class="bi bi-save me-1"></i>Guardar instrucciones
-            </button>
-            <div id="bot-inst-msg"></div>
-          </div>
-        </div>
-
-        <!-- TAB: Base de conocimiento -->
-        <div id="bot-tab-conocimiento" style="display:none;">
-          <div class="bg-white border rounded-3 p-4 mb-4">
-            <h6 class="fw-semibold mb-3">Agregar pregunta y respuesta</h6>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold mb-1">Pregunta del cliente</label>
-              <input type="text" id="faq-pregunta" class="form-control form-control-sm"
-                placeholder="Ej: ¿Qué cubre el seguro de vida?">
+              placeholder="Ej: Eres el asistente virtual de Seguros Carguill. Responde en español formal y amable. Solo habla de seguros y citas. Si el cliente quiere agendar, ofrece horarios disponibles..."></textarea>
+            <div class="d-flex align-items-center gap-3 mt-3">
+              <button class="btn btn-primary px-4" onclick="guardarInstrucciones()">
+                <i class="bi bi-save me-1"></i>Guardar instrucciones
+              </button>
+              <div id="bot-inst-msg"></div>
             </div>
-            <div class="mb-3">
-              <label class="form-label small fw-semibold mb-1">Respuesta del bot</label>
-              <textarea id="faq-respuesta" class="form-control form-control-sm" rows="3"
-                placeholder="Ej: El seguro de vida cubre fallecimiento por cualquier causa, invalidez total..."></textarea>
+          </div>
+
+          <!-- TAB: Base de conocimiento -->
+          <div id="bot-tab-conocimiento" style="display:none;">
+            <div class="bg-white border rounded-3 p-4 mb-4">
+              <h6 class="fw-semibold mb-3">Agregar pregunta y respuesta</h6>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold mb-1">Pregunta del cliente</label>
+                <input type="text" id="faq-pregunta" class="form-control form-control-sm"
+                  placeholder="Ej: ¿Qué cubre el seguro de vida?">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold mb-1">Respuesta del bot</label>
+                <textarea id="faq-respuesta" class="form-control form-control-sm" rows="3"
+                  placeholder="Ej: El seguro de vida cubre fallecimiento por cualquier causa..."></textarea>
+              </div>
+              <button class="btn btn-primary btn-sm px-3" onclick="agregarFaq()">
+                <i class="bi bi-plus-circle me-1"></i>Agregar a la base de conocimiento
+              </button>
             </div>
-            <button class="btn btn-primary btn-sm px-3" onclick="agregarFaq()">
-              <i class="bi bi-plus-circle me-1"></i>Agregar a la base de conocimiento
-            </button>
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h6 class="fw-semibold mb-0">
+                Entradas guardadas <span class="badge bg-secondary ms-1" id="faq-count">0</span>
+              </h6>
+            </div>
+            <div id="faq-lista">
+              <p class="text-muted small text-center py-4">Cargando...</p>
+            </div>
           </div>
 
-          <div class="d-flex align-items-center justify-content-between mb-3">
-            <h6 class="fw-semibold mb-0">
-              Entradas guardadas <span class="badge bg-secondary ms-1" id="faq-count">0</span>
-            </h6>
-          </div>
-          <div id="faq-lista">
-            <p class="text-muted small text-center py-4">Cargando...</p>
-          </div>
         </div>
-
       </div>
     </div>
-
-  </div><!-- /main -->
-</div><!-- /panel-screen -->
+  </div>
+</div>
 
 <!-- ════════════════════════════════════
      OVERLAY + DRAWER DE DETALLE
@@ -1584,13 +1575,11 @@ function cambiarVista(vista) {
   vistaActual = vista;
   const kanbanView = document.getElementById('kanban-view');
   const listaView  = document.getElementById('lista-view');
-  const botView    = document.getElementById('bot-view');
   const btnLista   = document.getElementById('btn-vista-lista');
   const btnKanban  = document.getElementById('btn-vista-kanban');
 
   kanbanView.classList.remove('visible');
   listaView.classList.remove('visible');
-  botView.classList.remove('visible');
   btnKanban.classList.remove('active');
   btnLista.classList.remove('active');
 
@@ -1598,14 +1587,16 @@ function cambiarVista(vista) {
     kanbanView.classList.add('visible');
     btnKanban.classList.add('active');
     cargarKanban();
-  } else if (vista === 'lista') {
+  } else {
     listaView.classList.add('visible');
     btnLista.classList.add('active');
     cargarLista();
-  } else if (vista === 'bot') {
-    botView.classList.add('visible');
-    cargarVistaBotInstrucciones();
   }
+}
+
+function abrirModalBot() {
+  cargarVistaBotInstrucciones();
+  new bootstrap.Modal(document.getElementById('modal-bot')).show();
 }
 
 function cerrarDrawer() {
@@ -1789,71 +1780,6 @@ function esc(s) {
     .replace(/>/g,'&gt;');
 }
 
-async function migrarEstados(btn) {
-  if (!confirm('Esto convertirá los estados del sistema anterior al nuevo sistema de etapas. ¿Continuar?')) return;
-  const texto = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Migrando...';
-  try {
-    const r = await api('/api/admin/migrar-estados', { method: 'POST' });
-    const d = await r.json();
-    if (r.ok) {
-      alert(d.mensaje);
-      if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
-    } else {
-      alert('Error: ' + (d.error || 'Intenta de nuevo'));
-    }
-  } catch {
-    alert('Error de conexion');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = texto;
-  }
-}
-
-async function cargarDatosPrueba(btn) {
-  if (!confirm('Esto borrara los datos de prueba actuales e insertara 15 conversaciones nuevas. Continuar?')) return;
-  const texto = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Cargando...';
-  try {
-    const r = await api('/api/admin/seed', { method: 'POST' });
-    const d = await r.json();
-    if (r.ok) {
-      alert(d.mensaje);
-      if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
-    } else {
-      alert('Error: ' + (d.error || 'Intenta de nuevo'));
-    }
-  } catch {
-    alert('Error de conexion');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = texto;
-  }
-}
-
-async function limpiarDatosPrueba(btn) {
-  if (!confirm('Esto eliminará todos los datos de prueba. ¿Continuar?')) return;
-  const texto = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Limpiando...';
-  try {
-    const r = await api('/api/admin/datos-prueba', { method: 'DELETE' });
-    const d = await r.json();
-    if (r.ok) {
-      alert(d.mensaje);
-      if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
-    } else {
-      alert('Error: ' + (d.error || 'Intenta de nuevo'));
-    }
-  } catch {
-    alert('Error de conexion');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = texto;
-  }
-}
 
 function fmtHora(ts) {
   if (!ts) return '';
