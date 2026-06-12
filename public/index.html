@@ -331,6 +331,34 @@
     .vista-btn.active { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 
 
+/* ─── BOT VIEW ──────────────────────────────────────── */
+    #bot-view {
+      display: none; flex: 1; flex-direction: column;
+      overflow-y: auto; background: #f8fafc;
+    }
+    #bot-view.visible { display: flex; }
+    .bot-panel {
+      max-width: 780px; margin: 0 auto;
+      padding: 28px 24px; width: 100%;
+    }
+    .bot-tab-btn {
+      padding: 6px 18px; border-radius: 8px; cursor: pointer;
+      font-size: 13px; font-weight: 500; color: #64748b;
+      border: 1px solid #e2e8f0; background: #fff;
+      transition: all .15s;
+    }
+    .bot-tab-btn.active {
+      background: #1e293b; color: #f1f5f9; border-color: #1e293b;
+    }
+    .faq-card {
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+    }
+    .faq-p { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 6px; }
+    .faq-r { font-size: 12.5px; color: #475569; white-space: pre-wrap; }
+    .sb-bot-label { cursor: pointer; }
+    .sb-bot-label:hover span { color: #f1f5f9; }
+
 /* ─── KANBAN ────────────────────────────────────────── */
     #kanban-view {
       display: none; flex: 1; overflow-x: auto; overflow-y: hidden;
@@ -467,7 +495,7 @@
     <!-- BOT TOGGLE GLOBAL -->
     <div class="sb-bot-section">
       <div class="sb-bot-toggle">
-        <div class="sb-bot-label">
+        <div class="sb-bot-label" onclick="cambiarVista('bot')" title="Configurar bot">
           <i class="bi bi-robot"></i>
           <span>Bot IA</span>
         </div>
@@ -550,6 +578,81 @@
       <div id="paginacion"
         class="d-flex justify-content-between align-items-center px-3 py-2 bg-white border-top"
         style="font-size:11px; min-height:36px; flex-shrink:0;">
+      </div>
+    </div>
+
+    <!-- BOT VIEW -->
+    <div id="bot-view">
+      <div class="bot-panel">
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div>
+            <h5 class="mb-0 fw-bold" style="color:#0f172a;">
+              <i class="bi bi-robot me-2" style="color:#8b5cf6;"></i>Configuración del Bot IA
+            </h5>
+            <p class="text-muted small mb-0 mt-1">Entrena al bot con instrucciones y una base de conocimiento de preguntas frecuentes.</p>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="d-flex gap-2 mb-4">
+          <button class="bot-tab-btn active" id="tab-btn-instrucciones" onclick="botTab('instrucciones')">
+            <i class="bi bi-pencil-square me-1"></i>Instrucciones
+          </button>
+          <button class="bot-tab-btn" id="tab-btn-conocimiento" onclick="botTab('conocimiento')">
+            <i class="bi bi-book me-1"></i>Base de conocimiento
+          </button>
+        </div>
+
+        <!-- TAB: Instrucciones -->
+        <div id="bot-tab-instrucciones">
+          <div class="mb-2">
+            <label class="form-label fw-semibold mb-1">System prompt del bot</label>
+            <p class="text-muted small mb-2">
+              Define la personalidad, tono y qué puede o no puede decir el bot.
+              Este texto se envía a OpenAI como instrucciones base en cada conversación.
+            </p>
+            <textarea id="bot-instrucciones" class="form-control" rows="12"
+              style="font-size:13px;font-family:inherit;resize:vertical;"
+              placeholder="Ej: Eres el asistente virtual de Seguros Carguill. Responde en español formal y amable. Solo habla de seguros y citas. Si el cliente quiere agendar una cita, ofrece horarios disponibles..."></textarea>
+          </div>
+          <div class="d-flex align-items-center gap-3 mt-3">
+            <button class="btn btn-primary px-4" onclick="guardarInstrucciones()">
+              <i class="bi bi-save me-1"></i>Guardar instrucciones
+            </button>
+            <div id="bot-inst-msg"></div>
+          </div>
+        </div>
+
+        <!-- TAB: Base de conocimiento -->
+        <div id="bot-tab-conocimiento" style="display:none;">
+          <div class="bg-white border rounded-3 p-4 mb-4">
+            <h6 class="fw-semibold mb-3">Agregar pregunta y respuesta</h6>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold mb-1">Pregunta del cliente</label>
+              <input type="text" id="faq-pregunta" class="form-control form-control-sm"
+                placeholder="Ej: ¿Qué cubre el seguro de vida?">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold mb-1">Respuesta del bot</label>
+              <textarea id="faq-respuesta" class="form-control form-control-sm" rows="3"
+                placeholder="Ej: El seguro de vida cubre fallecimiento por cualquier causa, invalidez total..."></textarea>
+            </div>
+            <button class="btn btn-primary btn-sm px-3" onclick="agregarFaq()">
+              <i class="bi bi-plus-circle me-1"></i>Agregar a la base de conocimiento
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="fw-semibold mb-0">
+              Entradas guardadas <span class="badge bg-secondary ms-1" id="faq-count">0</span>
+            </h6>
+          </div>
+          <div id="faq-lista">
+            <p class="text-muted small text-center py-4">Cargando...</p>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -895,6 +998,105 @@ async function toggleBotConv(activo) {
   } catch {
     document.getElementById('toggle-bot-conv').checked = !activo;
   }
+}
+
+// ════════════════════════════════════════════════════
+// BOT VIEW — instrucciones + base de conocimiento
+// ════════════════════════════════════════════════════
+async function cargarVistaBotInstrucciones() {
+  try {
+    const r = await api('/api/bot/config');
+    if (!r.ok) return;
+    const d = await r.json();
+    const ta = document.getElementById('bot-instrucciones');
+    if (ta) ta.value = d.instrucciones || '';
+    // sincronizar toggle global
+    const chk = document.getElementById('toggle-bot-global');
+    const lbl = document.getElementById('bot-status-label');
+    if (chk) chk.checked = d.activo_global;
+    if (lbl) {
+      lbl.textContent = d.activo_global ? 'Activado' : 'Desactivado';
+      lbl.className = 'sb-bot-status ' + (d.activo_global ? 'on' : 'off');
+    }
+  } catch {}
+}
+
+function botTab(tab) {
+  document.getElementById('bot-tab-instrucciones').style.display = tab === 'instrucciones' ? 'block' : 'none';
+  document.getElementById('bot-tab-conocimiento').style.display  = tab === 'conocimiento'  ? 'block' : 'none';
+  document.getElementById('tab-btn-instrucciones').classList.toggle('active', tab === 'instrucciones');
+  document.getElementById('tab-btn-conocimiento').classList.toggle('active', tab === 'conocimiento');
+  if (tab === 'conocimiento') cargarFaqs();
+}
+
+async function guardarInstrucciones() {
+  const instrucciones = document.getElementById('bot-instrucciones').value;
+  const msg = document.getElementById('bot-inst-msg');
+  try {
+    const r = await api('/api/bot/config', {
+      method: 'PUT',
+      body: JSON.stringify({ instrucciones }),
+    });
+    if (r.ok) {
+      msg.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Guardado correctamente</span>';
+    } else {
+      msg.innerHTML = '<span class="text-danger small">Error al guardar</span>';
+    }
+  } catch {
+    msg.innerHTML = '<span class="text-danger small">Error de conexión</span>';
+  }
+  setTimeout(() => { if (msg) msg.innerHTML = ''; }, 3000);
+}
+
+async function cargarFaqs() {
+  const lista = document.getElementById('faq-lista');
+  const count = document.getElementById('faq-count');
+  try {
+    const r = await api('/api/bot/faq');
+    if (!r.ok) return;
+    const faqs = await r.json();
+    if (count) count.textContent = faqs.length;
+    if (!lista) return;
+    if (faqs.length === 0) {
+      lista.innerHTML = '<p class="text-muted small text-center py-4">No hay entradas aún. Agrega la primera arriba.</p>';
+      return;
+    }
+    lista.innerHTML = faqs.map(f => `
+      <div class="faq-card">
+        <div class="faq-p"><i class="bi bi-question-circle me-1" style="color:#3b82f6;"></i>${esc(f.pregunta)}</div>
+        <div class="faq-r mt-1">${esc(f.respuesta)}</div>
+        <button class="btn btn-sm btn-outline-danger mt-2" style="font-size:11px;" onclick="eliminarFaq('${f.id}')">
+          <i class="bi bi-trash me-1"></i>Eliminar
+        </button>
+      </div>`).join('');
+  } catch {
+    if (lista) lista.innerHTML = '<p class="text-danger small">Error al cargar.</p>';
+  }
+}
+
+async function agregarFaq() {
+  const pregunta = document.getElementById('faq-pregunta').value.trim();
+  const respuesta = document.getElementById('faq-respuesta').value.trim();
+  if (!pregunta || !respuesta) return alert('Completa la pregunta y la respuesta.');
+  try {
+    const r = await api('/api/bot/faq', {
+      method: 'POST',
+      body: JSON.stringify({ pregunta, respuesta }),
+    });
+    if (r.ok) {
+      document.getElementById('faq-pregunta').value  = '';
+      document.getElementById('faq-respuesta').value = '';
+      cargarFaqs();
+    }
+  } catch {}
+}
+
+async function eliminarFaq(id) {
+  if (!confirm('¿Eliminar esta entrada?')) return;
+  try {
+    await api(`/api/bot/faq/${id}`, { method: 'DELETE' });
+    cargarFaqs();
+  } catch {}
 }
 
 function mostrarPanel(nombre) {
@@ -1377,21 +1579,27 @@ function cambiarVista(vista) {
   vistaActual = vista;
   const kanbanView = document.getElementById('kanban-view');
   const listaView  = document.getElementById('lista-view');
+  const botView    = document.getElementById('bot-view');
   const btnLista   = document.getElementById('btn-vista-lista');
   const btnKanban  = document.getElementById('btn-vista-kanban');
 
+  kanbanView.classList.remove('visible');
+  listaView.classList.remove('visible');
+  botView.classList.remove('visible');
+  btnKanban.classList.remove('active');
+  btnLista.classList.remove('active');
+
   if (vista === 'kanban') {
     kanbanView.classList.add('visible');
-    listaView.classList.remove('visible');
     btnKanban.classList.add('active');
-    btnLista.classList.remove('active');
     cargarKanban();
-  } else {
+  } else if (vista === 'lista') {
     listaView.classList.add('visible');
-    kanbanView.classList.remove('visible');
     btnLista.classList.add('active');
-    btnKanban.classList.remove('active');
     cargarLista();
+  } else if (vista === 'bot') {
+    botView.classList.add('visible');
+    cargarVistaBotInstrucciones();
   }
 }
 
