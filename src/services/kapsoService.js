@@ -14,4 +14,21 @@ async function obtenerHistorialMensajes(phoneNumber, limit = 100) {
   return response.data;
 }
 
-module.exports = { obtenerHistorialMensajes };
+async function enviarMensaje(telefono, texto) {
+  const apiKey = process.env.KAPSO_API_KEY;
+  const phoneNumberId = process.env.KAPSO_PHONE_NUMBER_ID;
+  if (!apiKey) throw new Error('KAPSO_API_KEY no configurada');
+
+  await axios.post(
+    `${KAPSO_BASE_URL}/messages`,
+    {
+      phone_number_id: phoneNumberId,
+      to: telefono,
+      type: 'text',
+      text: { body: texto },
+    },
+    { headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' } }
+  );
+}
+
+module.exports = { obtenerHistorialMensajes, enviarMensaje };

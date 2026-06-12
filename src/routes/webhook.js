@@ -1,6 +1,8 @@
 const express = require('express');
 const db = require('../config/database');
 const { verifyKapsoSignature, detectarTipoSeguro } = require('../utils/helpers');
+const { generarRespuesta } = require('../services/botService');
+const { enviarMensaje } = require('../services/kapsoService');
 
 const router = express.Router();
 
@@ -131,6 +133,41 @@ router.post(
           'INSERT INTO idempotencia_webhooks (idempotency_key, event_type) VALUES ($1, $2) ON CONFLICT DO NOTHING',
           [idempotencyKey, req.headers['x-webhook-event'] || 'whatsapp.message.received']
         );
+      }
+
+      // 8. Respuesta automática del bot (solo mensajes inbound, no bloquea el 200)
+      if (message.direction === 'inbound' && process.env.OPENAI_API_KEY) {
+        setImmediate(async () => {
+          try {
+            const convBot = await db.query(
+              'SELECT bot_activo, cliente_telefono FROM conversaciones WHERE id = $1',
+              [conversacion_id]
+            );
+            const conv = convBot.rows[0];
+            if (!conv?.bot_activo) return;
+
+            const texto = await generarRespuesta(conversacion_id);
+            if (!texto) return;
+
+            await enviarMensaje(conv.cliente_telefono, texto);
+
+            await db.query(
+              `INSERT INTO mensajes
+                (conversacion_id, autor, nombre_autor, contenido, tipo_mensaje, timestamp_mensaje, requiere_respuesta)
+               VALUES ($1, 'bot', 'Bot Carguill', $2, 'text', NOW(), false)`,
+              [conversacion_id, texto]
+            );
+
+            await db.query(
+              'UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false WHERE id = $1',
+              [conversacion_id]
+            );
+
+            console.log(`[Bot] Respuesta enviada a ${conv.cliente_telefono}`);
+          } catch (botErr) {
+            console.error('[Bot] Error al generar/enviar respuesta:', botErr.message);
+          }
+        });
       }
 
       res.status(200).json({ status: 'ok', conversacion_id });
