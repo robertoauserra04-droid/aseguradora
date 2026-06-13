@@ -7,7 +7,7 @@ const router = express.Router();
 // GET /api/bot/config
 router.get('/bot/config', authenticateAgent, async (req, res) => {
   try {
-    const r = await db.query('SELECT instrucciones, activo_global, contexto FROM bot_config LIMIT 1');
+    const r = await db.query('SELECT instrucciones, activo_global, contexto FROM bot_config WHERE id = 1');
     const row = r.rows[0] || { instrucciones: '', activo_global: true, contexto: {} };
     res.json({ ...row, contexto: row.contexto || {} });
   } catch (err) {

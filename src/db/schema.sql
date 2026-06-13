@@ -203,11 +203,11 @@ CREATE TABLE IF NOT EXISTS bot_config (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS contexto JSONB DEFAULT '{}';
-INSERT INTO bot_config (instrucciones, activo_global)
-VALUES ('', false)
-ON CONFLICT DO NOTHING;
--- Desactivar bot global si estaba activo por defecto
-UPDATE bot_config SET activo_global = false WHERE id = 1 AND instrucciones = 'Eres el asistente virtual de Seguros Carguill. Responde en español formal y amable. Solo habla de seguros y citas. Si el cliente quiere una cita, ofrece horarios disponibles.';
+INSERT INTO bot_config (id, instrucciones, activo_global)
+VALUES (1, '', false)
+ON CONFLICT (id) DO NOTHING;
+-- Limpiar filas duplicadas que se hayan creado (dejar solo id=1)
+DELETE FROM bot_config WHERE id <> 1;
 
 -- =============================================
 -- TABLA: bot_faq (base de conocimiento Q&A)

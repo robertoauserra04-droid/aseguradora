@@ -47,7 +47,7 @@ async function generarRespuesta(conversacionId) {
   if (!openai) return null;
 
   // 1. Config global del bot
-  const cfgResult = await db.query('SELECT instrucciones, activo_global, contexto FROM bot_config LIMIT 1');
+  const cfgResult = await db.query('SELECT instrucciones, activo_global, contexto FROM bot_config WHERE id = 1');
   const cfg = cfgResult.rows[0];
   if (!cfg || !cfg.activo_global) return null;
 
