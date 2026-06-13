@@ -87,7 +87,7 @@ router.post(
 
       if (mensajeExiste.rows.length === 0) {
         const requiereMensaje =
-          message.direction === 'inbound' && message.content && message.content.includes('?');
+          !!(message.direction === 'inbound' && message.content && message.content.includes('?'));
 
         await db.query(
           `INSERT INTO mensajes

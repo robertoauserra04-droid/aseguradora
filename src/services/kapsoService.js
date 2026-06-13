@@ -1,23 +1,21 @@
 const axios = require('axios');
 
-const KAPSO_BASE_URL = 'https://api.kapso.io/v1';
-
-async function obtenerHistorialMensajes(phoneNumber, limit = 100) {
-  const apiKey = process.env.KAPSO_API_KEY;
-  if (!apiKey) throw new Error('KAPSO_API_KEY no configurada');
-
-  const response = await axios.get(`${KAPSO_BASE_URL}/conversations`, {
-    headers: { 'X-API-Key': apiKey },
-    params: { phone_number: phoneNumber, limit },
-  });
-
-  return response.data;
-}
+// Configurar KAPSO_API_BASE_URL en Railway con la URL correcta de tu cuenta Kapso
+// (revisar en el dashboard de Kapso → API → Base URL o Settings → Integrations)
+const KAPSO_BASE_URL = (process.env.KAPSO_API_BASE_URL || '').replace(/\/$/, '');
 
 async function enviarMensaje(telefono, texto) {
   const apiKey = process.env.KAPSO_API_KEY;
+  if (!apiKey) {
+    console.warn('[Kapso] KAPSO_API_KEY no configurada — mensaje no enviado');
+    return;
+  }
+  if (!KAPSO_BASE_URL) {
+    console.warn('[Kapso] KAPSO_API_BASE_URL no configurada — mensaje no enviado');
+    return;
+  }
+
   const phoneNumberId = process.env.KAPSO_PHONE_NUMBER_ID;
-  if (!apiKey) throw new Error('KAPSO_API_KEY no configurada');
 
   await axios.post(
     `${KAPSO_BASE_URL}/messages`,
@@ -31,4 +29,4 @@ async function enviarMensaje(telefono, texto) {
   );
 }
 
-module.exports = { obtenerHistorialMensajes, enviarMensaje };
+module.exports = { enviarMensaje };

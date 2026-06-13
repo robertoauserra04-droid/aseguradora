@@ -1797,9 +1797,9 @@ function cambiarVista(vista) {
 }
 
 function abrirModalBot() {
-  cargarVistaBotInstrucciones();
   botTab('contexto');
-  new bootstrap.Modal(document.getElementById('modal-bot')).show();
+  cargarVistaBotInstrucciones();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-bot')).show();
 }
 
 function cerrarDrawer() {
