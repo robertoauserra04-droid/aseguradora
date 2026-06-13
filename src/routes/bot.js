@@ -19,19 +19,16 @@ router.get('/bot/config', authenticateAgent, async (req, res) => {
 router.put('/bot/config', authenticateAgent, async (req, res) => {
   try {
     const { instrucciones, activo_global, contexto } = req.body;
-    await db.query(
-      `UPDATE bot_config SET
-        instrucciones = COALESCE($1, instrucciones),
-        activo_global = COALESCE($2, activo_global),
-        contexto      = COALESCE($3, contexto),
-        updated_at    = NOW()
-       WHERE id = 1`,
-      [
-        instrucciones ?? null,
-        activo_global ?? null,
-        contexto !== undefined ? JSON.stringify(contexto) : null,
-      ]
-    );
+
+    const sets = ['updated_at = NOW()'];
+    const params = [];
+    let i = 1;
+
+    if (instrucciones !== undefined) { sets.push(`instrucciones = $${i++}`); params.push(instrucciones); }
+    if (activo_global !== undefined) { sets.push(`activo_global = $${i++}`); params.push(Boolean(activo_global)); }
+    if (contexto     !== undefined) { sets.push(`contexto = $${i++}`);      params.push(JSON.stringify(contexto)); }
+
+    await db.query(`UPDATE bot_config SET ${sets.join(', ')} WHERE id = 1`, params);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
