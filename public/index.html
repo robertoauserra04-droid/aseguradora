@@ -435,8 +435,8 @@
     .cal-leyenda { display: flex; gap: 14px; flex-wrap: wrap; }
     .cal-leyenda-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #64748b; }
     .cal-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    #cal-container { flex: 1; padding: 16px 20px; overflow: auto; }
-    #cal-container .fc { height: 100%; }
+    #cal-container { flex: 1; padding: 16px 20px; overflow-y: auto; min-height: 0; }
+    #cal-container .fc { min-height: 500px; }
 
     /* ─── AGENTES VIEW ───────────────────────────────────── */
     #agentes-view {
@@ -540,38 +540,41 @@
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sb-brand"><img src="/logo.png" alt="Seguros Carguill" /></div>
-    <div class="sb-section">Etapas</div>
-    <div id="sb-estados"></div>
 
-    <!-- NAV EXTRA: Calendario y Agentes -->
-    <div class="sb-section" style="margin-top:4px;">Vistas</div>
+    <!-- NAVEGACIÓN PRINCIPAL -->
+    <div class="sb-section">Vistas</div>
+    <div id="sb-nav-kanban" class="sb-nav-item active" onclick="cambiarVista('kanban')">
+      <i class="bi bi-kanban me-2"></i>Kanban
+    </div>
+    <div id="sb-nav-lista" class="sb-nav-item" onclick="cambiarVista('lista')">
+      <i class="bi bi-list-ul me-2"></i>Lista de conversaciones
+    </div>
     <div id="sb-nav-calendario" class="sb-nav-item" onclick="irAVista('calendario')">
-      <i class="bi bi-calendar3"></i> Calendario
-    </div>
-    <div id="sb-nav-agentes" class="sb-nav-item" onclick="irAVista('agentes')" style="display:none;">
-      <i class="bi bi-people"></i> Agentes
+      <i class="bi bi-calendar3 me-2"></i>Calendario
     </div>
 
-    <!-- BOT TOGGLE GLOBAL -->
-    <div class="sb-bot-section">
-      <div class="sb-bot-toggle">
-        <span style="font-size:12.5px;color:#94a3b8;display:flex;align-items:center;gap:6px;">
-          <i class="bi bi-robot"></i>Bot IA
-        </span>
-        <div class="d-flex align-items-center gap-2">
-          <div id="bot-status-label" class="sb-bot-status off">Off</div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input" type="checkbox" id="toggle-bot-global"
-                   onchange="toggleBotGlobal(this.checked)" title="Activar/desactivar bot">
-          </div>
-        </div>
+    <!-- BOT IA -->
+    <div class="sb-section" style="margin-top:4px;">Bot IA</div>
+    <div class="sb-nav-item" style="cursor:default; justify-content:space-between;">
+      <span style="display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-robot"></i>
+        <span>Activar bot</span>
+        <div id="bot-status-label" class="sb-bot-status off" style="margin-left:2px;">Off</div>
+      </span>
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" id="toggle-bot-global"
+               onchange="toggleBotGlobal(this.checked)" title="Activar/desactivar bot">
       </div>
-      <button class="btn btn-sm w-100 mt-2"
-        style="background:#334155;color:#94a3b8;border:1px solid #475569;font-size:11.5px;text-align:left;padding:5px 10px;"
-        data-bs-toggle="modal" data-bs-target="#modal-bot"
-        onclick="botTab('contexto'); cargarVistaBotInstrucciones();">
-        <i class="bi bi-sliders me-1"></i>Entrenar / Configurar bot
-      </button>
+    </div>
+    <div class="sb-nav-item" style="color:#94a3b8;"
+      data-bs-toggle="modal" data-bs-target="#modal-bot"
+      onclick="botTab('contexto'); cargarVistaBotInstrucciones();">
+      <i class="bi bi-sliders me-2"></i>Configurar bot
+    </div>
+
+    <!-- USUARIOS (solo admin) -->
+    <div id="sb-nav-agentes" class="sb-nav-item" onclick="irAVista('agentes')" style="display:none;">
+      <i class="bi bi-people me-2"></i>Usuarios
     </div>
 
     <div class="sb-footer">
@@ -1442,20 +1445,15 @@ function api(url, opts = {}) {
 // SIDEBAR
 // ════════════════════════════════════════════════════
 function renderSidebar() {
-  const el = document.getElementById('sb-estados');
+  // Los items son estáticos; solo actualiza el estado activo
+  activarNavItem(vistaActual === 'lista' ? 'sb-nav-lista' : 'sb-nav-kanban');
+}
 
-  let html = `<div class="sb-item ${!etapaFiltro ? 'active' : ''}" onclick="filtrarEtapa(null)">
-    <span><span class="sb-dot" style="background:#475569"></span>Todas</span>
-  </div>`;
-
-  for (const etapa of Object.values(ETAPAS)) {
-    const activa = etapaFiltro === etapa.key;
-    html += `<div class="sb-item ${activa ? 'active' : ''}" onclick="filtrarEtapa('${etapa.key}')">
-      <span><span class="sb-dot" style="background:${etapa.color}"></span>${etapa.label}</span>
-    </div>`;
-  }
-
-  el.innerHTML = html;
+function activarNavItem(id) {
+  ['sb-nav-kanban', 'sb-nav-lista', 'sb-nav-calendario', 'sb-nav-agentes'].forEach(navId => {
+    const el = document.getElementById(navId);
+    if (el) el.classList.toggle('active', navId === id);
+  });
 }
 
 function filtrarEtapa(etapaKey) {
@@ -1463,8 +1461,7 @@ function filtrarEtapa(etapaKey) {
   etapaFiltro  = etapaKey;
   estadoFiltro = null;
   offset = 0;
-  renderSidebar();
-  // Asegurar que kanban o lista estén visibles
+  activarNavItem(vistaActual === 'lista' ? 'sb-nav-lista' : 'sb-nav-kanban');
   const kanbanView = document.getElementById('kanban-view');
   const listaView  = document.getElementById('lista-view');
   if (vistaActual === 'kanban') {
@@ -1902,16 +1899,18 @@ function cambiarVista(vista) {
 
   kanbanView.classList.remove('visible');
   listaView.classList.remove('visible');
-  btnKanban.classList.remove('active');
-  btnLista.classList.remove('active');
+  if (btnKanban) btnKanban.classList.remove('active');
+  if (btnLista)  btnLista.classList.remove('active');
 
   if (vista === 'kanban') {
     kanbanView.classList.add('visible');
-    btnKanban.classList.add('active');
+    if (btnKanban) btnKanban.classList.add('active');
+    activarNavItem('sb-nav-kanban');
     cargarKanban();
   } else {
     listaView.classList.add('visible');
-    btnLista.classList.add('active');
+    if (btnLista) btnLista.classList.add('active');
+    activarNavItem('sb-nav-lista');
     cargarLista();
   }
 }
@@ -2137,11 +2136,11 @@ async function cargarCalendario() {
   calendarInstance = new FullCalendar.Calendar(container, {
     initialView: 'dayGridMonth',
     locale: 'es',
-    height: '100%',
+    height: 'auto',
     headerToolbar: {
       left:   'prev,next today',
       center: 'title',
-      right:  'dayGridMonth,timeGridWeek,listMonth',
+      right:  'dayGridMonth,dayGridWeek,listMonth',
     },
     buttonText: { month: 'Mes', week: 'Semana', list: 'Lista' },
     events: async (info, successCallback, failureCallback) => {
@@ -2290,10 +2289,6 @@ async function desactivarAgente(id, nombre) {
 // NAVEGACIÓN ENTRE VISTAS ESPECIALES
 // ════════════════════════════════════════════════════
 function irAVista(vista) {
-  // Quitar active de sidebar
-  document.querySelectorAll('.sb-item, .sb-nav-item').forEach(el => el.classList.remove('active'));
-
-  // Ocultar todas las vistas
   ['kanban-view', 'lista-view', 'calendario-view', 'agentes-view'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
@@ -2301,17 +2296,16 @@ function irAVista(vista) {
 
   if (vista === 'calendario') {
     document.getElementById('calendario-view').classList.add('visible');
-    document.getElementById('sb-nav-calendario').classList.add('active');
+    activarNavItem('sb-nav-calendario');
     cargarCalendario();
   } else if (vista === 'agentes') {
     document.getElementById('agentes-view').classList.add('visible');
-    document.getElementById('sb-nav-agentes').classList.add('active');
+    activarNavItem('sb-nav-agentes');
     cargarAgentes();
   }
 }
 
 function limpiarVistasExtra() {
-  document.querySelectorAll('.sb-nav-item').forEach(el => el.classList.remove('active'));
   const cv = document.getElementById('calendario-view');
   const av = document.getElementById('agentes-view');
   if (cv) cv.classList.remove('visible');
