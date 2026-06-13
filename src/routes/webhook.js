@@ -67,7 +67,7 @@ router.post(
         const insert = await db.query(
           `INSERT INTO conversaciones
             (cliente_telefono, cliente_whatsapp_id, cliente_nombre, estado, bot_activo, requiere_respuesta, created_at, ultimo_mensaje_at)
-           VALUES ($1, $2, $3, 'inicio', false, false, NOW(), NOW())
+           VALUES ($1, $2, $3, 'inicio', true, false, NOW(), NOW())
            RETURNING id`,
           [
             conversation.phone_number,
@@ -143,12 +143,14 @@ router.post(
       if (message.direction === 'inbound' && !isTestEvent && process.env.OPENAI_API_KEY) {
         setImmediate(async () => {
           try {
-            const convBot = await db.query(
-              'SELECT bot_activo, cliente_telefono FROM conversaciones WHERE id = $1',
-              [conversacion_id]
-            );
+            // El global controla si el bot responde; bot_activo por conv permite silenciarlo individualmente
+            const [cfgBot, convBot] = await Promise.all([
+              db.query('SELECT activo_global FROM bot_config LIMIT 1'),
+              db.query('SELECT bot_activo, cliente_telefono FROM conversaciones WHERE id = $1', [conversacion_id]),
+            ]);
+            if (!cfgBot.rows[0]?.activo_global) return;
             const conv = convBot.rows[0];
-            if (!conv?.bot_activo) return;
+            if (conv?.bot_activo === false) return;
 
             const texto = await generarRespuesta(conversacion_id);
             if (!texto) return;

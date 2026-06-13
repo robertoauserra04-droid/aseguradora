@@ -221,6 +221,5 @@ CREATE TABLE IF NOT EXISTS bot_faq (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Campo bot_activo por conversación (desactivado por defecto)
-ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS bot_activo BOOLEAN DEFAULT false;
-UPDATE conversaciones SET bot_activo = false WHERE bot_activo = true;
+-- bot_activo por conversación: true por defecto (el global activo_global es el control maestro)
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS bot_activo BOOLEAN DEFAULT true;
