@@ -505,6 +505,44 @@
       width: 8px; height: 8px; border-radius: 50%;
       display: inline-block; margin-right: 5px;
     }
+
+    /* ─── BOT CONFIG MODAL ──────────────────────────────── */
+    .bot-cols { display: flex; height: calc(88vh - 58px); overflow: hidden; }
+    .bot-left { flex: 0 0 60%; overflow-y: auto; padding: 20px 18px; border-right: 1px solid #e2e8f0; background: #f8fafc; }
+    .bot-right { flex: 0 0 40%; overflow-y: auto; padding: 20px 14px; background: #fff; }
+    .bot-section-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+    .bot-section-title { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+    .seguro-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 9px 12px; cursor: pointer;
+      display: flex; align-items: center; gap: 7px; transition: all .15s;
+      font-size: 12.5px; font-weight: 500; color: #475569; user-select: none; }
+    .seguro-card:hover { border-color: #94a3b8; background: #f8fafc; }
+    .seguro-card.active { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+    .tono-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 11px 14px;
+      cursor: pointer; flex: 1; transition: all .15s; text-align: center; user-select: none; }
+    .tono-card:hover { border-color: #94a3b8; }
+    .tono-card.active { border-color: #3b82f6; background: #eff6ff; }
+    .tono-card-title { font-size: 13px; font-weight: 600; color: #0f172a; }
+    .tono-card-desc  { font-size: 11px; color: #64748b; margin-top: 3px; }
+    .wa-wrap { position: sticky; top: 0; }
+    .wa-header { background: #075e54; color: #fff; border-radius: 12px 12px 0 0;
+      padding: 11px 14px; display: flex; align-items: center; gap: 10px; }
+    .wa-header-name { font-size: 14px; font-weight: 600; }
+    .wa-header-sub  { font-size: 11px; opacity: .8; }
+    .wa-body { background: #e5ddd5; padding: 14px 10px; min-height: 240px; }
+    .wa-bubble { background: #fff; border-radius: 0 10px 10px 10px; padding: 9px 12px;
+      font-size: 13px; max-width: 90%; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.13);
+      color: #111; line-height: 1.5; word-break: break-word; }
+    .wa-time { font-size: 10px; color: #888; text-align: right; margin-top: 4px; }
+    .wa-input-bar { background: #f0f0f0; border-top: 1px solid #ddd; padding: 9px 12px;
+      border-radius: 0 0 12px 12px; display: flex; align-items: center; gap: 8px; }
+    .faq-table-wrap { max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .faq-table { width: 100%; border-collapse: collapse; }
+    .faq-table th { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase;
+      letter-spacing: .5px; padding: 8px 10px; background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; }
+    .faq-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; vertical-align: top; color: #334155; }
+    .faq-table tr:last-child td { border-bottom: none; }
+    .bienvenida-counter { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 3px; }
   </style>
 </head>
 <body>
@@ -683,197 +721,223 @@
      MODAL BOT IA
 ════════════════════════════════════ -->
 <div class="modal fade" id="modal-bot" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content" style="border:none;">
-      <div class="modal-header" style="background:#1e293b;color:#f1f5f9;border:none;padding:16px 20px;">
-        <h5 class="modal-title mb-0">
-          <i class="bi bi-robot me-2" style="color:#8b5cf6;"></i>Entrenamiento del Bot IA
+  <div class="modal-dialog" style="max-width:980px; margin:20px auto;">
+    <div class="modal-content" style="border:none; border-radius:14px; overflow:hidden;">
+      <div class="modal-header" style="background:#1e293b;color:#f1f5f9;border:none;padding:13px 20px;">
+        <h5 class="modal-title mb-0" style="font-size:14px;">
+          <i class="bi bi-robot me-2" style="color:#8b5cf6;"></i>Configuracion del Bot — WhatsApp Business
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" style="background:#f8fafc;padding:0;">
-        <div class="bot-panel">
+      <div class="modal-body p-0">
+        <div class="bot-cols">
 
-          <p class="text-muted small mb-4">
-            Configura el contexto del negocio, la personalidad del bot y las preguntas frecuentes.
-            Con estos tres bloques el asistente tendrá todo lo necesario para atender correctamente.
-          </p>
+          <!-- COLUMNA IZQUIERDA: Configuracion -->
+          <div class="bot-left">
 
-          <!-- Tabs -->
-          <div class="d-flex gap-2 mb-4 flex-wrap">
-            <button class="bot-tab-btn active" id="tab-btn-contexto" onclick="botTab('contexto')">
-              <i class="bi bi-building me-1"></i>Contexto
-            </button>
-            <button class="bot-tab-btn" id="tab-btn-personalidad" onclick="botTab('personalidad')">
-              <i class="bi bi-person-gear me-1"></i>Personalidad
-            </button>
-            <button class="bot-tab-btn" id="tab-btn-conocimiento" onclick="botTab('conocimiento')">
-              <i class="bi bi-book me-1"></i>Preguntas frecuentes
-            </button>
-          </div>
-
-          <!-- TAB: Contexto -->
-          <div id="bot-tab-contexto">
-            <div class="bg-white border rounded-3 p-4 mb-4">
-              <h6 class="fw-semibold mb-3">
-                <i class="bi bi-building me-2" style="color:#3b82f6;"></i>Datos de la empresa
-              </h6>
+            <!-- 1. Perfil -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-building" style="color:#3b82f6;"></i>Perfil del bot
+              </div>
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label small fw-semibold mb-1">Nombre de la empresa</label>
                   <input type="text" id="ctx-empresa" class="form-control form-control-sm"
-                    placeholder="Ej: Seguros Carguill">
+                    placeholder="Ej: Seguros Carguill" oninput="actualizarPreviewBot()">
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label small fw-semibold mb-1">Ciudad / Región</label>
+                  <label class="form-label small fw-semibold mb-1">Ciudad / Region</label>
                   <input type="text" id="ctx-ciudad" class="form-control form-control-sm"
                     placeholder="Ej: Monterrey, NL">
                 </div>
                 <div class="col-12">
-                  <label class="form-label small fw-semibold mb-1">Descripción del negocio</label>
+                  <label class="form-label small fw-semibold mb-1">Descripcion del negocio</label>
                   <textarea id="ctx-descripcion" class="form-control form-control-sm" rows="2"
-                    placeholder="Ej: Somos un broker de seguros con 10 años de experiencia, trabajamos con las mejores aseguradoras del mercado mexicano."></textarea>
+                    placeholder="Ej: Somos un broker de seguros con 10 anos de experiencia, trabajamos con las mejores aseguradoras del mercado mexicano."></textarea>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold mb-1">Horario de atención</label>
-                  <input type="text" id="ctx-horario" class="form-control form-control-sm"
-                    placeholder="Ej: Lun–Vie 9am–6pm, Sáb 10am–2pm">
+              </div>
+            </div>
+
+            <!-- 2. Seguros -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-shield-check" style="color:#22c55e;"></i>Seguros que ofrecen
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <div class="seguro-card" data-valor="Vida" onclick="toggleSeguroCard(this)">
+                  <i class="bi bi-heart-pulse" style="color:#ef4444;font-size:15px;"></i>Vida
                 </div>
+                <div class="seguro-card" data-valor="Auto" onclick="toggleSeguroCard(this)">
+                  <i class="bi bi-car-front" style="color:#3b82f6;font-size:15px;"></i>Auto
+                </div>
+                <div class="seguro-card" data-valor="Medico / GMM" onclick="toggleSeguroCard(this)">
+                  <i class="bi bi-hospital" style="color:#22c55e;font-size:15px;"></i>Medico / GMM
+                </div>
+                <div class="seguro-card" data-valor="Danos / Hogar" onclick="toggleSeguroCard(this)">
+                  <i class="bi bi-house" style="color:#f97316;font-size:15px;"></i>Danos / Hogar
+                </div>
+                <div class="seguro-card" data-valor="Viaje" onclick="toggleSeguroCard(this)">
+                  <i class="bi bi-airplane" style="color:#8b5cf6;font-size:15px;"></i>Viaje
+                </div>
+                <div class="seguro-card" data-valor="Empresarial" onclick="toggleSeguroCard(this)">
+                  <i class="bi bi-building" style="color:#64748b;font-size:15px;"></i>Empresarial
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Aseguradoras y horario -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-clock" style="color:#f59e0b;"></i>Aseguradoras y horario
+              </div>
+              <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label small fw-semibold mb-1">Aseguradoras con las que trabajan</label>
                   <input type="text" id="ctx-aseguradoras" class="form-control form-control-sm"
-                    placeholder="Ej: GNP, Quálitas, AXA, Metlife, HDI">
+                    placeholder="Ej: GNP, Qualitas, AXA, Metlife, HDI">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Horario de atencion</label>
+                  <input type="text" id="ctx-horario" class="form-control form-control-sm"
+                    placeholder="Ej: Lun-Vie 9am-6pm, Sab 10am-2pm">
                 </div>
               </div>
             </div>
 
-            <div class="bg-white border rounded-3 p-4 mb-4">
-              <h6 class="fw-semibold mb-3">
-                <i class="bi bi-shield-check me-2" style="color:#22c55e;"></i>Seguros que ofrecen
-              </h6>
-              <div class="d-flex flex-wrap gap-3">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="seg-vida" value="Vida">
-                  <label class="form-check-label small" for="seg-vida">Vida</label>
+            <!-- 4. Tono y bienvenida -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-chat-quote" style="color:#06b6d4;"></i>Tono y mensaje de bienvenida
+              </div>
+              <div class="d-flex gap-2 mb-3">
+                <div class="tono-card" data-tono="formal" onclick="seleccionarTono(this)">
+                  <div class="tono-card-title">Formal</div>
+                  <div class="tono-card-desc">Profesional y directo</div>
                 </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="seg-auto" value="Auto">
-                  <label class="form-check-label small" for="seg-auto">Auto</label>
+                <div class="tono-card" data-tono="amigable" onclick="seleccionarTono(this)">
+                  <div class="tono-card-title">Amigable</div>
+                  <div class="tono-card-desc">Cercano y calido</div>
                 </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="seg-medico" value="Médico / GMM">
-                  <label class="form-check-label small" for="seg-medico">Médico / GMM</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="seg-danos" value="Daños / Hogar">
-                  <label class="form-check-label small" for="seg-danos">Daños / Hogar</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="seg-viaje" value="Viaje">
-                  <label class="form-check-label small" for="seg-viaje">Viaje</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="seg-empresarial" value="Empresarial">
-                  <label class="form-check-label small" for="seg-empresarial">Empresarial</label>
+                <div class="tono-card active" data-tono="ambos" onclick="seleccionarTono(this)">
+                  <div class="tono-card-title">Equilibrado <span class="badge bg-secondary ms-1" style="font-size:9px;vertical-align:middle;">Recomendado</span></div>
+                  <div class="tono-card-desc">Formal y amigable</div>
                 </div>
               </div>
-            </div>
-
-            <div class="d-flex align-items-center gap-3">
-              <button class="btn btn-primary px-4" onclick="guardarContexto()">
-                <i class="bi bi-save me-1"></i>Guardar contexto
-              </button>
-              <div id="bot-ctx-msg"></div>
-            </div>
-          </div>
-
-          <!-- TAB: Personalidad -->
-          <div id="bot-tab-personalidad" style="display:none;">
-            <div class="bg-white border rounded-3 p-4 mb-4">
-              <h6 class="fw-semibold mb-3">
-                <i class="bi bi-chat-heart me-2" style="color:#f59e0b;"></i>Tono y estilo de respuesta
-              </h6>
-              <div class="d-flex gap-4 flex-wrap">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="bot-tono" id="tono-formal" value="formal">
-                  <label class="form-check-label small" for="tono-formal">Formal y profesional</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="bot-tono" id="tono-amigable" value="amigable">
-                  <label class="form-check-label small" for="tono-amigable">Amigable y cercano</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="bot-tono" id="tono-ambos" value="ambos" checked>
-                  <label class="form-check-label small" for="tono-ambos">Formal y amigable <span class="badge bg-secondary ms-1" style="font-size:10px;">Recomendado</span></label>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white border rounded-3 p-4 mb-4">
-              <h6 class="fw-semibold mb-3">
-                <i class="bi bi-hand-wave me-2" style="color:#06b6d4;"></i>Mensaje de bienvenida
-              </h6>
-              <p class="text-muted small mb-2">¿Cómo saluda el bot cuando un cliente escribe por primera vez?</p>
+              <label class="form-label small fw-semibold mb-1">Mensaje de bienvenida</label>
               <textarea id="ctx-bienvenida" class="form-control form-control-sm" rows="2"
-                placeholder="Ej: ¡Hola! Bienvenido a Seguros Carguill. Soy tu asistente virtual, ¿en qué puedo ayudarte hoy?"></textarea>
+                oninput="actualizarPreviewBot()"
+                placeholder="Ej: Hola. Bienvenido a Seguros Carguill. Soy tu asistente virtual, en que puedo ayudarte hoy?"></textarea>
+              <div class="bienvenida-counter" id="bienvenida-count">0 caracteres</div>
             </div>
 
-            <div class="bg-white border rounded-3 p-4 mb-4">
-              <h6 class="fw-semibold mb-3">
-                <i class="bi bi-slash-circle me-2" style="color:#ef4444;"></i>Lo que NO debe hacer el bot
-              </h6>
-              <p class="text-muted small mb-2">Restricciones de comportamiento — una por línea.</p>
-              <textarea id="ctx-restricciones" class="form-control form-control-sm" rows="4"
-                placeholder="Ej:&#10;No des precios exactos sin cotizar primero.&#10;No hagas promesas de cobertura sin revisar la póliza.&#10;No hables de temas ajenos a los seguros.&#10;Si el cliente menciona un siniestro urgente, pide que llame al agente directamente."></textarea>
-            </div>
-
-            <div class="bg-white border rounded-3 p-4 mb-4">
-              <h6 class="fw-semibold mb-3">
-                <i class="bi bi-pencil-square me-2"></i>Instrucciones adicionales
-              </h6>
-              <p class="text-muted small mb-2">Cualquier otra indicación específica que no encaje en los campos anteriores.</p>
-              <textarea id="bot-instrucciones" class="form-control form-control-sm" rows="5"
-                style="font-size:13px;font-family:inherit;resize:vertical;"
-                placeholder="Ej: Si el cliente quiere agendar, ofrece los horarios disponibles del calendario. Si preguntan por renovación, pídeles número de póliza y aseguradora actual."></textarea>
-            </div>
-
-            <div class="d-flex align-items-center gap-3">
-              <button class="btn btn-primary px-4" onclick="guardarPersonalidad()">
-                <i class="bi bi-save me-1"></i>Guardar personalidad
-              </button>
-              <div id="bot-pers-msg"></div>
-            </div>
-          </div>
-
-          <!-- TAB: Preguntas frecuentes -->
-          <div id="bot-tab-conocimiento" style="display:none;">
-            <div class="bg-white border rounded-3 p-4 mb-4">
-              <h6 class="fw-semibold mb-3">Agregar pregunta y respuesta</h6>
-              <div class="mb-2">
-                <label class="form-label small fw-semibold mb-1">Pregunta del cliente</label>
-                <input type="text" id="faq-pregunta" class="form-control form-control-sm"
-                  placeholder="Ej: ¿Qué cubre el seguro de vida?">
+            <!-- 5. Reglas -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-slash-circle" style="color:#ef4444;"></i>Reglas del bot
               </div>
               <div class="mb-3">
-                <label class="form-label small fw-semibold mb-1">Respuesta del bot</label>
-                <textarea id="faq-respuesta" class="form-control form-control-sm" rows="3"
-                  placeholder="Ej: El seguro de vida cubre fallecimiento por cualquier causa..."></textarea>
+                <label class="form-label small fw-semibold mb-1">Lo que NO debe hacer el bot</label>
+                <p class="text-muted mb-1" style="font-size:11px;">Una restriccion por linea. Se aplica en cada conversacion.</p>
+                <textarea id="ctx-restricciones" class="form-control form-control-sm" rows="4"
+                  placeholder="Ej:&#10;No des precios exactos sin cotizar primero.&#10;No hagas promesas de cobertura sin revisar la poliza.&#10;No hables de temas ajenos a los seguros.&#10;Si el cliente menciona un siniestro urgente, pide que llame al agente directamente."></textarea>
               </div>
-              <button class="btn btn-primary btn-sm px-3" onclick="agregarFaq()">
-                <i class="bi bi-plus-circle me-1"></i>Agregar a la base de conocimiento
-              </button>
+              <div>
+                <label class="form-label small fw-semibold mb-1">Instrucciones adicionales</label>
+                <textarea id="bot-instrucciones" class="form-control form-control-sm" rows="3"
+                  placeholder="Ej: Si el cliente quiere agendar, ofrece los horarios disponibles. Si preguntan por renovacion, pide numero de poliza y aseguradora actual."></textarea>
+              </div>
             </div>
-            <div class="d-flex align-items-center justify-content-between mb-3">
-              <h6 class="fw-semibold mb-0">
-                Entradas guardadas <span class="badge bg-secondary ms-1" id="faq-count">0</span>
-              </h6>
-            </div>
-            <div id="faq-lista">
-              <p class="text-muted small text-center py-4">Cargando...</p>
-            </div>
-          </div>
 
-        </div>
+            <!-- 6. FAQ -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-book" style="color:#3b82f6;"></i>
+                Base de conocimiento
+                <span class="badge bg-secondary ms-1" id="faq-count" style="font-size:10px;">0</span>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-12">
+                  <input type="text" id="faq-pregunta" class="form-control form-control-sm"
+                    placeholder="Pregunta del cliente — Ej: Que cubre el seguro de vida?">
+                </div>
+                <div class="col-12">
+                  <textarea id="faq-respuesta" class="form-control form-control-sm" rows="2"
+                    placeholder="Respuesta del bot — Ej: El seguro de vida cubre fallecimiento por cualquier causa..."></textarea>
+                </div>
+                <div class="col-12">
+                  <button class="btn btn-sm btn-outline-primary px-3" onclick="agregarFaq()">
+                    <i class="bi bi-plus-circle me-1"></i>Agregar entrada
+                  </button>
+                </div>
+              </div>
+              <input type="text" class="form-control form-control-sm mb-2"
+                placeholder="Buscar en FAQ..."
+                oninput="buscarFaq(this.value)">
+              <div class="faq-table-wrap">
+                <table class="faq-table">
+                  <thead>
+                    <tr>
+                      <th style="width:42%">Pregunta</th>
+                      <th>Respuesta</th>
+                      <th style="width:56px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="faq-lista">
+                    <tr><td colspan="3" class="text-center text-muted py-3" style="font-size:12px;">Cargando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Guardar -->
+            <div class="d-flex align-items-center gap-3 pb-2">
+              <button class="btn btn-primary px-4" onclick="guardarTodo(event)">
+                <i class="bi bi-save me-1"></i>Guardar configuracion
+              </button>
+              <div id="bot-save-msg"></div>
+            </div>
+
+          </div><!-- /bot-left -->
+
+          <!-- COLUMNA DERECHA: Preview WhatsApp -->
+          <div class="bot-right">
+            <div class="wa-wrap">
+              <p class="text-muted mb-3" style="font-size:11px; line-height:1.5;">
+                Vista previa de como se presenta el bot. Se actualiza al escribir.
+              </p>
+              <div class="wa-header">
+                <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="bi bi-robot" style="font-size:17px;"></i>
+                </div>
+                <div>
+                  <div class="wa-header-name" id="preview-empresa">Seguros Carguill</div>
+                  <div class="wa-header-sub">
+                    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;margin-right:4px;"></span>En linea
+                  </div>
+                </div>
+              </div>
+              <div class="wa-body">
+                <div class="wa-bubble">
+                  <div id="preview-bienvenida" style="white-space:pre-wrap;">Hola. Bienvenido a Seguros Carguill. Soy tu asistente virtual, en que puedo ayudarte hoy?</div>
+                  <div class="wa-time">Bot · ahora</div>
+                </div>
+                <div class="wa-bubble" id="preview-seguros-bubble" style="display:none;">
+                  <div style="font-size:12px;color:#555;margin-bottom:4px;">Trabajamos con los siguientes tipos de seguro:</div>
+                  <div id="preview-seguros-list" style="font-size:12px;color:#075e54;font-weight:500;"></div>
+                  <div class="wa-time">Bot · ahora</div>
+                </div>
+              </div>
+              <div class="wa-input-bar">
+                <input type="text" class="form-control form-control-sm" placeholder="Escribe un mensaje..." disabled
+                  style="background:#fff;border-radius:20px;font-size:12px;">
+                <i class="bi bi-send" style="color:#075e54;font-size:15px;"></i>
+              </div>
+            </div>
+          </div><!-- /bot-right -->
+
+        </div><!-- /bot-cols -->
       </div>
     </div>
   </div>
@@ -1225,8 +1289,6 @@ async function toggleBotConv(activo) {
 // ════════════════════════════════════════════════════
 // BOT IA — contexto, personalidad y preguntas
 // ════════════════════════════════════════════════════
-const SEG_IDS = ['seg-vida', 'seg-auto', 'seg-medico', 'seg-danos', 'seg-viaje', 'seg-empresarial'];
-
 async function cargarVistaBotInstrucciones() {
   try {
     const r = await api('/api/bot/config');
@@ -1234,28 +1296,28 @@ async function cargarVistaBotInstrucciones() {
     const d = await r.json();
     const ctx = d.contexto || {};
 
-    // Campos de contexto
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
     set('ctx-empresa', ctx.empresa);
     set('ctx-ciudad', ctx.ciudad);
     set('ctx-descripcion', ctx.descripcion);
     set('ctx-horario', ctx.horario);
     set('ctx-aseguradoras', ctx.aseguradoras);
-
-    // Checkboxes de seguros
-    const seguros = Array.isArray(ctx.seguros) ? ctx.seguros : [];
-    SEG_IDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.checked = seguros.includes(el.value);
-    });
-
-    // Personalidad
-    const tono = ctx.tono || 'ambos';
-    const tonoEl = document.querySelector(`input[name="bot-tono"][value="${tono}"]`);
-    if (tonoEl) tonoEl.checked = true;
     set('ctx-bienvenida', ctx.bienvenida);
     set('ctx-restricciones', ctx.restricciones);
     set('bot-instrucciones', d.instrucciones);
+
+    // Seguros cards
+    const seguros = Array.isArray(ctx.seguros) ? ctx.seguros : [];
+    document.querySelectorAll('.seguro-card').forEach(card => {
+      const val = card.dataset.valor;
+      card.classList.toggle('active', seguros.includes(val));
+    });
+
+    // Tono cards
+    const tono = ctx.tono || 'ambos';
+    document.querySelectorAll('.tono-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.tono === tono);
+    });
 
     // Toggle global en sidebar
     const chk = document.getElementById('toggle-bot-global');
@@ -1265,92 +1327,102 @@ async function cargarVistaBotInstrucciones() {
       lbl.textContent = d.activo_global ? 'Activado' : 'Desactivado';
       lbl.className = 'sb-bot-status ' + (d.activo_global ? 'on' : 'off');
     }
+
+    actualizarPreviewBot();
+    cargarFaqs();
   } catch {}
 }
 
-function botTab(tab) {
-  ['contexto', 'personalidad', 'conocimiento'].forEach(t => {
-    document.getElementById(`bot-tab-${t}`).style.display = t === tab ? 'block' : 'none';
-    document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
-  });
-  if (tab === 'conocimiento') cargarFaqs();
+function actualizarPreviewBot() {
+  const empresa = document.getElementById('ctx-empresa')?.value.trim() || 'Seguros Carguill';
+  const bienvenida = document.getElementById('ctx-bienvenida')?.value.trim() ||
+    'Hola. Bienvenido a Seguros Carguill. Soy tu asistente virtual, en que puedo ayudarte hoy?';
+  const prevEmpresa = document.getElementById('preview-empresa');
+  const prevBienvenida = document.getElementById('preview-bienvenida');
+  if (prevEmpresa) prevEmpresa.textContent = empresa;
+  if (prevBienvenida) prevBienvenida.textContent = bienvenida;
+  const counter = document.getElementById('bienvenida-count');
+  if (counter) counter.textContent = bienvenida.length + ' caracteres';
+
+  // Actualizar burbuja de seguros
+  const activos = [...document.querySelectorAll('.seguro-card.active')].map(c => c.dataset.valor);
+  const bubble = document.getElementById('preview-seguros-bubble');
+  const list = document.getElementById('preview-seguros-list');
+  if (bubble && list) {
+    if (activos.length > 0) {
+      list.textContent = activos.join(', ');
+      bubble.style.display = '';
+    } else {
+      bubble.style.display = 'none';
+    }
+  }
+}
+
+function toggleSeguroCard(el) {
+  el.classList.toggle('active');
+  actualizarPreviewBot();
+}
+
+function seleccionarTono(el) {
+  document.querySelectorAll('.tono-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
 }
 
 async function guardarContexto() {
-  const msg = document.getElementById('bot-ctx-msg');
-  const seguros = SEG_IDS
-    .map(id => document.getElementById(id))
-    .filter(el => el && el.checked)
-    .map(el => el.value);
-
+  const seguros = [...document.querySelectorAll('.seguro-card.active')].map(c => c.dataset.valor);
   const contexto = {
-    empresa:      document.getElementById('ctx-empresa').value.trim(),
-    ciudad:       document.getElementById('ctx-ciudad').value.trim(),
-    descripcion:  document.getElementById('ctx-descripcion').value.trim(),
-    horario:      document.getElementById('ctx-horario').value.trim(),
-    aseguradoras: document.getElementById('ctx-aseguradoras').value.trim(),
+    empresa:      (document.getElementById('ctx-empresa')?.value || '').trim(),
+    ciudad:       (document.getElementById('ctx-ciudad')?.value || '').trim(),
+    descripcion:  (document.getElementById('ctx-descripcion')?.value || '').trim(),
+    horario:      (document.getElementById('ctx-horario')?.value || '').trim(),
+    aseguradoras: (document.getElementById('ctx-aseguradoras')?.value || '').trim(),
     seguros,
+    tono:         document.querySelector('.tono-card.active')?.dataset.tono || 'ambos',
+    bienvenida:   (document.getElementById('ctx-bienvenida')?.value || '').trim(),
+    restricciones:(document.getElementById('ctx-restricciones')?.value || '').trim(),
   };
-
-  // Preserve personalidad fields from current contexto in DB
-  try {
-    const cur = await api('/api/bot/config');
-    if (cur.ok) {
-      const cd = await cur.json();
-      const cc = cd.contexto || {};
-      contexto.tono         = cc.tono         || 'ambos';
-      contexto.bienvenida   = cc.bienvenida   || '';
-      contexto.restricciones = cc.restricciones || '';
-    }
-  } catch {}
-
-  try {
-    const r = await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ contexto }) });
-    if (r.ok) {
-      msg.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Contexto guardado</span>';
-    } else {
-      msg.innerHTML = '<span class="text-danger small">Error al guardar</span>';
-    }
-  } catch {
-    msg.innerHTML = '<span class="text-danger small">Error de conexión</span>';
-  }
-  setTimeout(() => { if (msg) msg.innerHTML = ''; }, 3000);
+  await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ contexto }) });
 }
 
 async function guardarPersonalidad() {
-  const msg = document.getElementById('bot-pers-msg');
-  const tonoEl = document.querySelector('input[name="bot-tono"]:checked');
-
-  // Preserve contexto fields from DB, only update personalidad fields
-  let contexto = {};
+  const instrucciones = document.getElementById('bot-instrucciones')?.value || '';
+  const contexto = {
+    tono:          document.querySelector('.tono-card.active')?.dataset.tono || 'ambos',
+    bienvenida:    (document.getElementById('ctx-bienvenida')?.value || '').trim(),
+    restricciones: (document.getElementById('ctx-restricciones')?.value || '').trim(),
+  };
+  // Merge with existing contexto so we don't overwrite empresa/seguros etc.
   try {
     const cur = await api('/api/bot/config');
     if (cur.ok) {
       const cd = await cur.json();
-      contexto = { ...(cd.contexto || {}) };
+      Object.assign(contexto, { ...(cd.contexto || {}), ...contexto });
     }
   } catch {}
+  await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ instrucciones, contexto }) });
+}
 
-  contexto.tono          = tonoEl ? tonoEl.value : 'ambos';
-  contexto.bienvenida    = document.getElementById('ctx-bienvenida').value.trim();
-  contexto.restricciones = document.getElementById('ctx-restricciones').value.trim();
-
-  const instrucciones = document.getElementById('bot-instrucciones').value;
-
+async function guardarTodo(ev) {
+  const btn = ev?.currentTarget || ev?.target;
+  const msg = document.getElementById('bot-save-msg');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Guardando...'; }
   try {
-    const r = await api('/api/bot/config', {
-      method: 'PUT',
-      body: JSON.stringify({ instrucciones, contexto }),
-    });
-    if (r.ok) {
-      msg.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Personalidad guardada</span>';
-    } else {
-      msg.innerHTML = '<span class="text-danger small">Error al guardar</span>';
-    }
+    await guardarContexto();
+    await guardarPersonalidad();
+    if (msg) msg.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Configuracion guardada correctamente</span>';
   } catch {
-    msg.innerHTML = '<span class="text-danger small">Error de conexión</span>';
+    if (msg) msg.innerHTML = '<span class="text-danger small">Error al guardar — intenta de nuevo</span>';
   }
-  setTimeout(() => { if (msg) msg.innerHTML = ''; }, 3000);
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save me-1"></i>Guardar configuracion'; }
+  setTimeout(() => { if (msg) msg.innerHTML = ''; }, 3500);
+}
+
+function buscarFaq(val) {
+  const q = val.toLowerCase();
+  document.querySelectorAll('#faq-lista tr').forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(q) ? '' : 'none';
+  });
 }
 
 async function cargarFaqs() {
@@ -1363,19 +1435,21 @@ async function cargarFaqs() {
     if (count) count.textContent = faqs.length;
     if (!lista) return;
     if (faqs.length === 0) {
-      lista.innerHTML = '<p class="text-muted small text-center py-4">No hay entradas aún. Agrega la primera arriba.</p>';
+      lista.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3" style="font-size:12px;">No hay entradas. Agrega la primera arriba.</td></tr>';
       return;
     }
     lista.innerHTML = faqs.map(f => `
-      <div class="faq-card">
-        <div class="faq-p"><i class="bi bi-question-circle me-1" style="color:#3b82f6;"></i>${esc(f.pregunta)}</div>
-        <div class="faq-r mt-1">${esc(f.respuesta)}</div>
-        <button class="btn btn-sm btn-outline-danger mt-2" style="font-size:11px;" onclick="eliminarFaq('${f.id}')">
-          <i class="bi bi-trash me-1"></i>Eliminar
-        </button>
-      </div>`).join('');
+      <tr>
+        <td style="font-weight:500;">${esc(f.pregunta)}</td>
+        <td style="color:#475569;">${esc(f.respuesta.length > 80 ? f.respuesta.slice(0, 80) + '...' : f.respuesta)}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:11px;" onclick="eliminarFaq('${f.id}')">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`).join('');
   } catch {
-    if (lista) lista.innerHTML = '<p class="text-danger small">Error al cargar.</p>';
+    if (lista) lista.innerHTML = '<tr><td colspan="3" class="text-danger small py-2 px-2">Error al cargar.</td></tr>';
   }
 }
 
