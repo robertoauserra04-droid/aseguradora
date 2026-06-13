@@ -223,3 +223,6 @@ CREATE TABLE IF NOT EXISTS bot_faq (
 
 -- bot_activo por conversación: true por defecto (el global activo_global es el control maestro)
 ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS bot_activo BOOLEAN DEFAULT true;
+
+-- Contraseña para login de agentes (bcrypt hash)
+ALTER TABLE agentes ADD COLUMN IF NOT EXISTS contrasena TEXT;

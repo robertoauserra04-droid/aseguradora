@@ -9,7 +9,7 @@ function authenticateAgent(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'carguill_secret_dev');
     req.agente = decoded;
     next();
   } catch {
@@ -17,4 +17,18 @@ function authenticateAgent(req, res, next) {
   }
 }
 
-module.exports = { authenticateAgent };
+function requireAdmin(req, res, next) {
+  if (req.agente?.rol !== 'admin') {
+    return res.status(403).json({ error: 'Se requiere rol de administrador' });
+  }
+  next();
+}
+
+function requireSupervisor(req, res, next) {
+  if (!['admin', 'supervisor'].includes(req.agente?.rol)) {
+    return res.status(403).json({ error: 'Se requiere rol de supervisor o administrador' });
+  }
+  next();
+}
+
+module.exports = { authenticateAgent, requireAdmin, requireSupervisor };

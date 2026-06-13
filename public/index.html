@@ -7,6 +7,9 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <!-- FullCalendar v6 -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -31,10 +34,9 @@
       box-shadow: 0 20px 60px rgba(0,0,0,.35);
     }
     .login-logo {
-      font-size: 22px; font-weight: 700; color: #0f172a;
-      letter-spacing: -.4px; margin-bottom: 4px;
+      margin-bottom: 4px; text-align: center;
     }
-    .login-logo span { color: #2563eb; }
+    .login-logo img { width: 200px; height: auto; display: block; margin: 0 auto; }
     .login-sub { font-size: 12px; color: #64748b; margin-bottom: 28px; }
 
     /* ─── PANEL ─────────────────────────────────────────────── */
@@ -47,12 +49,11 @@
       display: flex; flex-direction: column; overflow-y: auto;
     }
     .sb-brand {
-      padding: 20px 16px 16px;
-      font-size: 15px; font-weight: 700; color: #f1f5f9;
-      letter-spacing: -.3px;
+      padding: 16px 14px;
       border-bottom: 1px solid #334155;
+      display: flex; align-items: center; justify-content: center;
     }
-    .sb-brand span { color: #60a5fa; }
+    .sb-brand img { width: 130px; height: auto; display: block; filter: brightness(1); }
     .sb-section {
       padding: 14px 16px 6px;
       font-size: 10px; font-weight: 600;
@@ -419,6 +420,56 @@
     }
     #lista-view.visible { display: flex; }
 
+    /* ─── CALENDARIO VIEW ────────────────────────────────── */
+    #calendario-view {
+      display: none; flex: 1; flex-direction: column; overflow: hidden;
+      background: #f8fafc;
+    }
+    #calendario-view.visible { display: flex; }
+    .cal-header {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 20px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
+    }
+    .cal-header h5 { margin: 0; font-size: 15px; font-weight: 600; color: #0f172a; }
+    .cal-leyenda { display: flex; gap: 14px; flex-wrap: wrap; }
+    .cal-leyenda-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #64748b; }
+    .cal-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    #cal-container { flex: 1; padding: 16px 20px; overflow: auto; }
+    #cal-container .fc { height: 100%; }
+
+    /* ─── AGENTES VIEW ───────────────────────────────────── */
+    #agentes-view {
+      display: none; flex: 1; flex-direction: column; overflow: hidden;
+      background: #f8fafc;
+    }
+    #agentes-view.visible { display: flex; }
+    .ag-header {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 20px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
+    }
+    .ag-header h5 { margin: 0; font-size: 15px; font-weight: 600; color: #0f172a; }
+    #agentes-table-wrap { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .ag-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+    .ag-table th { background: #f1f5f9; font-size: 11px; font-weight: 600; color: #475569;
+      text-transform: uppercase; letter-spacing: .5px; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; }
+    .ag-table td { padding: 11px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #0f172a; vertical-align: middle; }
+    .ag-table tr:last-child td { border-bottom: none; }
+    .ag-table tr:hover td { background: #f8fafc; }
+    .rol-pill { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+    .rol-admin      { background: #fef3c7; color: #92400e; }
+    .rol-supervisor { background: #dbeafe; color: #1d4ed8; }
+    .rol-vendedor   { background: #dcfce7; color: #15803d; }
+    .sb-nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 14px; cursor: pointer; font-size: 12.5px;
+      color: #94a3b8; border-left: 3px solid transparent;
+      transition: background .1s;
+    }
+    .sb-nav-item:hover { background: #273549; color: #cbd5e1; }
+    .sb-nav-item.active { background: #1d3557; border-left-color: #3b82f6; color: #f1f5f9; }
+
     /* ─── DETAIL DRAWER ─────────────────────────────────── */
     #det-drawer-overlay {
       position: fixed; inset: 0;
@@ -463,7 +514,7 @@
 ════════════════════════════════════ -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">Seguros <span>Carguill</span></div>
+    <div class="login-logo"><img src="/logo.png" alt="Seguros Carguill" /></div>
     <div class="login-sub">Panel de conversaciones</div>
     <div id="login-err" class="alert alert-danger py-2 small d-none mb-3"></div>
     <div class="mb-3">
@@ -488,9 +539,18 @@
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sb-brand">Seguros <span>Carguill</span></div>
+    <div class="sb-brand"><img src="/logo.png" alt="Seguros Carguill" /></div>
     <div class="sb-section">Etapas</div>
     <div id="sb-estados"></div>
+
+    <!-- NAV EXTRA: Calendario y Agentes -->
+    <div class="sb-section" style="margin-top:4px;">Vistas</div>
+    <div id="sb-nav-calendario" class="sb-nav-item" onclick="irAVista('calendario')">
+      <i class="bi bi-calendar3"></i> Calendario
+    </div>
+    <div id="sb-nav-agentes" class="sb-nav-item" onclick="irAVista('agentes')" style="display:none;">
+      <i class="bi bi-people"></i> Agentes
+    </div>
 
     <!-- BOT TOGGLE GLOBAL -->
     <div class="sb-bot-section">
@@ -575,6 +635,41 @@
       <div id="paginacion"
         class="d-flex justify-content-between align-items-center px-3 py-2 bg-white border-top"
         style="font-size:11px; min-height:36px; flex-shrink:0;">
+      </div>
+    </div>
+
+    <!-- CALENDARIO VIEW -->
+    <div id="calendario-view">
+      <div class="cal-header">
+        <h5><i class="bi bi-calendar3 me-2 text-primary"></i>Calendario de pólizas y trámites</h5>
+        <div class="cal-leyenda">
+          <div class="cal-leyenda-item"><div class="cal-dot" style="background:#10B981"></div>Póliza inicio / vigente</div>
+          <div class="cal-leyenda-item"><div class="cal-dot" style="background:#F97316"></div>Cotización por vencer</div>
+          <div class="cal-leyenda-item"><div class="cal-dot" style="background:#3B82F6"></div>En trámite</div>
+          <div class="cal-leyenda-item"><div class="cal-dot" style="background:#EF4444"></div>Vencimiento / Renovación</div>
+        </div>
+      </div>
+      <div id="cal-container"></div>
+    </div>
+
+    <!-- AGENTES VIEW -->
+    <div id="agentes-view">
+      <div class="ag-header">
+        <h5><i class="bi bi-people me-2 text-primary"></i>Gestión de Agentes</h5>
+        <button class="btn btn-sm btn-primary" onclick="abrirModalAgente()">
+          <i class="bi bi-plus-lg me-1"></i>Nuevo agente
+        </button>
+      </div>
+      <div id="agentes-table-wrap">
+        <table class="ag-table">
+          <thead>
+            <tr>
+              <th>Nombre</th><th>Email</th><th>Rol</th><th>Tel. interno</th>
+              <th>Asignadas</th><th>Cerradas</th><th>Estado</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="agentes-tbody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -1064,7 +1159,8 @@ async function login() {
     token = d.token;
     localStorage.setItem('cg_token', token);
     localStorage.setItem('cg_nombre', d.nombre);
-    mostrarPanel(d.nombre);
+    localStorage.setItem('cg_rol', d.rol || 'vendedor');
+    mostrarPanel(d.nombre, d.rol);
   } catch(e) {
     errEl.textContent = e.message;
     errEl.classList.remove('d-none');
@@ -1076,6 +1172,7 @@ async function login() {
 function cerrarSesion() {
   localStorage.removeItem('cg_token');
   localStorage.removeItem('cg_nombre');
+  localStorage.removeItem('cg_rol');
   token = null;
   document.getElementById('panel-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
@@ -1304,10 +1401,13 @@ async function eliminarFaq(id) {
   } catch {}
 }
 
-function mostrarPanel(nombre) {
+function mostrarPanel(nombre, rol) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('panel-screen').style.display = 'flex';
-  document.getElementById('sb-user').textContent = nombre || 'Agente';
+  document.getElementById('sb-user').textContent = (nombre || 'Agente') + (rol && rol !== 'vendedor' ? ` · ${rol}` : '');
+  // Mostrar agentes solo para admin
+  const navAgentes = document.getElementById('sb-nav-agentes');
+  if (navAgentes) navAgentes.style.display = (rol === 'admin') ? '' : 'none';
   renderSidebar();
   cargarConfigBot();
   cambiarVista('kanban');
@@ -1334,7 +1434,8 @@ function api(url, opts = {}) {
 (function() {
   const t = localStorage.getItem('cg_token');
   const n = localStorage.getItem('cg_nombre');
-  if (t) { token = t; mostrarPanel(n); }
+  const r = localStorage.getItem('cg_rol');
+  if (t) { token = t; mostrarPanel(n, r); }
 })();
 
 // ════════════════════════════════════════════════════
@@ -1358,12 +1459,23 @@ function renderSidebar() {
 }
 
 function filtrarEtapa(etapaKey) {
+  limpiarVistasExtra();
   etapaFiltro  = etapaKey;
   estadoFiltro = null;
   offset = 0;
   renderSidebar();
-  if (vistaActual === 'kanban') renderKanban();
-  else cargarLista();
+  // Asegurar que kanban o lista estén visibles
+  const kanbanView = document.getElementById('kanban-view');
+  const listaView  = document.getElementById('lista-view');
+  if (vistaActual === 'kanban') {
+    listaView.classList.remove('visible');
+    kanbanView.classList.add('visible');
+    renderKanban();
+  } else {
+    kanbanView.classList.remove('visible');
+    listaView.classList.add('visible');
+    cargarLista();
+  }
 }
 
 function buscarGlobal(v) {
@@ -1781,6 +1893,7 @@ async function guardarCotizacion() {
 // TOGGLE VISTA + DRAWER
 // ════════════════════════════════════════════════════
 function cambiarVista(vista) {
+  limpiarVistasExtra();
   vistaActual = vista;
   const kanbanView = document.getElementById('kanban-view');
   const listaView  = document.getElementById('lista-view');
@@ -2006,6 +2119,248 @@ function fmtHora(ts) {
     day: '2-digit', month: 'short'
   }) + ' ' + hora;
 }
+
+// ════════════════════════════════════════════════════
+// VISTA: CALENDARIO
+// ════════════════════════════════════════════════════
+let calendarInstance = null;
+
+async function cargarCalendario() {
+  const container = document.getElementById('cal-container');
+  if (!container) return;
+
+  if (calendarInstance) {
+    calendarInstance.refetchEvents();
+    return;
+  }
+
+  calendarInstance = new FullCalendar.Calendar(container, {
+    initialView: 'dayGridMonth',
+    locale: 'es',
+    height: '100%',
+    headerToolbar: {
+      left:   'prev,next today',
+      center: 'title',
+      right:  'dayGridMonth,timeGridWeek,listMonth',
+    },
+    buttonText: { month: 'Mes', week: 'Semana', list: 'Lista' },
+    events: async (info, successCallback, failureCallback) => {
+      try {
+        const params = new URLSearchParams({ start: info.startStr, end: info.endStr });
+        const r = await api(`/api/calendario/eventos?${params}`);
+        const data = await r.json();
+        successCallback(data);
+      } catch (e) {
+        failureCallback(e);
+      }
+    },
+    eventClick: (info) => {
+      const convId = info.event.extendedProps.conversacion_id;
+      if (convId) abrirDetalle(convId);
+    },
+    eventDidMount: (info) => {
+      const tipo = info.event.extendedProps.tipo;
+      info.el.title = info.event.title + (tipo ? ` [${tipo}]` : '');
+    },
+  });
+
+  calendarInstance.render();
+}
+
+// ════════════════════════════════════════════════════
+// VISTA: AGENTES
+// ════════════════════════════════════════════════════
+let editandoAgenteId = null;
+
+async function cargarAgentes() {
+  try {
+    const r = await api('/api/agentes');
+    if (!r.ok) return;
+    const agentes = await r.json();
+    const tbody = document.getElementById('agentes-tbody');
+    if (!tbody) return;
+
+    if (agentes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay agentes registrados</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = agentes.map(ag => {
+      const rolClass = { admin: 'rol-admin', supervisor: 'rol-supervisor', vendedor: 'rol-vendedor' }[ag.rol] || 'rol-vendedor';
+      const rolLabel = { admin: 'Admin', supervisor: 'Supervisor', vendedor: 'Vendedor' }[ag.rol] || ag.rol;
+      const estadoBadge = ag.activo
+        ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:10px;">Activo</span>'
+        : '<span class="badge bg-secondary-subtle text-secondary border" style="font-size:10px;">Inactivo</span>';
+      return `<tr>
+        <td><strong>${esc(ag.nombre)}</strong></td>
+        <td>${esc(ag.email)}</td>
+        <td><span class="rol-pill ${rolClass}">${rolLabel}</span></td>
+        <td>${esc(ag.telefono_interno || '—')}</td>
+        <td>${ag.conversaciones_asignadas || 0}</td>
+        <td>${ag.conversaciones_cerradas || 0}</td>
+        <td>${estadoBadge}</td>
+        <td>
+          <div class="d-flex gap-1">
+            <button class="btn btn-xs btn-outline-secondary" style="font-size:11px;padding:2px 8px;" onclick="editarAgente('${ag.id}','${esc(ag.nombre)}','${esc(ag.email)}','${ag.rol}','${esc(ag.telefono_interno||'')}')">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-xs btn-outline-primary" style="font-size:11px;padding:2px 8px;" onclick="cambiarPasswordAgente('${ag.id}','${esc(ag.nombre)}')">
+              <i class="bi bi-key"></i>
+            </button>
+            ${ag.activo ? `<button class="btn btn-xs btn-outline-danger" style="font-size:11px;padding:2px 8px;" onclick="desactivarAgente('${ag.id}','${esc(ag.nombre)}')"><i class="bi bi-trash"></i></button>` : ''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    console.error('[Agentes]', e);
+  }
+}
+
+function abrirModalAgente(id, nombre, email, rol, telefono) {
+  editandoAgenteId = id || null;
+  document.getElementById('ag-modal-title').textContent = id ? 'Editar agente' : 'Nuevo agente';
+  document.getElementById('ag-nombre').value   = nombre  || '';
+  document.getElementById('ag-email').value    = email   || '';
+  document.getElementById('ag-rol').value      = rol     || 'vendedor';
+  document.getElementById('ag-telefono').value = telefono || '';
+  document.getElementById('ag-password').value = '';
+  document.getElementById('ag-pw-row').style.display = id ? 'none' : '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-agente')).show();
+}
+
+function editarAgente(id, nombre, email, rol, telefono) {
+  abrirModalAgente(id, nombre, email, rol, telefono);
+}
+
+async function guardarAgente() {
+  const nombre   = document.getElementById('ag-nombre').value.trim();
+  const email    = document.getElementById('ag-email').value.trim();
+  const rol      = document.getElementById('ag-rol').value;
+  const telefono = document.getElementById('ag-telefono').value.trim();
+  const password = document.getElementById('ag-password').value;
+
+  if (!nombre || !email) { mostrarToast('Nombre y email son requeridos', 'warning'); return; }
+  if (!editandoAgenteId && !password) { mostrarToast('La contraseña es requerida para nuevos agentes', 'warning'); return; }
+
+  const body = { nombre, email, rol, telefono_interno: telefono };
+  if (!editandoAgenteId) body.password = password;
+
+  try {
+    const url    = editandoAgenteId ? `/api/agentes/${editandoAgenteId}` : '/api/agentes';
+    const method = editandoAgenteId ? 'PUT' : 'POST';
+    const r = await api(url, { method, body: JSON.stringify(body) });
+    if (!r.ok) {
+      const err = await r.json();
+      mostrarToast(err.error || 'Error al guardar', 'danger');
+      return;
+    }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-agente')).hide();
+    mostrarToast(editandoAgenteId ? 'Agente actualizado' : 'Agente creado', 'success');
+    cargarAgentes();
+  } catch {
+    mostrarToast('Error de conexión', 'danger');
+  }
+}
+
+async function cambiarPasswordAgente(id, nombre) {
+  const password = prompt(`Nueva contraseña para ${nombre}:`);
+  if (!password) return;
+  if (password.length < 6) { alert('La contraseña debe tener al menos 6 caracteres.'); return; }
+
+  try {
+    const r = await api(`/api/agentes/${id}/password`, {
+      method: 'PUT', body: JSON.stringify({ password }),
+    });
+    if (r.ok) mostrarToast('Contraseña actualizada', 'success');
+    else { const e = await r.json(); mostrarToast(e.error || 'Error', 'danger'); }
+  } catch { mostrarToast('Error de conexión', 'danger'); }
+}
+
+async function desactivarAgente(id, nombre) {
+  if (!confirm(`¿Desactivar al agente ${nombre}?`)) return;
+  try {
+    const r = await api(`/api/agentes/${id}`, { method: 'DELETE' });
+    if (r.ok) { mostrarToast('Agente desactivado', 'success'); cargarAgentes(); }
+    else { const e = await r.json(); mostrarToast(e.error || 'Error', 'danger'); }
+  } catch { mostrarToast('Error de conexión', 'danger'); }
+}
+
+// ════════════════════════════════════════════════════
+// NAVEGACIÓN ENTRE VISTAS ESPECIALES
+// ════════════════════════════════════════════════════
+function irAVista(vista) {
+  // Quitar active de sidebar
+  document.querySelectorAll('.sb-item, .sb-nav-item').forEach(el => el.classList.remove('active'));
+
+  // Ocultar todas las vistas
+  ['kanban-view', 'lista-view', 'calendario-view', 'agentes-view'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+
+  if (vista === 'calendario') {
+    document.getElementById('calendario-view').classList.add('visible');
+    document.getElementById('sb-nav-calendario').classList.add('active');
+    cargarCalendario();
+  } else if (vista === 'agentes') {
+    document.getElementById('agentes-view').classList.add('visible');
+    document.getElementById('sb-nav-agentes').classList.add('active');
+    cargarAgentes();
+  }
+}
+
+function limpiarVistasExtra() {
+  document.querySelectorAll('.sb-nav-item').forEach(el => el.classList.remove('active'));
+  const cv = document.getElementById('calendario-view');
+  const av = document.getElementById('agentes-view');
+  if (cv) cv.classList.remove('visible');
+  if (av) av.classList.remove('visible');
+}
 </script>
+
+<!-- ════════════════════════════════════
+     MODAL AGENTE
+════════════════════════════════════ -->
+<div class="modal fade" id="modal-agente" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold" id="ag-modal-title">Nuevo agente</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Nombre completo</label>
+          <input type="text" id="ag-nombre" class="form-control form-control-sm" placeholder="Ej: Ana García">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Email</label>
+          <input type="email" id="ag-email" class="form-control form-control-sm" placeholder="agente@carguill.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Rol</label>
+          <select id="ag-rol" class="form-select form-select-sm">
+            <option value="vendedor">Vendedor</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Teléfono interno</label>
+          <input type="text" id="ag-telefono" class="form-control form-control-sm" placeholder="Ext. 101">
+        </div>
+        <div class="mb-3" id="ag-pw-row">
+          <label class="form-label small fw-semibold">Contraseña</label>
+          <input type="password" id="ag-password" class="form-control form-control-sm" placeholder="Mínimo 6 caracteres">
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-sm btn-primary" onclick="guardarAgente()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
