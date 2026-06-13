@@ -495,16 +495,23 @@
     <!-- BOT TOGGLE GLOBAL -->
     <div class="sb-bot-section">
       <div class="sb-bot-toggle">
-        <div class="sb-bot-label" onclick="abrirModalBot()" title="Configurar bot">
-          <i class="bi bi-robot"></i>
-          <span>Bot IA</span>
-        </div>
-        <div class="form-check form-switch mb-0">
-          <input class="form-check-input" type="checkbox" id="toggle-bot-global"
-                 onchange="toggleBotGlobal(this.checked)" title="Activar/desactivar bot globalmente">
+        <span style="font-size:12.5px;color:#94a3b8;display:flex;align-items:center;gap:6px;">
+          <i class="bi bi-robot"></i>Bot IA
+        </span>
+        <div class="d-flex align-items-center gap-2">
+          <div id="bot-status-label" class="sb-bot-status off">Off</div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="toggle-bot-global"
+                   onchange="toggleBotGlobal(this.checked)" title="Activar/desactivar bot">
+          </div>
         </div>
       </div>
-      <div id="bot-status-label" class="sb-bot-status off">Desactivado</div>
+      <button class="btn btn-sm w-100 mt-2"
+        style="background:#334155;color:#94a3b8;border:1px solid #475569;font-size:11.5px;text-align:left;padding:5px 10px;"
+        data-bs-toggle="modal" data-bs-target="#modal-bot"
+        onclick="botTab('contexto'); cargarVistaBotInstrucciones();">
+        <i class="bi bi-sliders me-1"></i>Entrenar / Configurar bot
+      </button>
     </div>
 
     <div class="sb-footer">
