@@ -66,8 +66,8 @@ router.post(
       if (convRow.rows.length === 0) {
         const insert = await db.query(
           `INSERT INTO conversaciones
-            (cliente_telefono, cliente_whatsapp_id, cliente_nombre, estado, requiere_respuesta, created_at, ultimo_mensaje_at)
-           VALUES ($1, $2, $3, 'inicio', false, NOW(), NOW())
+            (cliente_telefono, cliente_whatsapp_id, cliente_nombre, estado, bot_activo, requiere_respuesta, created_at, ultimo_mensaje_at)
+           VALUES ($1, $2, $3, 'inicio', false, false, NOW(), NOW())
            RETURNING id`,
           [
             conversation.phone_number,

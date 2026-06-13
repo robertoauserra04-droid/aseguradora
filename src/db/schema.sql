@@ -198,14 +198,16 @@ ON CONFLICT (email) DO NOTHING;
 CREATE TABLE IF NOT EXISTS bot_config (
   id SERIAL PRIMARY KEY,
   instrucciones TEXT NOT NULL DEFAULT '',
-  activo_global BOOLEAN DEFAULT true,
+  activo_global BOOLEAN DEFAULT false,
   contexto JSONB DEFAULT '{}',
   updated_at TIMESTAMP DEFAULT NOW()
 );
 ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS contexto JSONB DEFAULT '{}';
 INSERT INTO bot_config (instrucciones, activo_global)
-VALUES ('Eres el asistente virtual de Seguros Carguill. Responde en español formal y amable. Solo habla de seguros y citas. Si el cliente quiere una cita, ofrece horarios disponibles.', true)
+VALUES ('', false)
 ON CONFLICT DO NOTHING;
+-- Desactivar bot global si estaba activo por defecto
+UPDATE bot_config SET activo_global = false WHERE id = 1 AND instrucciones = 'Eres el asistente virtual de Seguros Carguill. Responde en español formal y amable. Solo habla de seguros y citas. Si el cliente quiere una cita, ofrece horarios disponibles.';
 
 -- =============================================
 -- TABLA: bot_faq (base de conocimiento Q&A)
@@ -219,5 +221,6 @@ CREATE TABLE IF NOT EXISTS bot_faq (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Campo bot_activo por conversación
-ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS bot_activo BOOLEAN DEFAULT true;
+-- Campo bot_activo por conversación (desactivado por defecto)
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS bot_activo BOOLEAN DEFAULT false;
+UPDATE conversaciones SET bot_activo = false WHERE bot_activo = true;
