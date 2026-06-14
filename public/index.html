@@ -1152,15 +1152,13 @@
         <button class="btn btn-sm btn-primary fw-semibold" onclick="abrirModalEstado()">
           <i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado
         </button>
-        <select id="det-tipo-sel" class="form-select form-select-sm" style="width:auto;font-size:12px;"
-          onchange="cambiarTipoSeguro(this.value)">
-          <option value="">Sin tipo</option>
-          <option value="vida">Vida</option>
-          <option value="auto">Auto</option>
-          <option value="medical">Gastos Medicos</option>
-          <option value="daño">Daños</option>
-          <option value="viaje">Viaje</option>
-        </select>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+            data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:12px;">
+            <i class="bi bi-tags me-1"></i>Tipos de seguro
+          </button>
+          <ul class="dropdown-menu p-2" id="det-tipos-menu" style="font-size:12px;min-width:190px;"></ul>
+        </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="irTab('notas')">
           <i class="bi bi-sticky me-1"></i>Nota
         </button>
@@ -2006,25 +2004,18 @@ async function abrirDetalle(id) {
       (c.cliente_email ? ' · ' + esc(c.cliente_email) : '') +
       fichaLink;
 
-    // Tipo badge
-    const tipoPill = document.getElementById('det-tipo-pill');
-    if (t) {
-      tipoPill.className = `pill-tipo ${t.cls}`;
-      tipoPill.innerHTML = `<i class="bi ${t.icon} me-1"></i>${t.label}`;
-    } else {
-      tipoPill.className = 'pill-tipo t-none';
-      tipoPill.innerHTML = 'Sin tipo';
-    }
+    // Tipo(s) de seguro — varios por persona
+    const tipos = (Array.isArray(c.tipos_seguro) && c.tipos_seguro.length)
+      ? c.tipos_seguro
+      : (c.tipo_seguro ? [c.tipo_seguro] : []);
+    pintarTipoPill(tipos);
+    renderTiposMenu(tipos);
 
     // Estado badge
     const estPill = document.getElementById('det-estado-pill');
     estPill.className = 'pill-estado';
     estPill.textContent = e.label;
     estPill.style.cssText = `background:${e.color}18;color:${e.color};`;
-
-    // Tipo select
-    const tipoSel = document.getElementById('det-tipo-sel');
-    if (tipoSel) tipoSel.value = c.tipo_seguro || '';
 
     // Alerta badge
     const alertaBadge = document.getElementById('det-alerta-badge');
@@ -2219,14 +2210,45 @@ function abrirEditarCliente() {
   new bootstrap.Modal(document.getElementById('modal-cliente')).show();
 }
 
-async function cambiarTipoSeguro(tipo) {
+const TIPOS_OPCIONES = [['vida','Vida'],['auto','Auto'],['medical','Gastos Médicos'],['daño','Daños'],['viaje','Viaje']];
+
+function pintarTipoPill(tipos) {
+  const tipoPill = document.getElementById('det-tipo-pill');
+  if (!tipoPill) return;
+  if (tipos.length) {
+    tipoPill.className = '';
+    tipoPill.innerHTML = tipos.map(tk => {
+      const ti = TIPOS[tk] || { label: tk, cls: 't-none', icon: 'bi-tag' };
+      return `<span class="pill-tipo ${ti.cls} me-1"><i class="bi ${ti.icon} me-1"></i>${ti.label}</span>`;
+    }).join('');
+  } else {
+    tipoPill.className = 'pill-tipo t-none';
+    tipoPill.innerHTML = 'Sin tipo';
+  }
+}
+
+function renderTiposMenu(seleccionados) {
+  const menu = document.getElementById('det-tipos-menu');
+  if (!menu) return;
+  const set = new Set(seleccionados || []);
+  menu.innerHTML = TIPOS_OPCIONES.map(([v, l]) =>
+    `<li><label class="dropdown-item d-flex align-items-center gap-2 px-2 py-1" style="cursor:pointer;">
+       <input type="checkbox" class="form-check-input m-0" value="${v}" ${set.has(v) ? 'checked' : ''}
+         onchange="guardarTiposSeguro()"> ${l}
+     </label></li>`).join('');
+}
+
+async function guardarTiposSeguro() {
   if (!convId) return;
+  const tipos = [...document.querySelectorAll('#det-tipos-menu input:checked')].map(c => c.value);
   const r = await api(`/api/conversaciones/${convId}/cliente`, {
     method: 'PATCH',
-    body: JSON.stringify({ tipo_seguro: tipo || null }),
+    body: JSON.stringify({ tipos_seguro: tipos }),
   });
   if (r.ok) {
-    await abrirDetalle(convId);
+    // Actualiza la píldora sin recargar todo el detalle, para poder marcar
+    // varios tipos seguidos sin que se cierre el menú.
+    pintarTipoPill(tipos);
     if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
   }
 }

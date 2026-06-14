@@ -250,11 +250,22 @@ def editar_cliente(conv_id: str, datos: dict) -> None:
     cliente_nombre = datos.get("cliente_nombre")
     cliente_email = datos.get("cliente_email")
 
-    # Sólo cambia el tipo de seguro: se permite null/"" para dejarlo "Sin tipo".
-    if "tipo_seguro" in datos and not cliente_nombre:
+    # Varios tipos de seguro. tipo_seguro = principal (primer tipo) para compatibilidad.
+    if "tipos_seguro" in datos and not cliente_nombre:
+        tipos = datos["tipos_seguro"] or []
+        principal = tipos[0] if tipos else None
         query(
-            "UPDATE conversaciones SET tipo_seguro = %s, updated_at = NOW() WHERE id = %s",
-            [datos["tipo_seguro"] or None, conv_id],
+            "UPDATE conversaciones SET tipos_seguro = %s, tipo_seguro = %s, updated_at = NOW() WHERE id = %s",
+            [tipos, principal, conv_id],
+        )
+        return
+
+    # Sólo cambia el tipo de seguro (un valor): se permite null/"" para "Sin tipo".
+    if "tipo_seguro" in datos and not cliente_nombre:
+        tipo = datos["tipo_seguro"] or None
+        query(
+            "UPDATE conversaciones SET tipo_seguro = %s, tipos_seguro = %s, updated_at = NOW() WHERE id = %s",
+            [tipo, ([tipo] if tipo else []), conv_id],
         )
         return
 

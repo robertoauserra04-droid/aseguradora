@@ -285,6 +285,12 @@ ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS cliente_id UUID REFERENCES c
 ALTER TABLE polizas ALTER COLUMN ramo DROP NOT NULL;
 ALTER TABLE polizas ALTER COLUMN aseguradora DROP NOT NULL;
 
+-- Conversaciones: varios tipos de seguro por persona. tipo_seguro queda como el
+-- "principal" (primer tipo) para compatibilidad con kanban/filtros/bot/calendario.
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS tipos_seguro TEXT[] DEFAULT '{}';
+UPDATE conversaciones SET tipos_seguro = ARRAY[tipo_seguro]
+  WHERE tipo_seguro IS NOT NULL AND (tipos_seguro IS NULL OR tipos_seguro = '{}');
+
 -- =============================================
 -- TABLA: bot_numeros_excluidos
 -- Números donde el bot NUNCA responde (ej. número personal del dueño,
