@@ -49,9 +49,15 @@ def _normalizar_payload(body: dict) -> tuple[dict, dict] | None:
 
     content = (
         (raw_msg.get("text") or {}).get("body")
+        or (raw_msg.get("kapso") or {}).get("content")
         or raw_msg.get("content", "")
     )
     direction = (raw_msg.get("kapso") or {}).get("direction") or raw_msg.get("direction", "inbound")
+    # origin: cómo entró el mensaje al sistema.
+    #   cloud_api    -> lo envió la propia app/bot vía la API de Kapso (ya guardado)
+    #   business_app -> lo envió un humano desde la app de WhatsApp Business
+    #   history_sync -> backfill de historial
+    origin = (raw_msg.get("kapso") or {}).get("origin")
     whatsapp_id = raw_msg.get("id") or raw_msg.get("whatsapp_message_id")
     msg_type = raw_msg.get("type") or raw_msg.get("message_type", "text")
 
@@ -69,7 +75,7 @@ def _normalizar_payload(body: dict) -> tuple[dict, dict] | None:
     customer_name = _extraer_nombre(raw_conv, raw_msg, phone)
 
     message = {"content": content, "direction": direction, "whatsapp_id": whatsapp_id,
-               "msg_type": msg_type, "created_at": created_at}
+               "msg_type": msg_type, "created_at": created_at, "origin": origin}
     conversation = {"phone_number": phone, "customer_name": customer_name}
     return message, conversation
 
@@ -121,9 +127,14 @@ def procesar_mensaje_entrante(body: dict, idempotency_key: str = None,
 
     conv_id = _obtener_o_crear_conversacion(conversation["phone_number"], conversation["customer_name"])
 
-    # Guardar mensaje si no existe
+    # Guardar mensaje si no existe.
+    # Los salientes que envió la propia app/bot vía la API (origin=cloud_api) ya
+    # quedaron guardados al enviarse; su eco por webhook se ignora para no duplicar.
+    # Los salientes desde la app de WhatsApp Business (origin=business_app) SÍ se
+    # guardan, porque son la única fuente de esos mensajes en el panel.
     es_duplicado = bool(message["whatsapp_id"] and crud.mensajes.ya_existe(message["whatsapp_id"]))
-    if not es_duplicado:
+    es_eco_api = bool(message["direction"] != "inbound" and message["origin"] == "cloud_api")
+    if not es_duplicado and not es_eco_api:
         requiere = bool(message["direction"] == "inbound" and "?" in (message["content"] or ""))
         autor = "cliente" if message["direction"] == "inbound" else "agente"
         nombre_autor = conversation["customer_name"] if message["direction"] == "inbound" else "Agente"

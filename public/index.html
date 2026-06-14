@@ -255,6 +255,11 @@
       background: #2563eb; color: #fff;
       align-self: flex-end; border-bottom-right-radius: 3px;
     }
+    .b-bot {
+      background: #0ea5e9; color: #fff;
+      align-self: flex-end; border-bottom-right-radius: 3px;
+    }
+    .b-bot .burbuja-autor { color: #e0f2fe; }
     .b-sistema {
       background: #f1f5f9; color: #64748b;
       align-self: center; font-size: 11px;
@@ -2074,12 +2079,15 @@ function renderMensajes(msgs, clienteNombre) {
   }
   const esGenerico = n => !n || !n.trim() || n.trim().toLowerCase() === 'cliente';
   el.innerHTML = msgs.map(m => {
-    const cls   = { cliente: 'b-cliente', agente: 'b-agente' }[m.autor] || 'b-sistema';
-    const align = m.autor === 'agente' ? 'ms-auto' : m.autor === 'sistema' ? 'mx-auto' : '';
+    const cls   = { cliente: 'b-cliente', agente: 'b-agente', bot: 'b-bot' }[m.autor] || 'b-sistema';
+    const saliente = m.autor === 'agente' || m.autor === 'bot';
+    const align = saliente ? 'ms-auto' : m.autor === 'sistema' ? 'mx-auto' : '';
     const hora  = m.timestamp_mensaje ? fmtHora(m.timestamp_mensaje) : '';
     let remitente = '';
     if (m.autor === 'agente') {
       remitente = 'Tú';
+    } else if (m.autor === 'bot') {
+      remitente = !esGenerico(m.nombre_autor) ? m.nombre_autor : 'Bot';
     } else if (m.autor === 'cliente') {
       remitente = !esGenerico(m.nombre_autor) ? m.nombre_autor
                 : !esGenerico(clienteNombre) ? clienteNombre
