@@ -9,8 +9,9 @@ from app.services.webhook_service import procesar_mensaje_entrante, ejecutar_bot
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Cabeceras donde Kapso/Meta pueden enviar la firma HMAC del payload
-_SIGNATURE_HEADERS = ("x-hub-signature-256", "x-kapso-signature", "x-signature")
+# Cabeceras donde Kapso/Meta pueden enviar la firma HMAC del payload.
+# Kapso firma en `X-Webhook-Signature` (ver doc oficial); las demás son fallback.
+_SIGNATURE_HEADERS = ("x-webhook-signature", "x-hub-signature-256", "x-kapso-signature", "x-signature")
 
 
 def _extraer_firma(headers) -> str | None:
@@ -27,8 +28,14 @@ async def kapso_webhook(request: Request, background: BackgroundTasks):
     # Verificación de firma HMAC (solo si hay secreto configurado)
     if KAPSO_WEBHOOK_SECRET:
         firma = _extraer_firma(request.headers)
-        if not firma or not verify_kapso_signature(raw, firma, KAPSO_WEBHOOK_SECRET):
-            logger.warning("Webhook rechazado: firma HMAC inválida o ausente")
+        if not firma:
+            logger.warning(
+                "Webhook rechazado: no se encontró header de firma. Headers presentes: %s",
+                list(request.headers.keys()),
+            )
+            raise HTTPException(401, detail="Firma ausente")
+        if not verify_kapso_signature(raw, firma, KAPSO_WEBHOOK_SECRET):
+            logger.warning("Webhook rechazado: firma HMAC no coincide")
             raise HTTPException(401, detail="Firma inválida")
 
     try:
