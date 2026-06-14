@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+psycopg2-binary
+python-dotenv
+python-jose[cryptography]
+bcrypt
+openai
+google-auth
+google-api-python-client
+httpx
+apscheduler
+python-multipart

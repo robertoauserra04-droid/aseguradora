@@ -439,11 +439,11 @@
     #cal-container .fc { font-size: 13px; }
 
     /* ─── AGENTES VIEW ───────────────────────────────────── */
-    #agentes-view {
+    #agentes-view, #clientes-view, #polizas-view {
       display: none; flex: 1; flex-direction: column; overflow: hidden;
       background: #f8fafc;
     }
-    #agentes-view.visible { display: flex; }
+    #agentes-view.visible, #clientes-view.visible, #polizas-view.visible { display: flex; }
     .ag-header {
       background: #fff; border-bottom: 1px solid #e2e8f0;
       padding: 14px 20px; display: flex; align-items: center;
@@ -591,6 +591,15 @@
       <i class="bi bi-calendar3 me-2"></i>Calendario
     </div>
 
+    <!-- CARTERA -->
+    <div class="sb-section" style="margin-top:4px;">Cartera</div>
+    <div id="sb-nav-clientes" class="sb-nav-item" onclick="irAVista('clientes')">
+      <i class="bi bi-person-vcard me-2"></i>Clientes
+    </div>
+    <div id="sb-nav-polizas" class="sb-nav-item" onclick="irAVista('polizas')">
+      <i class="bi bi-file-earmark-text me-2"></i>Pólizas
+    </div>
+
     <!-- BOT IA -->
     <div class="sb-section" style="margin-top:4px;">Bot IA</div>
     <div class="sb-nav-item" style="cursor:default; justify-content:space-between;">
@@ -710,6 +719,68 @@
             </tr>
           </thead>
           <tbody id="agentes-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CLIENTES VIEW -->
+    <div id="clientes-view">
+      <div class="ag-header">
+        <h5><i class="bi bi-person-vcard me-2 text-primary"></i>Clientes</h5>
+        <div class="d-flex gap-2">
+          <input type="text" id="cli-search" class="form-control form-control-sm" style="max-width:200px;"
+            placeholder="Buscar cliente..." oninput="cargarClientes(this.value)">
+          <button class="btn btn-sm btn-primary" onclick="abrirModalCliente()">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo cliente
+          </button>
+        </div>
+      </div>
+      <div id="agentes-table-wrap">
+        <table class="ag-table">
+          <thead>
+            <tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>RFC</th><th>Pólizas</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="clientes-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PÓLIZAS VIEW -->
+    <div id="polizas-view">
+      <div class="ag-header">
+        <h5><i class="bi bi-file-earmark-text me-2 text-primary"></i>Pólizas</h5>
+        <div class="d-flex gap-2 align-items-center">
+          <select id="pol-filtro-ramo" class="form-select form-select-sm" style="max-width:130px;" onchange="cargarPolizas()">
+            <option value="">Todos los ramos</option>
+            <option value="vida">Vida</option>
+            <option value="auto">Auto</option>
+            <option value="medical">Médico</option>
+            <option value="daño">Daños</option>
+            <option value="viaje">Viaje</option>
+            <option value="mascotas">Mascotas</option>
+          </select>
+          <select id="pol-filtro-estado" class="form-select form-select-sm" style="max-width:130px;" onchange="cargarPolizas()">
+            <option value="">Todos los estados</option>
+            <option value="vigente">Vigente</option>
+            <option value="vencida">Vencida</option>
+            <option value="cancelada">Cancelada</option>
+            <option value="en_tramite">En trámite</option>
+          </select>
+          <label class="small text-muted d-flex align-items-center gap-1" style="white-space:nowrap;">
+            <input type="checkbox" id="pol-por-vencer" onchange="cargarPolizas()"> Por vencer
+          </label>
+          <button class="btn btn-sm btn-primary" onclick="abrirModalPoliza()">
+            <i class="bi bi-plus-lg me-1"></i>Nueva póliza
+          </button>
+        </div>
+      </div>
+      <div id="pol-comisiones" class="px-3 py-2" style="font-size:12px;"></div>
+      <div id="agentes-table-wrap">
+        <table class="ag-table">
+          <thead>
+            <tr><th>Cliente</th><th>Ramo</th><th>Aseguradora</th><th>Nº póliza</th><th>Vigencia</th><th>Prima</th><th>Comisión</th><th>Estado</th><th></th></tr>
+          </thead>
+          <tbody id="polizas-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -1504,6 +1575,17 @@ function api(url, opts = {}) {
       'Authorization': `Bearer ${token}`,
       ...(opts.headers || {}),
     },
+  }).then(r => {
+    if (r.status === 401) {
+      cerrarSesion();
+      return Promise.reject(new Error('Sesión expirada'));
+    }
+    if (!r.ok) {
+      return r.json().catch(() => ({})).then(body => {
+        return Promise.reject(new Error(body.error || `Error ${r.status}`));
+      });
+    }
+    return r;
   });
 }
 
@@ -1524,7 +1606,7 @@ function renderSidebar() {
 }
 
 function activarNavItem(id) {
-  ['sb-nav-kanban', 'sb-nav-lista', 'sb-nav-calendario', 'sb-nav-agentes'].forEach(navId => {
+  ['sb-nav-kanban', 'sb-nav-lista', 'sb-nav-calendario', 'sb-nav-agentes', 'sb-nav-clientes', 'sb-nav-polizas'].forEach(navId => {
     const el = document.getElementById(navId);
     if (el) el.classList.toggle('active', navId === id);
   });
@@ -1687,10 +1769,14 @@ async function abrirDetalle(id) {
     if (toggleConv) toggleConv.checked = c.bot_activo !== false;
 
     document.getElementById('det-nombre').textContent = c.cliente_nombre;
-    document.getElementById('det-meta').textContent   =
-      c.cliente_telefono +
-      (c.cliente_email ? ' · ' + c.cliente_email : '') +
-      (c.numero_poliza ? ' · Poliza: ' + c.numero_poliza : '');
+    const fichaLink = c.cliente_id
+      ? ` · <a href="#" onclick="cerrarDrawer(); abrirFichaCliente('${c.cliente_id}'); return false;" style="color:#3b82f6;">ver ficha</a>`
+      : '';
+    document.getElementById('det-meta').innerHTML =
+      esc(c.cliente_telefono || '') +
+      (c.cliente_email ? ' · ' + esc(c.cliente_email) : '') +
+      (c.numero_poliza ? ' · Póliza: ' + esc(c.numero_poliza) : '') +
+      fichaLink;
 
     // Tipo badge
     const tipoPill = document.getElementById('det-tipo-pill');
@@ -2371,10 +2457,216 @@ async function desactivarAgente(id, nombre) {
 }
 
 // ════════════════════════════════════════════════════
+// CLIENTES
+// ════════════════════════════════════════════════════
+let editandoClienteId = null;
+let editandoPolizaId  = null;
+let clientesCache     = [];
+const RAMO_LABEL = { vida: 'Vida', auto: 'Auto', medical: 'Médico', 'daño': 'Daños', viaje: 'Viaje', mascotas: 'Mascotas' };
+const fmtMoney = n => (n == null ? '—' : '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0 }));
+const fmtFecha = f => (f ? new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
+
+async function cargarClientes(search) {
+  try {
+    const url = '/api/clientes' + (search ? `?search=${encodeURIComponent(search)}` : '');
+    const clientes = await api(url).then(r => r.json());
+    clientesCache = clientes;
+    const tbody = document.getElementById('clientes-tbody');
+    if (!tbody) return;
+    if (clientes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay clientes</td></tr>';
+      return;
+    }
+    tbody.innerHTML = clientes.map(c => `<tr style="cursor:pointer;" onclick="abrirFichaCliente('${c.id}')">
+      <td><strong>${esc(c.nombre)}</strong></td>
+      <td>${esc(c.telefono || '—')}</td>
+      <td>${esc(c.email || '—')}</td>
+      <td>${esc(c.rfc || '—')}</td>
+      <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">${c.num_polizas}</span></td>
+      <td onclick="event.stopPropagation()">
+        <div class="d-flex gap-1">
+          <button class="btn btn-xs btn-outline-secondary" style="font-size:11px;padding:2px 8px;" onclick="editarCliente('${c.id}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-xs btn-outline-danger" style="font-size:11px;padding:2px 8px;" onclick="eliminarCliente('${c.id}','${esc(c.nombre)}')"><i class="bi bi-trash"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+  } catch (e) { console.error('[Clientes]', e); }
+}
+
+function abrirModalCliente(id) {
+  editandoClienteId = id || null;
+  const c = id ? clientesCache.find(x => x.id === id) || {} : {};
+  document.getElementById('cli-modal-title').textContent = id ? 'Editar cliente' : 'Nuevo cliente';
+  document.getElementById('cli-nombre').value   = c.nombre   || '';
+  document.getElementById('cli-telefono').value = c.telefono || '';
+  document.getElementById('cli-email').value    = c.email    || '';
+  document.getElementById('cli-rfc').value      = c.rfc      || '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-cliente')).show();
+}
+
+function editarCliente(id) { abrirModalCliente(id); }
+
+async function guardarCliente() {
+  const nombre   = document.getElementById('cli-nombre').value.trim();
+  const telefono = document.getElementById('cli-telefono').value.trim();
+  const email    = document.getElementById('cli-email').value.trim();
+  const rfc      = document.getElementById('cli-rfc').value.trim();
+  if (!nombre) { mostrarToast('El nombre es requerido', 'warning'); return; }
+  const body = { nombre, telefono: telefono || null, email: email || null, rfc: rfc || null };
+  try {
+    const url    = editandoClienteId ? `/api/clientes/${editandoClienteId}` : '/api/clientes';
+    const method = editandoClienteId ? 'PUT' : 'POST';
+    await api(url, { method, body: JSON.stringify(body) });
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-cliente')).hide();
+    mostrarToast(editandoClienteId ? 'Cliente actualizado' : 'Cliente creado', 'success');
+    cargarClientes();
+  } catch (e) { mostrarToast(e.message || 'Error al guardar', 'danger'); }
+}
+
+async function eliminarCliente(id, nombre) {
+  if (!confirm(`¿Eliminar al cliente ${nombre}? Se borrarán también sus pólizas.`)) return;
+  try {
+    await api(`/api/clientes/${id}`, { method: 'DELETE' });
+    mostrarToast('Cliente eliminado', 'success');
+    cargarClientes();
+  } catch (e) { mostrarToast(e.message || 'Error', 'danger'); }
+}
+
+async function abrirFichaCliente(id) {
+  try {
+    const d = await api(`/api/clientes/${id}`).then(r => r.json());
+    const c = d.cliente;
+    document.getElementById('ficha-nombre').textContent = c.nombre;
+    document.getElementById('ficha-sub').textContent = [c.telefono, c.email, c.rfc].filter(Boolean).join(' · ') || 'Sin datos de contacto';
+    const polHtml = d.polizas.length === 0
+      ? '<div class="text-muted small py-2">Sin pólizas registradas</div>'
+      : d.polizas.map(p => `<div class="d-flex justify-content-between align-items-center border-bottom py-2">
+          <div>
+            <strong>${RAMO_LABEL[p.ramo] || p.ramo}</strong> · ${esc(p.aseguradora)}
+            <div class="text-muted" style="font-size:11px;">Nº ${esc(p.numero_poliza || '—')} · vence ${fmtFecha(p.fecha_vencimiento)}</div>
+          </div>
+          <div class="text-end"><div>${fmtMoney(p.prima)}</div><div class="text-success" style="font-size:11px;">com. ${fmtMoney(p.comision_monto)}</div></div>
+        </div>`).join('');
+    document.getElementById('ficha-polizas').innerHTML = polHtml;
+    document.getElementById('ficha-add-poliza').onclick = () => {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-ficha-cliente')).hide();
+      abrirModalPoliza(null, id);
+    };
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-ficha-cliente')).show();
+  } catch (e) { mostrarToast(e.message || 'Error', 'danger'); }
+}
+
+// ════════════════════════════════════════════════════
+// PÓLIZAS
+// ════════════════════════════════════════════════════
+async function cargarPolizas() {
+  const ramo      = document.getElementById('pol-filtro-ramo')?.value || '';
+  const estado    = document.getElementById('pol-filtro-estado')?.value || '';
+  const porVencer = document.getElementById('pol-por-vencer')?.checked;
+  const p = new URLSearchParams();
+  if (ramo)   p.set('ramo', ramo);
+  if (estado) p.set('estado', estado);
+  if (porVencer) p.set('por_vencer', 'true');
+  try {
+    const polizas = await api(`/api/polizas?${p}`).then(r => r.json());
+    const tbody = document.getElementById('polizas-tbody');
+    if (!tbody) return;
+    if (polizas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No hay pólizas</td></tr>';
+    } else {
+      tbody.innerHTML = polizas.map(p => {
+        const dias = p.dias_para_vencer;
+        const vencBadge = (dias != null && dias <= 30 && p.estado === 'vigente')
+          ? ` <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:9px;">${dias < 0 ? 'vencida' : dias + 'd'}</span>` : '';
+        const estadoBadge = { vigente: 'bg-success-subtle text-success', vencida: 'bg-danger-subtle text-danger', cancelada: 'bg-secondary-subtle text-secondary', en_tramite: 'bg-warning-subtle text-warning' }[p.estado] || 'bg-secondary-subtle text-secondary';
+        return `<tr>
+          <td><strong>${esc(p.cliente_nombre)}</strong></td>
+          <td>${RAMO_LABEL[p.ramo] || p.ramo}</td>
+          <td>${esc(p.aseguradora)}</td>
+          <td>${esc(p.numero_poliza || '—')}</td>
+          <td>${fmtFecha(p.fecha_vencimiento)}${vencBadge}</td>
+          <td>${fmtMoney(p.prima)}</td>
+          <td class="text-success">${fmtMoney(p.comision_monto)}</td>
+          <td><span class="badge ${estadoBadge}" style="font-size:10px;">${p.estado}</span></td>
+          <td><div class="d-flex gap-1">
+            <button class="btn btn-xs btn-outline-secondary" style="font-size:11px;padding:2px 8px;" onclick='editarPoliza(${JSON.stringify(p).replace(/'/g, "&#39;")})'><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-xs btn-outline-danger" style="font-size:11px;padding:2px 8px;" onclick="eliminarPoliza('${p.id}')"><i class="bi bi-trash"></i></button>
+          </div></td>
+        </tr>`;
+      }).join('');
+    }
+    // Resumen de comisiones del periodo
+    const com = await api('/api/polizas/comisiones').then(r => r.json());
+    document.getElementById('pol-comisiones').innerHTML =
+      `<span class="text-muted">Comisiones totales (cartera):</span> <strong class="text-success">${fmtMoney(com.total)}</strong>`;
+  } catch (e) { console.error('[Pólizas]', e); }
+}
+
+async function abrirModalPoliza(poliza, clienteIdPreset) {
+  editandoPolizaId = poliza ? poliza.id : null;
+  document.getElementById('pol-modal-title').textContent = poliza ? 'Editar póliza' : 'Nueva póliza';
+
+  // Cargar clientes en el selector
+  if (clientesCache.length === 0) {
+    try { clientesCache = await api('/api/clientes').then(r => r.json()); } catch {}
+  }
+  const sel = document.getElementById('pol-cliente');
+  sel.innerHTML = clientesCache.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  sel.value = clienteIdPreset || (poliza ? poliza.cliente_id : (clientesCache[0]?.id || ''));
+  sel.disabled = !!poliza; // no se cambia el cliente al editar
+
+  document.getElementById('pol-ramo').value          = poliza ? poliza.ramo : 'auto';
+  document.getElementById('pol-aseguradora').value   = poliza ? (poliza.aseguradora || '') : '';
+  document.getElementById('pol-numero').value        = poliza ? (poliza.numero_poliza || '') : '';
+  document.getElementById('pol-estado').value        = poliza ? poliza.estado : 'vigente';
+  document.getElementById('pol-inicio').value        = poliza && poliza.fecha_inicio ? poliza.fecha_inicio.slice(0,10) : '';
+  document.getElementById('pol-venc').value          = poliza && poliza.fecha_vencimiento ? poliza.fecha_vencimiento.slice(0,10) : '';
+  document.getElementById('pol-prima').value         = poliza ? (poliza.prima || '') : '';
+  document.getElementById('pol-suma').value          = poliza ? (poliza.suma_asegurada || '') : '';
+  document.getElementById('pol-comision').value      = poliza ? (poliza.comision_pct || '') : '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-poliza')).show();
+}
+
+function editarPoliza(p) { abrirModalPoliza(p); }
+
+async function guardarPoliza() {
+  const body = {
+    cliente_id:    document.getElementById('pol-cliente').value,
+    ramo:          document.getElementById('pol-ramo').value,
+    aseguradora:   document.getElementById('pol-aseguradora').value.trim(),
+    numero_poliza: document.getElementById('pol-numero').value.trim() || null,
+    estado:        document.getElementById('pol-estado').value,
+    fecha_inicio:  document.getElementById('pol-inicio').value || null,
+    fecha_vencimiento: document.getElementById('pol-venc').value || null,
+    prima:         parseFloat(document.getElementById('pol-prima').value) || null,
+    suma_asegurada: parseFloat(document.getElementById('pol-suma').value) || null,
+    comision_pct:  parseFloat(document.getElementById('pol-comision').value) || 0,
+  };
+  if (!body.cliente_id || !body.aseguradora) { mostrarToast('Cliente y aseguradora son requeridos', 'warning'); return; }
+  try {
+    const url    = editandoPolizaId ? `/api/polizas/${editandoPolizaId}` : '/api/polizas';
+    const method = editandoPolizaId ? 'PUT' : 'POST';
+    await api(url, { method, body: JSON.stringify(body) });
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-poliza')).hide();
+    mostrarToast(editandoPolizaId ? 'Póliza actualizada' : 'Póliza creada', 'success');
+    cargarPolizas();
+  } catch (e) { mostrarToast(e.message || 'Error al guardar', 'danger'); }
+}
+
+async function eliminarPoliza(id) {
+  if (!confirm('¿Eliminar esta póliza?')) return;
+  try {
+    await api(`/api/polizas/${id}`, { method: 'DELETE' });
+    mostrarToast('Póliza eliminada', 'success');
+    cargarPolizas();
+  } catch (e) { mostrarToast(e.message || 'Error', 'danger'); }
+}
+
+// ════════════════════════════════════════════════════
 // NAVEGACIÓN ENTRE VISTAS ESPECIALES
 // ════════════════════════════════════════════════════
 function irAVista(vista) {
-  ['kanban-view', 'lista-view', 'calendario-view', 'agentes-view'].forEach(id => {
+  ['kanban-view', 'lista-view', 'calendario-view', 'agentes-view', 'clientes-view', 'polizas-view'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });
@@ -2388,14 +2680,22 @@ function irAVista(vista) {
     document.getElementById('agentes-view').classList.add('visible');
     activarNavItem('sb-nav-agentes');
     cargarAgentes();
+  } else if (vista === 'clientes') {
+    document.getElementById('clientes-view').classList.add('visible');
+    activarNavItem('sb-nav-clientes');
+    cargarClientes();
+  } else if (vista === 'polizas') {
+    document.getElementById('polizas-view').classList.add('visible');
+    activarNavItem('sb-nav-polizas');
+    cargarPolizas();
   }
 }
 
 function limpiarVistasExtra() {
-  const cv = document.getElementById('calendario-view');
-  const av = document.getElementById('agentes-view');
-  if (cv) cv.classList.remove('visible');
-  if (av) av.classList.remove('visible');
+  ['calendario-view', 'agentes-view', 'clientes-view', 'polizas-view'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
 }
 </script>
 
@@ -2438,6 +2738,146 @@ function limpiarVistasExtra() {
       <div class="modal-footer border-0 pt-0">
         <button class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancelar</button>
         <button class="btn btn-sm btn-primary" onclick="guardarAgente()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MODAL CLIENTE
+════════════════════════════════════ -->
+<div class="modal fade" id="modal-cliente" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold" id="cli-modal-title">Nuevo cliente</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Nombre completo</label>
+          <input type="text" id="cli-nombre" class="form-control form-control-sm" placeholder="Ej: Juan Pérez">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Teléfono</label>
+          <input type="text" id="cli-telefono" class="form-control form-control-sm" placeholder="+52811...">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Email</label>
+          <input type="email" id="cli-email" class="form-control form-control-sm" placeholder="cliente@correo.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">RFC</label>
+          <input type="text" id="cli-rfc" class="form-control form-control-sm" placeholder="XAXX010101000">
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-sm btn-primary" onclick="guardarCliente()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MODAL PÓLIZA
+════════════════════════════════════ -->
+<div class="modal fade" id="modal-poliza" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold" id="pol-modal-title">Nueva póliza</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Cliente</label>
+          <select id="pol-cliente" class="form-select form-select-sm"></select>
+        </div>
+        <div class="row g-2">
+          <div class="col-6 mb-2">
+            <label class="form-label small fw-semibold">Ramo</label>
+            <select id="pol-ramo" class="form-select form-select-sm">
+              <option value="vida">Vida</option>
+              <option value="auto">Auto</option>
+              <option value="medical">Médico</option>
+              <option value="daño">Daños</option>
+              <option value="viaje">Viaje</option>
+              <option value="mascotas">Mascotas</option>
+            </select>
+          </div>
+          <div class="col-6 mb-2">
+            <label class="form-label small fw-semibold">Estado</label>
+            <select id="pol-estado" class="form-select form-select-sm">
+              <option value="vigente">Vigente</option>
+              <option value="en_tramite">En trámite</option>
+              <option value="vencida">Vencida</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Aseguradora</label>
+          <input type="text" id="pol-aseguradora" class="form-control form-control-sm" placeholder="GNP, Qualitas, AXA...">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Número de póliza</label>
+          <input type="text" id="pol-numero" class="form-control form-control-sm" placeholder="Opcional">
+        </div>
+        <div class="row g-2">
+          <div class="col-6 mb-2">
+            <label class="form-label small fw-semibold">Inicio</label>
+            <input type="date" id="pol-inicio" class="form-control form-control-sm">
+          </div>
+          <div class="col-6 mb-2">
+            <label class="form-label small fw-semibold">Vencimiento</label>
+            <input type="date" id="pol-venc" class="form-control form-control-sm">
+          </div>
+        </div>
+        <div class="row g-2">
+          <div class="col-6 mb-2">
+            <label class="form-label small fw-semibold">Prima (MXN)</label>
+            <input type="number" id="pol-prima" class="form-control form-control-sm" placeholder="0">
+          </div>
+          <div class="col-6 mb-2">
+            <label class="form-label small fw-semibold">Suma asegurada</label>
+            <input type="number" id="pol-suma" class="form-control form-control-sm" placeholder="0">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Comisión (%)</label>
+          <input type="number" id="pol-comision" class="form-control form-control-sm" placeholder="Ej: 12" step="0.1">
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-sm btn-primary" onclick="guardarPoliza()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MODAL FICHA DE CLIENTE
+════════════════════════════════════ -->
+<div class="modal fade" id="modal-ficha-cliente" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-1">
+        <div>
+          <h6 class="modal-title fw-bold mb-0" id="ficha-nombre"></h6>
+          <div class="text-muted" id="ficha-sub" style="font-size:12px;"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="small fw-semibold text-muted">PÓLIZAS</span>
+          <button class="btn btn-xs btn-outline-primary" id="ficha-add-poliza" style="font-size:11px;padding:2px 8px;">
+            <i class="bi bi-plus-lg me-1"></i>Agregar póliza
+          </button>
+        </div>
+        <div id="ficha-polizas"></div>
       </div>
     </div>
   </div>
