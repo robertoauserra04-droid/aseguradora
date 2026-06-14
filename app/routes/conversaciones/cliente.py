@@ -17,9 +17,12 @@ class ClienteBody(BaseModel):
 
 @router.patch("/api/conversaciones/{conv_id}/cliente")
 def patch_cliente(conv_id: str, body: ClienteBody, agente=Depends(get_agente)):
-    datos = body.model_dump(exclude_none=True)
+    # exclude_unset conserva un tipo_seguro explícito en null (para dejar "Sin tipo");
+    # exclude_none lo descartaría y no se podría limpiar el tipo.
+    datos = body.model_dump(exclude_unset=True)
 
-    if "tipo_seguro" in datos and not body.cliente_nombre:
+    # Sólo cambia el tipo de seguro (no toca nombre): se permite null/"" para "Sin tipo".
+    if "tipo_seguro" in datos and "cliente_nombre" not in datos:
         if datos["tipo_seguro"] and datos["tipo_seguro"] not in TIPOS_VALIDOS:
             raise HTTPException(400, detail="Tipo de seguro no válido")
         editar_cliente(conv_id, datos)

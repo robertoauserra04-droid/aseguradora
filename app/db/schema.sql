@@ -281,6 +281,10 @@ CREATE INDEX IF NOT EXISTS idx_polizas_estado ON polizas(estado);
 -- Enlace opcional de conversación -> cliente
 ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS cliente_id UUID REFERENCES clientes(id);
 
+-- Pólizas: tipo (ramo) y aseguradora opcionales (se pueden capturar después)
+ALTER TABLE polizas ALTER COLUMN ramo DROP NOT NULL;
+ALTER TABLE polizas ALTER COLUMN aseguradora DROP NOT NULL;
+
 -- =============================================
 -- TABLA: bot_numeros_excluidos
 -- Números donde el bot NUNCA responde (ej. número personal del dueño,

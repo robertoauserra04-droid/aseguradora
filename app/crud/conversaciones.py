@@ -128,13 +128,57 @@ def obtener_por_id(conv_id: str) -> dict | None:
         ),
     )
 
+    cliente_id = r.rows[0].get("cliente_id")
+    polizas = []
+    if cliente_id:
+        polizas = query(
+            """SELECT id, numero_poliza, ramo, aseguradora, estado,
+                      fecha_inicio, fecha_vencimiento, suma_asegurada, prima,
+                      moneda, forma_pago, comision_pct, comision_monto, notas
+               FROM polizas WHERE cliente_id = %s
+               ORDER BY fecha_vencimiento ASC NULLS LAST, created_at DESC""",
+            [cliente_id],
+        ).rows
+        for p in polizas:
+            p["id"] = str(p["id"])
+
     return {
         "conversacion": r.rows[0],
         "mensajes": mensajes.rows,
         "cotizaciones": cotizaciones.rows,
         "notas": notas.rows,
         "historial_estados": historial.rows,
+        "polizas": polizas,
     }
+
+
+def asegurar_cliente_id(conv_id: str) -> str | None:
+    """Devuelve el cliente_id de la conversación; lo crea/enlaza por teléfono si falta.
+    Permite gestionar seguros (pólizas) desde el chat aunque la conversación sea vieja."""
+    r = query("SELECT cliente_id, cliente_telefono, cliente_nombre FROM conversaciones WHERE id = %s", [conv_id])
+    if not r.rows:
+        return None
+    if r.rows[0].get("cliente_id"):
+        return str(r.rows[0]["cliente_id"])
+
+    telefono = r.rows[0].get("cliente_telefono")
+    nombre = r.rows[0].get("cliente_nombre") or "Cliente"
+
+    cli = query("SELECT id FROM clientes WHERE telefono = %s", [telefono])
+    if cli.rows:
+        cli_id = cli.rows[0]["id"]
+    else:
+        ins = query(
+            """INSERT INTO clientes (nombre, telefono)
+               VALUES (%s, %s) ON CONFLICT (telefono) DO NOTHING RETURNING id""",
+            [nombre, telefono],
+        )
+        cli_id = ins.rows[0]["id"] if ins.rows else query(
+            "SELECT id FROM clientes WHERE telefono = %s", [telefono]
+        ).rows[0]["id"]
+
+    query("UPDATE conversaciones SET cliente_id = %s WHERE id = %s", [cli_id, conv_id])
+    return str(cli_id)
 
 
 def eliminar(conv_id: str) -> bool:
@@ -203,14 +247,14 @@ def crear_cotizacion(conv_id: str, datos: dict) -> str:
 
 
 def editar_cliente(conv_id: str, datos: dict) -> None:
-    tipo_seguro = datos.get("tipo_seguro")
     cliente_nombre = datos.get("cliente_nombre")
     cliente_email = datos.get("cliente_email")
 
-    if tipo_seguro is not None and not cliente_nombre:
+    # Sólo cambia el tipo de seguro: se permite null/"" para dejarlo "Sin tipo".
+    if "tipo_seguro" in datos and not cliente_nombre:
         query(
             "UPDATE conversaciones SET tipo_seguro = %s, updated_at = NOW() WHERE id = %s",
-            [tipo_seguro or None, conv_id],
+            [datos["tipo_seguro"] or None, conv_id],
         )
         return
 

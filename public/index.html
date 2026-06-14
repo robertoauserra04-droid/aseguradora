@@ -1175,6 +1175,7 @@
       <div class="det-tab active" id="dtab-mensajes"     onclick="irTab('mensajes')">Mensajes</div>
       <div class="det-tab"        id="dtab-notas"        onclick="irTab('notas')">Notas</div>
       <div class="det-tab"        id="dtab-cotizaciones" onclick="irTab('cotizaciones')">Cotizaciones</div>
+      <div class="det-tab"        id="dtab-seguros"      onclick="irTab('seguros')">Seguros</div>
       <div class="det-tab"        id="dtab-historial"    onclick="irTab('historial')">Historial</div>
     </div>
 
@@ -1231,6 +1232,15 @@
           </div>
         </div>
         <div id="lista-cots"></div>
+      </div>
+
+      <div id="tab-seguros" class="tab-pane">
+        <div class="d-flex justify-content-end mb-2">
+          <button class="btn btn-sm btn-primary fw-semibold" onclick="abrirModalSeguro()">
+            <i class="bi bi-plus-circle me-1"></i>Agregar seguro
+          </button>
+        </div>
+        <div id="lista-seguros"></div>
       </div>
 
       <div id="tab-historial" class="tab-pane">
@@ -2027,6 +2037,7 @@ async function abrirDetalle(id) {
     renderMensajes(d.mensajes || [], c.cliente_nombre);
     renderNotas(d.notas || []);
     renderCots(d.cotizaciones || []);
+    renderSeguros(d.polizas || []);
     renderHist(d.historial_estados || []);
     irTab('mensajes');
 
@@ -2713,7 +2724,13 @@ let editandoPolizaId  = null;
 let clientesCache     = [];
 const RAMO_LABEL = { vida: 'Vida', auto: 'Auto', medical: 'Médico', 'daño': 'Daños', viaje: 'Viaje', mascotas: 'Mascotas' };
 const fmtMoney = n => (n == null ? '—' : '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0 }));
-const fmtFecha = f => (f ? new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
+const fmtFecha = f => {
+  if (!f) return '—';
+  // Fechas tipo "YYYY-MM-DD" se parsean como LOCAL (evita que se vea un día antes en MX).
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f);
+  const d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(f);
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+};
 
 async function cargarClientes(search) {
   try {
@@ -2851,20 +2868,82 @@ async function cargarPolizas() {
   } catch (e) { console.error('[Pólizas]', e); }
 }
 
-async function abrirModalPoliza(poliza, clienteIdPreset) {
-  editandoPolizaId = poliza ? poliza.id : null;
-  document.getElementById('pol-modal-title').textContent = poliza ? 'Editar póliza' : 'Nueva póliza';
+// ─── SEGUROS dentro del chat (pólizas de la persona) ───────────────
+const ESTADO_POL_LABEL = { vigente: 'Vigente', en_tramite: 'En trámite', vencida: 'Vencida', cancelada: 'Cancelada' };
 
-  // Cargar clientes en el selector
-  if (clientesCache.length === 0) {
-    try { clientesCache = await api('/api/clientes').then(r => r.json()); } catch {}
+function renderSeguros(polizas) {
+  const el = document.getElementById('lista-seguros');
+  if (!el) return;
+  if (!polizas.length) {
+    el.innerHTML = '<div class="text-muted small text-center py-3">Sin seguros registrados</div>';
+    return;
   }
-  const sel = document.getElementById('pol-cliente');
-  sel.innerHTML = clientesCache.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
-  sel.value = clienteIdPreset || (poliza ? poliza.cliente_id : (clientesCache[0]?.id || ''));
-  sel.disabled = !!poliza; // no se cambia el cliente al editar
+  el.innerHTML = polizas.map(p => {
+    const tipo = p.ramo ? (RAMO_LABEL[p.ramo] || p.ramo) : 'Sin tipo';
+    const aseg = p.aseguradora ? ' · ' + esc(p.aseguradora) : '';
+    const fechas = (p.fecha_inicio || p.fecha_vencimiento)
+      ? `${fmtFecha(p.fecha_inicio)} → ${fmtFecha(p.fecha_vencimiento)}` : 'Sin fechas';
+    const num = p.numero_poliza ? `Nº ${esc(p.numero_poliza)} · ` : '';
+    return `<div class="bg-white border rounded-3 p-3 mb-2 d-flex justify-content-between align-items-start">
+      <div>
+        <div class="fw-semibold" style="font-size:13px;">${tipo}${aseg}</div>
+        <div class="text-muted" style="font-size:11px;margin-top:2px;">${num}${fechas}</div>
+        <span class="badge bg-secondary-subtle text-secondary border mt-1" style="font-size:10px;">${ESTADO_POL_LABEL[p.estado] || p.estado || ''}</span>
+      </div>
+      <div class="d-flex gap-1">
+        <button class="btn btn-xs btn-outline-secondary" style="font-size:11px;padding:2px 8px;" onclick='editarSeguro(${JSON.stringify(p).replace(/'/g, "&#39;")})'><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-xs btn-outline-danger" style="font-size:11px;padding:2px 8px;" onclick="eliminarSeguro('${p.id}')"><i class="bi bi-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-  document.getElementById('pol-ramo').value          = poliza ? poliza.ramo : 'auto';
+async function cargarSeguros() {
+  if (!convId) return;
+  try {
+    const d = await api(`/api/conversaciones/${convId}/seguros`).then(r => r.json());
+    renderSeguros(d.seguros || []);
+  } catch { /* noop */ }
+}
+
+function abrirModalSeguro() {
+  if (!convId) return;
+  abrirModalPoliza(null, null, true);
+}
+
+function editarSeguro(p) { abrirModalPoliza(p, null, true); }
+
+async function eliminarSeguro(id) {
+  if (!confirm('¿Eliminar este seguro?')) return;
+  try {
+    await api(`/api/polizas/${id}`, { method: 'DELETE' });
+    mostrarToast('Seguro eliminado', 'success');
+    cargarSeguros();
+  } catch (e) { mostrarToast(e.message || 'Error', 'danger'); }
+}
+
+// ─── Modal de póliza (compartido: ficha de cliente y chat) ──────────
+let seguroModoConv = false;
+
+async function abrirModalPoliza(poliza, clienteIdPreset, modoConv = false) {
+  seguroModoConv = modoConv;
+  editandoPolizaId = poliza ? poliza.id : null;
+  document.getElementById('pol-modal-title').textContent =
+    poliza ? (modoConv ? 'Editar seguro' : 'Editar póliza') : (modoConv ? 'Nuevo seguro' : 'Nueva póliza');
+
+  // En modo conversación el cliente es el de la conversación: se oculta el selector.
+  document.getElementById('pol-cliente-row').style.display = modoConv ? 'none' : '';
+  if (!modoConv) {
+    if (clientesCache.length === 0) {
+      try { clientesCache = await api('/api/clientes').then(r => r.json()); } catch {}
+    }
+    const sel = document.getElementById('pol-cliente');
+    sel.innerHTML = clientesCache.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    sel.value = clienteIdPreset || (poliza ? poliza.cliente_id : (clientesCache[0]?.id || ''));
+    sel.disabled = !!poliza;
+  }
+
+  document.getElementById('pol-ramo').value          = poliza ? (poliza.ramo || '') : '';
   document.getElementById('pol-aseguradora').value   = poliza ? (poliza.aseguradora || '') : '';
   document.getElementById('pol-numero').value        = poliza ? (poliza.numero_poliza || '') : '';
   document.getElementById('pol-estado').value        = poliza ? poliza.estado : 'vigente';
@@ -2880,9 +2959,8 @@ function editarPoliza(p) { abrirModalPoliza(p); }
 
 async function guardarPoliza() {
   const body = {
-    cliente_id:    document.getElementById('pol-cliente').value,
-    ramo:          document.getElementById('pol-ramo').value,
-    aseguradora:   document.getElementById('pol-aseguradora').value.trim(),
+    ramo:          document.getElementById('pol-ramo').value || null,
+    aseguradora:   document.getElementById('pol-aseguradora').value.trim() || null,
     numero_poliza: document.getElementById('pol-numero').value.trim() || null,
     estado:        document.getElementById('pol-estado').value,
     fecha_inicio:  document.getElementById('pol-inicio').value || null,
@@ -2891,14 +2969,24 @@ async function guardarPoliza() {
     suma_asegurada: parseFloat(document.getElementById('pol-suma').value) || null,
     comision_pct:  parseFloat(document.getElementById('pol-comision').value) || 0,
   };
-  if (!body.cliente_id || !body.aseguradora) { mostrarToast('Cliente y aseguradora son requeridos', 'warning'); return; }
+
+  // Alta/edición según contexto.
+  let url, method;
+  if (editandoPolizaId) {
+    url = `/api/polizas/${editandoPolizaId}`; method = 'PUT';
+  } else if (seguroModoConv) {
+    url = `/api/conversaciones/${convId}/seguros`; method = 'POST';
+  } else {
+    body.cliente_id = document.getElementById('pol-cliente').value;
+    if (!body.cliente_id || !body.aseguradora) { mostrarToast('Cliente y aseguradora son requeridos', 'warning'); return; }
+    url = '/api/polizas'; method = 'POST';
+  }
+
   try {
-    const url    = editandoPolizaId ? `/api/polizas/${editandoPolizaId}` : '/api/polizas';
-    const method = editandoPolizaId ? 'PUT' : 'POST';
     await api(url, { method, body: JSON.stringify(body) });
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-poliza')).hide();
-    mostrarToast(editandoPolizaId ? 'Póliza actualizada' : 'Póliza creada', 'success');
-    cargarPolizas();
+    mostrarToast(editandoPolizaId ? 'Seguro actualizado' : 'Seguro guardado', 'success');
+    if (seguroModoConv) cargarSeguros(); else cargarPolizas();
   } catch (e) { mostrarToast(e.message || 'Error al guardar', 'danger'); }
 }
 
@@ -3035,14 +3123,15 @@ function limpiarVistasExtra() {
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="mb-3">
+        <div class="mb-3" id="pol-cliente-row">
           <label class="form-label small fw-semibold">Cliente</label>
           <select id="pol-cliente" class="form-select form-select-sm"></select>
         </div>
         <div class="row g-2">
           <div class="col-6 mb-2">
-            <label class="form-label small fw-semibold">Ramo</label>
+            <label class="form-label small fw-semibold">Tipo</label>
             <select id="pol-ramo" class="form-select form-select-sm">
+              <option value="">Sin tipo</option>
               <option value="vida">Vida</option>
               <option value="auto">Auto</option>
               <option value="medical">Médico</option>
