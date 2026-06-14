@@ -248,7 +248,7 @@
       word-break: break-word; line-height: 1.45;
     }
     .b-cliente {
-      background: #fff; border: 1px solid #e2e8f0;
+      background: #f1f5f9; border: 1px solid #e2e8f0;
       align-self: flex-start; border-bottom-left-radius: 3px;
     }
     .b-agente {
@@ -260,6 +260,9 @@
       align-self: center; font-size: 11px;
       padding: 5px 12px; border-radius: 20px; max-width: 90%;
     }
+    .burbuja-autor { font-size: 11px; font-weight: 600; margin-bottom: 2px; opacity: .85; }
+    .b-cliente .burbuja-autor { color: #2563eb; }
+    .b-agente  .burbuja-autor { color: #dbeafe; }
     .burbuja-hora { font-size: 10px; opacity: .55; margin-top: 3px; }
 
     /* ─── NOTAS ─────────────────────────────────────────────── */
@@ -2022,7 +2025,6 @@ async function abrirDetalle(id) {
     document.getElementById('det-meta').innerHTML =
       esc(c.cliente_telefono || '') +
       (c.cliente_email ? ' · ' + esc(c.cliente_email) : '') +
-      (c.numero_poliza ? ' · Póliza: ' + esc(c.numero_poliza) : '') +
       fichaLink;
 
     // Tipo badge
@@ -2053,7 +2055,7 @@ async function abrirDetalle(id) {
       alertaBadge.innerHTML = '';
     }
 
-    renderMensajes(d.mensajes || []);
+    renderMensajes(d.mensajes || [], c.cliente_nombre);
     renderNotas(d.notas || []);
     renderCots(d.cotizaciones || []);
     renderHist(d.historial_estados || []);
@@ -2064,17 +2066,27 @@ async function abrirDetalle(id) {
   }
 }
 
-function renderMensajes(msgs) {
+function renderMensajes(msgs, clienteNombre) {
   const el = document.getElementById('msgs-wrap');
   if (!msgs.length) {
     el.innerHTML = '<div class="text-muted small text-center py-4">Sin mensajes registrados</div>';
     return;
   }
+  const esGenerico = n => !n || !n.trim() || n.trim().toLowerCase() === 'cliente';
   el.innerHTML = msgs.map(m => {
     const cls   = { cliente: 'b-cliente', agente: 'b-agente' }[m.autor] || 'b-sistema';
     const align = m.autor === 'agente' ? 'ms-auto' : m.autor === 'sistema' ? 'mx-auto' : '';
     const hora  = m.timestamp_mensaje ? fmtHora(m.timestamp_mensaje) : '';
+    let remitente = '';
+    if (m.autor === 'agente') {
+      remitente = 'Tú';
+    } else if (m.autor === 'cliente') {
+      remitente = !esGenerico(m.nombre_autor) ? m.nombre_autor
+                : !esGenerico(clienteNombre) ? clienteNombre
+                : 'Cliente';
+    }
     return `<div class="burbuja ${cls} ${align}">
+      ${remitente ? `<div class="burbuja-autor">${esc(remitente)}</div>` : ''}
       ${esc(m.contenido)}
       <div class="burbuja-hora text-end">${hora}</div>
     </div>`;

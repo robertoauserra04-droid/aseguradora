@@ -8,6 +8,39 @@ from app import crud
 logger = logging.getLogger(__name__)
 
 
+def _es_nombre_generico(nombre: str | None, phone: str) -> bool:
+    """True si el nombre es vacío, el placeholder 'Cliente' o el propio teléfono."""
+    if not nombre:
+        return True
+    n = nombre.strip()
+    return n == "" or n.lower() == "cliente" or n == phone
+
+
+def _extraer_nombre(raw_conv: dict, raw_msg: dict, phone: str) -> str:
+    """Extrae el nombre de perfil del contacto probando las rutas que mandan
+    Kapso y Meta Cloud API. Si ninguna trae un nombre real, devuelve el teléfono."""
+    conv_kapso = raw_conv.get("kapso") or {}
+    msg_kapso = raw_msg.get("kapso") or {}
+    contactos = raw_conv.get("contacts") or []
+    contacto0 = contactos[0] if contactos else {}
+
+    candidatos = [
+        (raw_conv.get("metadata") or {}).get("customer_name"),
+        raw_conv.get("contact_name"),
+        conv_kapso.get("contact_name"),
+        msg_kapso.get("contact_name"),
+        (contacto0.get("profile") or {}).get("name"),
+        (raw_conv.get("profile") or {}).get("name"),
+        raw_conv.get("username"),
+    ]
+
+    for c in candidatos:
+        if c and isinstance(c, str) and c.strip() and c.strip() != phone:
+            return c.strip()
+
+    return phone
+
+
 def _normalizar_payload(body: dict) -> tuple[dict, dict] | None:
     raw_msg = body.get("message", {})
     raw_conv = body.get("conversation", {})
@@ -33,7 +66,7 @@ def _normalizar_payload(body: dict) -> tuple[dict, dict] | None:
     raw_phone = (raw_conv.get("phone_number") or raw_msg.get("from", "")).replace(" ", "")
     phone = raw_phone if raw_phone.startswith("+") else f"+{raw_phone}"
 
-    customer_name = (raw_conv.get("metadata") or {}).get("customer_name") or raw_conv.get("contact_name") or raw_conv.get("username") or "Cliente"
+    customer_name = _extraer_nombre(raw_conv, raw_msg, phone)
 
     message = {"content": content, "direction": direction, "whatsapp_id": whatsapp_id,
                "msg_type": msg_type, "created_at": created_at}
@@ -42,9 +75,18 @@ def _normalizar_payload(body: dict) -> tuple[dict, dict] | None:
 
 
 def _obtener_o_crear_conversacion(phone: str, nombre: str) -> str:
-    r = query("SELECT id FROM conversaciones WHERE cliente_whatsapp_id = %s", [phone])
+    r = query("SELECT id, cliente_nombre FROM conversaciones WHERE cliente_whatsapp_id = %s", [phone])
     if r.rows:
-        return str(r.rows[0]["id"])
+        conv_id = str(r.rows[0]["id"])
+        # Si el nombre guardado es genérico y ahora llega uno real, actualizarlo.
+        # No se sobrescribe un nombre editado manualmente por un agente.
+        actual = r.rows[0].get("cliente_nombre")
+        if _es_nombre_generico(actual, phone) and not _es_nombre_generico(nombre, phone):
+            query(
+                "UPDATE conversaciones SET cliente_nombre = %s, updated_at = NOW() WHERE id = %s",
+                [nombre, conv_id],
+            )
+        return conv_id
 
     ins = query(
         """INSERT INTO conversaciones
@@ -84,7 +126,7 @@ def procesar_mensaje_entrante(body: dict, idempotency_key: str = None,
     if not es_duplicado:
         requiere = bool(message["direction"] == "inbound" and "?" in (message["content"] or ""))
         autor = "cliente" if message["direction"] == "inbound" else "agente"
-        nombre_autor = "Cliente" if message["direction"] == "inbound" else "Agente"
+        nombre_autor = conversation["customer_name"] if message["direction"] == "inbound" else "Agente"
 
         crud.mensajes.guardar(
             conv_id=conv_id,
