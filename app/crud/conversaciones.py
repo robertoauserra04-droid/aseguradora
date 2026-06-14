@@ -52,7 +52,7 @@ def listar(filtros: dict) -> dict:
 
     data_result = query(
         f"""SELECT
-              c.id, c.cliente_nombre, c.cliente_telefono, c.tipo_seguro,
+              c.id, c.cliente_nombre, c.cliente_telefono, c.tipo_seguro, c.tipos_seguro,
               c.estado, c.agente_asignado, c.agente_nombre,
               c.requiere_respuesta, c.prioridad, c.dias_en_estado,
               c.created_at, c.updated_at, c.ultimo_mensaje_at,
@@ -80,6 +80,7 @@ def listar(filtros: dict) -> dict:
             "cliente_nombre": r["cliente_nombre"],
             "cliente_telefono": r["cliente_telefono"],
             "tipo_seguro": r["tipo_seguro"],
+            "tipos_seguro": r.get("tipos_seguro") or [],
             "estado": r["estado"],
             "agente_asignado": str(r["agente_asignado"]) if r["agente_asignado"] else None,
             "agente_nombre": r["agente_nombre"],

@@ -1906,7 +1906,6 @@ function renderLista(convs) {
 
   el.innerHTML = convs.map(c => {
     const e   = getEstado(c.estado);
-    const t   = TIPOS[c.tipo_seguro] || null;
     const urg = urgClase(c);
 
     let alertaHtml = '';
@@ -1917,9 +1916,13 @@ function renderLista(convs) {
       }
     }
 
-    const tipoHtml = t
-      ? `<span class="pill-tipo ${t.cls}"><i class="bi ${t.icon} me-1"></i>${t.label}</span>`
-      : '';
+    const tiposList = (Array.isArray(c.tipos_seguro) && c.tipos_seguro.length)
+      ? c.tipos_seguro
+      : (c.tipo_seguro ? [c.tipo_seguro] : []);
+    const tipoHtml = tiposList.map(tk => {
+      const ti = TIPOS[tk] || { label: tk, cls: 't-none', icon: 'bi-tag' };
+      return `<span class="pill-tipo ${ti.cls} me-1"><i class="bi ${ti.icon} me-1"></i>${ti.label}</span>`;
+    }).join('');
 
     // Dias en estado actual (aproximado desde fecha_cambio_estado o created_at)
     const fechaRef = c.updated_at || c.created_at;
@@ -2424,9 +2427,14 @@ function renderKanban() {
 
     const cards = convs.map(c => {
       const est = getEstado(c.estado);
-      const t   = TIPOS[c.tipo_seguro];
       const urgCls = urgClase(c);
-      const tipoHtml = t ? `<span class="pill-tipo ${t.cls}">${t.label}</span>` : '';
+      const tiposCard = (Array.isArray(c.tipos_seguro) && c.tipos_seguro.length)
+        ? c.tipos_seguro
+        : (c.tipo_seguro ? [c.tipo_seguro] : []);
+      const tipoHtml = tiposCard.map(tk => {
+        const ti = TIPOS[tk] || { label: tk, cls: 't-none' };
+        return `<span class="pill-tipo ${ti.cls} me-1 mb-1">${ti.label}</span>`;
+      }).join('');
       const alertaHtml = c.requiere_respuesta ? `<span class="badge-alerta ms-1"><i class="bi bi-clock"></i></span>` : '';
       const cardBg = etapa.key === 'inicio' ? '#ffffff' : hexToRgba(etapa.color, 0.08);
       const cardBorder = etapa.key === 'inicio' ? '#e2e8f0' : hexToRgba(etapa.color, 0.30);
