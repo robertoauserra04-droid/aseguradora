@@ -447,11 +447,11 @@
     #cal-container .fc { font-size: 13px; }
 
     /* ─── AGENTES VIEW ───────────────────────────────────── */
-    #agentes-view, #clientes-view, #polizas-view {
+    #agentes-view, #clientes-view {
       display: none; flex: 1; flex-direction: column; overflow: hidden;
       background: #f8fafc;
     }
-    #agentes-view.visible, #clientes-view.visible, #polizas-view.visible { display: flex; }
+    #agentes-view.visible, #clientes-view.visible { display: flex; }
     .ag-header {
       background: #fff; border-bottom: 1px solid #e2e8f0;
       padding: 14px 20px; display: flex; align-items: center;
@@ -604,9 +604,6 @@
     <div id="sb-nav-clientes" class="sb-nav-item" onclick="irAVista('clientes')">
       <i class="bi bi-person-vcard me-2"></i>Clientes
     </div>
-    <div id="sb-nav-polizas" class="sb-nav-item" onclick="irAVista('polizas')">
-      <i class="bi bi-file-earmark-text me-2"></i>Pólizas
-    </div>
 
     <!-- BOT IA -->
     <div class="sb-section" style="margin-top:4px;">Bot IA</div>
@@ -752,46 +749,6 @@
             <tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>RFC</th><th>Pólizas</th><th>Acciones</th></tr>
           </thead>
           <tbody id="clientes-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- PÓLIZAS VIEW -->
-    <div id="polizas-view">
-      <div class="ag-header">
-        <h5><i class="bi bi-file-earmark-text me-2 text-primary"></i>Pólizas</h5>
-        <div class="d-flex gap-2 align-items-center">
-          <select id="pol-filtro-ramo" class="form-select form-select-sm" style="max-width:130px;" onchange="cargarPolizas()">
-            <option value="">Todos los ramos</option>
-            <option value="vida">Vida</option>
-            <option value="auto">Auto</option>
-            <option value="medical">Médico</option>
-            <option value="daño">Daños</option>
-            <option value="viaje">Viaje</option>
-            <option value="mascotas">Mascotas</option>
-          </select>
-          <select id="pol-filtro-estado" class="form-select form-select-sm" style="max-width:130px;" onchange="cargarPolizas()">
-            <option value="">Todos los estados</option>
-            <option value="vigente">Vigente</option>
-            <option value="vencida">Vencida</option>
-            <option value="cancelada">Cancelada</option>
-            <option value="en_tramite">En trámite</option>
-          </select>
-          <label class="small text-muted d-flex align-items-center gap-1" style="white-space:nowrap;">
-            <input type="checkbox" id="pol-por-vencer" onchange="cargarPolizas()"> Por vencer
-          </label>
-          <button class="btn btn-sm btn-primary" onclick="abrirModalPoliza()">
-            <i class="bi bi-plus-lg me-1"></i>Nueva póliza
-          </button>
-        </div>
-      </div>
-      <div id="pol-comisiones" class="px-3 py-2" style="font-size:12px;"></div>
-      <div id="agentes-table-wrap">
-        <table class="ag-table">
-          <thead>
-            <tr><th>Cliente</th><th>Ramo</th><th>Aseguradora</th><th>Nº póliza</th><th>Vigencia</th><th>Prima</th><th>Comisión</th><th>Estado</th><th></th></tr>
-          </thead>
-          <tbody id="polizas-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -1861,7 +1818,7 @@ function renderSidebar() {
 }
 
 function activarNavItem(id) {
-  ['sb-nav-kanban', 'sb-nav-lista', 'sb-nav-calendario', 'sb-nav-agentes', 'sb-nav-clientes', 'sb-nav-polizas'].forEach(navId => {
+  ['sb-nav-kanban', 'sb-nav-lista', 'sb-nav-calendario', 'sb-nav-agentes', 'sb-nav-clientes'].forEach(navId => {
     const el = document.getElementById(navId);
     if (el) el.classList.toggle('active', navId === id);
   });
@@ -2933,7 +2890,7 @@ async function eliminarPoliza(id) {
 // NAVEGACIÓN ENTRE VISTAS ESPECIALES
 // ════════════════════════════════════════════════════
 function irAVista(vista) {
-  ['kanban-view', 'lista-view', 'calendario-view', 'agentes-view', 'clientes-view', 'polizas-view'].forEach(id => {
+  ['kanban-view', 'lista-view', 'calendario-view', 'agentes-view', 'clientes-view'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });
@@ -2951,15 +2908,11 @@ function irAVista(vista) {
     document.getElementById('clientes-view').classList.add('visible');
     activarNavItem('sb-nav-clientes');
     cargarClientes();
-  } else if (vista === 'polizas') {
-    document.getElementById('polizas-view').classList.add('visible');
-    activarNavItem('sb-nav-polizas');
-    cargarPolizas();
   }
 }
 
 function limpiarVistasExtra() {
-  ['calendario-view', 'agentes-view', 'clientes-view', 'polizas-view'].forEach(id => {
+  ['calendario-view', 'agentes-view', 'clientes-view'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });
