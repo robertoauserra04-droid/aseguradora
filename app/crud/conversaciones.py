@@ -137,6 +137,16 @@ def obtener_por_id(conv_id: str) -> dict | None:
     }
 
 
+def eliminar(conv_id: str) -> bool:
+    """Borrado suave: la conversación deja de aparecer en kanban/lista (activo=false).
+    No se borra el historial; se puede recuperar reactivándola en la BD."""
+    r = query(
+        "UPDATE conversaciones SET activo = false, updated_at = NOW() WHERE id = %s RETURNING id",
+        [conv_id],
+    )
+    return len(r.rows) > 0
+
+
 def cambiar_estado(conv_id: str, estado_nuevo: str, motivo: str, agente: dict) -> None:
     r = query("SELECT estado FROM conversaciones WHERE id = %s", [conv_id])
     if not r.rows:

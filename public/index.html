@@ -416,6 +416,13 @@
     }
     .kb-card-nombre { font-size: 12.5px; font-weight: 600; color: #0f172a; }
     .kb-card-tel    { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+    .kb-card-del {
+      border: none; background: transparent; color: #cbd5e1;
+      padding: 0 2px; font-size: 12px; line-height: 1; cursor: pointer;
+      opacity: 0; transition: opacity .12s, color .12s;
+    }
+    .kb-card:hover .kb-card-del { opacity: 1; }
+    .kb-card-del:hover { color: #ef4444; }
     .kb-card-sub    {
       font-size: 10px; font-weight: 600; padding: 2px 7px;
       border-radius: 8px; margin-top: 5px; display: inline-block;
@@ -2327,6 +2334,18 @@ function hexToRgba(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
+async function eliminarConversacion(id) {
+  if (!confirm('¿Eliminar esta conversación del tablero? No se borra el historial, solo se oculta.')) return;
+  try {
+    await api(`/api/conversaciones/${id}`, { method: 'DELETE' });
+    if (convId === id) cerrarDrawer();
+    mostrarToast('Conversación eliminada', 'success');
+    if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
+  } catch {
+    mostrarToast('No se pudo eliminar la conversación', 'danger');
+  }
+}
+
 async function cargarKanban() {
   const sort = document.getElementById('sort-sel')?.value || 'mas_urgente';
   const tipo = document.getElementById('filtro-tipo')?.value || '';
@@ -2384,7 +2403,13 @@ function renderKanban() {
         onclick="abrirDetalle('${c.id}')">
         <div class="d-flex justify-content-between align-items-start">
           <div class="kb-card-nombre">${esc(c.cliente_nombre)}</div>
-          ${alertaHtml}
+          <div class="d-flex align-items-center gap-1">
+            ${alertaHtml}
+            <button class="kb-card-del" title="Eliminar conversación"
+              onclick="event.stopPropagation(); eliminarConversacion('${c.id}')">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
         </div>
         <div class="kb-card-tel">${esc(c.cliente_telefono)}</div>
         ${tipoHtml ? `<div style="margin-top:5px;">${tipoHtml}</div>` : ''}

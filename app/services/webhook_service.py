@@ -80,6 +80,37 @@ def _normalizar_payload(body: dict) -> tuple[dict, dict] | None:
     return message, conversation
 
 
+def _sincronizar_cliente(phone: str, nombre: str, conv_id: str) -> None:
+    """Crea/actualiza el registro en `clientes` y lo enlaza a la conversación.
+
+    Así cada contacto de WhatsApp aparece en la sección Clientes con su teléfono
+    y, en cuanto Kapso manda el nombre de perfil, con su nombre real (sin esperar
+    al backfill de arranque). No pisa un nombre ya editado a mano.
+    """
+    r = query("SELECT id, nombre FROM clientes WHERE telefono = %s", [phone])
+    if r.rows:
+        cli_id = r.rows[0]["id"]
+        actual = r.rows[0].get("nombre")
+        if _es_nombre_generico(actual, phone) and not _es_nombre_generico(nombre, phone):
+            query("UPDATE clientes SET nombre = %s, updated_at = NOW() WHERE id = %s", [nombre, cli_id])
+    else:
+        ins = query(
+            """INSERT INTO clientes (nombre, telefono)
+               VALUES (%s, %s)
+               ON CONFLICT (telefono) DO NOTHING
+               RETURNING id""",
+            [nombre, phone],
+        )
+        cli_id = ins.rows[0]["id"] if ins.rows else query(
+            "SELECT id FROM clientes WHERE telefono = %s", [phone]
+        ).rows[0]["id"]
+
+    query(
+        "UPDATE conversaciones SET cliente_id = %s WHERE id = %s AND cliente_id IS NULL",
+        [cli_id, conv_id],
+    )
+
+
 def _obtener_o_crear_conversacion(phone: str, nombre: str) -> str:
     r = query("SELECT id, cliente_nombre FROM conversaciones WHERE cliente_whatsapp_id = %s", [phone])
     if r.rows:
@@ -92,16 +123,18 @@ def _obtener_o_crear_conversacion(phone: str, nombre: str) -> str:
                 "UPDATE conversaciones SET cliente_nombre = %s, updated_at = NOW() WHERE id = %s",
                 [nombre, conv_id],
             )
-        return conv_id
+    else:
+        ins = query(
+            """INSERT INTO conversaciones
+                 (cliente_telefono, cliente_whatsapp_id, cliente_nombre, estado, bot_activo, requiere_respuesta, created_at, ultimo_mensaje_at)
+               VALUES (%s, %s, %s, 'inicio', true, false, NOW(), NOW())
+               RETURNING id""",
+            [phone, phone, nombre],
+        )
+        conv_id = str(ins.rows[0]["id"])
 
-    ins = query(
-        """INSERT INTO conversaciones
-             (cliente_telefono, cliente_whatsapp_id, cliente_nombre, estado, bot_activo, requiere_respuesta, created_at, ultimo_mensaje_at)
-           VALUES (%s, %s, %s, 'inicio', true, false, NOW(), NOW())
-           RETURNING id""",
-        [phone, phone, nombre],
-    )
-    return str(ins.rows[0]["id"])
+    _sincronizar_cliente(phone, nombre, conv_id)
+    return conv_id
 
 
 def procesar_mensaje_entrante(body: dict, idempotency_key: str = None,
