@@ -115,6 +115,10 @@ def _obtener_o_crear_conversacion(phone: str, nombre: str) -> str:
     r = query("SELECT id, cliente_nombre FROM conversaciones WHERE cliente_whatsapp_id = %s", [phone])
     if r.rows:
         conv_id = str(r.rows[0]["id"])
+        # Reactivar la conversación: si se había eliminado (activo=false) y vuelve a
+        # escribir, debe reaparecer en el panel. Sin esto el mensaje se guardaría en
+        # una conversación oculta y nunca se vería.
+        query("UPDATE conversaciones SET activo = true WHERE id = %s AND activo = false", [conv_id])
         # Si el nombre guardado es genérico y ahora llega uno real, actualizarlo.
         # No se sobrescribe un nombre editado manualmente por un agente.
         actual = r.rows[0].get("cliente_nombre")
