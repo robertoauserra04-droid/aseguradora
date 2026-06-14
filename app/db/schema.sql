@@ -280,3 +280,16 @@ CREATE INDEX IF NOT EXISTS idx_polizas_estado ON polizas(estado);
 
 -- Enlace opcional de conversación -> cliente
 ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS cliente_id UUID REFERENCES clientes(id);
+
+-- =============================================
+-- TABLA: bot_numeros_excluidos
+-- Números donde el bot NUNCA responde (ej. número personal del dueño,
+-- contactos que se atienden manualmente, proveedores, etc.)
+-- =============================================
+CREATE TABLE IF NOT EXISTS bot_numeros_excluidos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  numero VARCHAR(20) NOT NULL UNIQUE,
+  motivo VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_bot_excluidos_numero ON bot_numeros_excluidos(numero);

@@ -25,11 +25,18 @@ def generar_respuesta(conversacion_id: str) -> str | None:
     if not snapshot["cfg"] or not snapshot["cfg"].get("activo_global"):
         return None
 
+    contexto = snapshot["cfg"].get("contexto") or {}
+    modelo = contexto.get("modelo") or "gpt-4o-mini"
+    try:
+        temperatura = float(contexto.get("temperatura", 0.65))
+    except (ValueError, TypeError):
+        temperatura = 0.65
+
     system_prompt = build_system_prompt(snapshot["cfg"], snapshot["faqs"], snapshot["slots_info"])
     messages = build_messages(system_prompt, snapshot["mensajes"])
     tools = build_tools(snapshot["slots_info"])
 
-    kwargs = {"model": "gpt-4o-mini", "messages": messages, "max_tokens": 400, "temperature": 0.65}
+    kwargs = {"model": modelo, "messages": messages, "max_tokens": 400, "temperature": temperatura}
     if tools:
         kwargs["tools"] = tools
         kwargs["tool_choice"] = "auto"
@@ -52,7 +59,7 @@ def generar_respuesta(conversacion_id: str) -> str | None:
             messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": result})
 
         resp2 = openai.chat.completions.create(
-            model="gpt-4o-mini", messages=messages, max_tokens=300, temperature=0.65
+            model=modelo, messages=messages, max_tokens=300, temperature=temperatura
         )
         return (resp2.choices[0].message.content or "").strip() or None
 

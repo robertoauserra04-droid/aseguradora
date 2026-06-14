@@ -41,3 +41,39 @@ def create_faq(pregunta: str, respuesta: str) -> dict:
 
 def delete_faq(faq_id: str) -> None:
     query("UPDATE bot_faq SET activo = false WHERE id = %s", [faq_id])
+
+
+# ── Números excluidos (el bot nunca responde a estos) ──
+
+def _normalizar_numero(numero: str) -> str:
+    numero = (numero or "").replace(" ", "").replace("-", "")
+    return numero if numero.startswith("+") else f"+{numero}"
+
+
+def list_excluidos() -> list:
+    r = query("SELECT id, numero, motivo, created_at FROM bot_numeros_excluidos ORDER BY created_at DESC")
+    for row in r.rows:
+        row["id"] = str(row["id"])
+    return r.rows
+
+
+def add_excluido(numero: str, motivo: str = None) -> dict:
+    r = query(
+        """INSERT INTO bot_numeros_excluidos (numero, motivo)
+           VALUES (%s, %s)
+           ON CONFLICT (numero) DO UPDATE SET motivo = EXCLUDED.motivo
+           RETURNING id, numero, motivo, created_at""",
+        [_normalizar_numero(numero), motivo],
+    )
+    r.rows[0]["id"] = str(r.rows[0]["id"])
+    return r.rows[0]
+
+
+def delete_excluido(excluido_id: str) -> bool:
+    r = query("DELETE FROM bot_numeros_excluidos WHERE id = %s RETURNING id", [excluido_id])
+    return len(r.rows) > 0
+
+
+def numero_excluido(telefono: str) -> bool:
+    r = query("SELECT 1 FROM bot_numeros_excluidos WHERE numero = %s", [_normalizar_numero(telefono)])
+    return len(r.rows) > 0

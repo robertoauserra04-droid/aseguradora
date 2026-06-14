@@ -128,12 +128,32 @@ def procesar_mensaje_entrante(body: dict, idempotency_key: str = None,
     return {"status": "ok", "conversacion_id": conv_id, "disparar_bot": disparar_bot}
 
 
+def _hora_monterrey() -> int:
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("America/Monterrey")).hour
+    except Exception:
+        return datetime.now(timezone.utc).hour
+
+
+def _fuera_de_horario(contexto: dict) -> bool:
+    if not contexto.get("solo_horario"):
+        return False
+    try:
+        inicio = int(contexto.get("hora_inicio", 9))
+        fin = int(contexto.get("hora_fin", 18))
+    except (ValueError, TypeError):
+        return False
+    return not (inicio <= _hora_monterrey() < fin)
+
+
 def ejecutar_bot(conv_id: str) -> None:
     """Genera y envía la respuesta del bot. Se ejecuta como BackgroundTask (sync, en threadpool)."""
     try:
-        cfg_r = query("SELECT activo_global FROM bot_config LIMIT 1")
+        cfg_r = query("SELECT activo_global, contexto FROM bot_config LIMIT 1")
         if not cfg_r.rows or not cfg_r.rows[0].get("activo_global"):
             return
+        contexto = cfg_r.rows[0].get("contexto") or {}
 
         conv_r = query("SELECT bot_activo, cliente_telefono FROM conversaciones WHERE id = %s", [conv_id])
         if not conv_r.rows:
@@ -142,24 +162,54 @@ def ejecutar_bot(conv_id: str) -> None:
         if conv.get("bot_activo") is False:
             return
 
+        # Número excluido (ej. número personal del dueño) → el bot nunca responde
+        from app.crud.bot import numero_excluido
+        if numero_excluido(conv["cliente_telefono"]):
+            logger.info("Bot omitido: %s está en la lista de excluidos", conv["cliente_telefono"])
+            return
+
+        from app.services.whatsapp.sender import enviar_mensaje
+
+        # Fuera del horario de atención
+        if _fuera_de_horario(contexto):
+            msg_fuera = (contexto.get("mensaje_fuera_horario") or "").strip()
+            if msg_fuera and not _bot_respondio_reciente(conv_id):
+                enviar_mensaje(conv["cliente_telefono"], msg_fuera)
+                _guardar_respuesta_bot(conv_id, msg_fuera)
+            return
+
         from app.services.ai.index import generar_respuesta
         texto = generar_respuesta(conv_id)
         if not texto:
             return
 
-        from app.services.whatsapp.sender import enviar_mensaje
         enviar_mensaje(conv["cliente_telefono"], texto)
-
-        query(
-            """INSERT INTO mensajes
-                 (conversacion_id, autor, nombre_autor, contenido, tipo_mensaje, timestamp_mensaje, requiere_respuesta)
-               VALUES (%s, 'bot', 'Bot Carguill', %s, 'text', NOW(), false)""",
-            [conv_id, texto],
-        )
-        query(
-            "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false WHERE id = %s",
-            [conv_id],
-        )
+        _guardar_respuesta_bot(conv_id, texto)
         logger.info("Respuesta del bot enviada a %s", conv["cliente_telefono"])
     except Exception as e:
         logger.error("Error al generar/enviar respuesta del bot: %s", e)
+
+
+def _guardar_respuesta_bot(conv_id: str, texto: str) -> None:
+    query(
+        """INSERT INTO mensajes
+             (conversacion_id, autor, nombre_autor, contenido, tipo_mensaje, timestamp_mensaje, requiere_respuesta)
+           VALUES (%s, 'bot', 'Bot Carguill', %s, 'text', NOW(), false)""",
+        [conv_id, texto],
+    )
+    query(
+        "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false WHERE id = %s",
+        [conv_id],
+    )
+
+
+def _bot_respondio_reciente(conv_id: str, horas: int = 4) -> bool:
+    """Evita repetir el mensaje de fuera de horario en cada mensaje del cliente."""
+    r = query(
+        """SELECT 1 FROM mensajes
+           WHERE conversacion_id = %s AND autor = 'bot'
+             AND timestamp_mensaje > NOW() - make_interval(hours => %s)
+           LIMIT 1""",
+        [conv_id, horas],
+    )
+    return len(r.rows) > 0

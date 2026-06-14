@@ -961,6 +961,87 @@
               </div>
             </div>
 
+            <!-- 7. Comportamiento -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-sliders2" style="color:#8b5cf6;"></i>Comportamiento del bot
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Inteligencia del bot</label>
+                  <select id="ctx-modelo" class="form-select form-select-sm">
+                    <option value="gpt-4o-mini">Rápido y económico (recomendado)</option>
+                    <option value="gpt-4o">Avanzado (respuestas más elaboradas)</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Creatividad</label>
+                  <select id="ctx-temperatura" class="form-select form-select-sm">
+                    <option value="0.3">Baja — preciso y consistente</option>
+                    <option value="0.65" selected>Media — equilibrado</option>
+                    <option value="0.9">Alta — más variado</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="ctx-solo-horario" onchange="toggleHorarioFields()">
+                <label class="form-check-label small fw-semibold" for="ctx-solo-horario">
+                  El bot solo responde dentro del horario de atención
+                </label>
+              </div>
+              <div id="horario-fields" class="row g-3 mt-1" style="display:none;">
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold mb-1">Desde (hora)</label>
+                  <input type="number" id="ctx-hora-inicio" class="form-control form-control-sm" min="0" max="23" placeholder="9">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold mb-1">Hasta (hora)</label>
+                  <input type="number" id="ctx-hora-fin" class="form-control form-control-sm" min="0" max="23" placeholder="18">
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-semibold mb-1">Mensaje fuera de horario (opcional)</label>
+                  <textarea id="ctx-msg-fuera" class="form-control form-control-sm" rows="2"
+                    placeholder="Ej: Gracias por tu mensaje. Nuestro horario es Lun-Vie 9am-6pm. Te responderemos en cuanto abramos."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 8. Números sin bot -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-person-dash" style="color:#ef4444;"></i>
+                Números sin bot
+                <span class="badge bg-secondary ms-1" id="excluidos-count" style="font-size:10px;">0</span>
+              </div>
+              <p class="text-muted mb-2" style="font-size:11px;">
+                El bot <strong>nunca</strong> responde a estos números. Útil para tu número personal,
+                contactos que atiendes a mano o proveedores. (Tu número personal asociado al de negocio va aquí.)
+              </p>
+              <div class="row g-2 mb-2">
+                <div class="col-md-5">
+                  <input type="text" id="exc-numero" class="form-control form-control-sm" placeholder="+528112345678">
+                </div>
+                <div class="col-md-5">
+                  <input type="text" id="exc-motivo" class="form-control form-control-sm" placeholder="Motivo (ej: mi número personal)">
+                </div>
+                <div class="col-md-2">
+                  <button class="btn btn-sm btn-outline-danger w-100 px-2" onclick="agregarExcluido()">
+                    <i class="bi bi-plus-circle"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="faq-table-wrap">
+                <table class="faq-table">
+                  <thead>
+                    <tr><th style="width:42%">Número</th><th>Motivo</th><th style="width:56px;"></th></tr>
+                  </thead>
+                  <tbody id="excluidos-lista">
+                    <tr><td colspan="3" class="text-center text-muted py-3" style="font-size:12px;">Cargando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <!-- Guardar -->
             <div class="d-flex align-items-center gap-3 pb-2">
               <button class="btn btn-primary px-4" onclick="guardarTodo(event)">
@@ -1377,6 +1458,17 @@ async function cargarVistaBotInstrucciones() {
     set('ctx-restricciones', ctx.restricciones);
     set('bot-instrucciones', d.instrucciones);
 
+    // Comportamiento
+    set('ctx-modelo', ctx.modelo || 'gpt-4o-mini');
+    set('ctx-temperatura', ctx.temperatura != null ? String(ctx.temperatura) : '0.65');
+    set('ctx-hora-inicio', ctx.hora_inicio != null ? String(ctx.hora_inicio) : '9');
+    set('ctx-hora-fin', ctx.hora_fin != null ? String(ctx.hora_fin) : '18');
+    set('ctx-msg-fuera', ctx.mensaje_fuera_horario);
+    const soloH = document.getElementById('ctx-solo-horario');
+    if (soloH) soloH.checked = !!ctx.solo_horario;
+    toggleHorarioFields();
+    cargarExcluidos();
+
     // Seguros cards
     const seguros = Array.isArray(ctx.seguros) ? ctx.seguros : [];
     document.querySelectorAll('.seguro-card').forEach(card => {
@@ -1451,6 +1543,13 @@ async function guardarContexto() {
     tono:         document.querySelector('.tono-card.active')?.dataset.tono || 'ambos',
     bienvenida:   (document.getElementById('ctx-bienvenida')?.value || '').trim(),
     restricciones:(document.getElementById('ctx-restricciones')?.value || '').trim(),
+    // Comportamiento
+    modelo:       document.getElementById('ctx-modelo')?.value || 'gpt-4o-mini',
+    temperatura:  parseFloat(document.getElementById('ctx-temperatura')?.value) || 0.65,
+    solo_horario: document.getElementById('ctx-solo-horario')?.checked || false,
+    hora_inicio:  parseInt(document.getElementById('ctx-hora-inicio')?.value, 10) || 9,
+    hora_fin:     parseInt(document.getElementById('ctx-hora-fin')?.value, 10) || 18,
+    mensaje_fuera_horario: (document.getElementById('ctx-msg-fuera')?.value || '').trim(),
   };
   await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ contexto }) });
 }
@@ -1547,6 +1646,61 @@ async function eliminarFaq(id) {
     await api(`/api/bot/faq/${id}`, { method: 'DELETE' });
     cargarFaqs();
   } catch {}
+}
+
+// ── Comportamiento: horario ──
+function toggleHorarioFields() {
+  const on = document.getElementById('ctx-solo-horario')?.checked;
+  const fields = document.getElementById('horario-fields');
+  if (fields) fields.style.display = on ? '' : 'none';
+}
+
+// ── Números sin bot (excluidos) ──
+async function cargarExcluidos() {
+  const lista = document.getElementById('excluidos-lista');
+  const count = document.getElementById('excluidos-count');
+  try {
+    const nums = await api('/api/bot/excluidos').then(r => r.json());
+    if (count) count.textContent = nums.length;
+    if (!lista) return;
+    if (nums.length === 0) {
+      lista.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3" style="font-size:12px;">Ningún número excluido todavía.</td></tr>';
+      return;
+    }
+    lista.innerHTML = nums.map(n => `
+      <tr>
+        <td style="font-weight:500;">${esc(n.numero)}</td>
+        <td style="color:#475569;">${esc(n.motivo || '—')}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:11px;" onclick="eliminarExcluido('${n.id}')">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`).join('');
+  } catch {
+    if (lista) lista.innerHTML = '<tr><td colspan="3" class="text-danger small py-2 px-2">Error al cargar.</td></tr>';
+  }
+}
+
+async function agregarExcluido() {
+  const numero = document.getElementById('exc-numero').value.trim();
+  const motivo = document.getElementById('exc-motivo').value.trim();
+  if (!numero) { mostrarToast('Escribe un número', 'warning'); return; }
+  try {
+    await api('/api/bot/excluidos', { method: 'POST', body: JSON.stringify({ numero, motivo }) });
+    document.getElementById('exc-numero').value = '';
+    document.getElementById('exc-motivo').value = '';
+    mostrarToast('Número excluido — el bot no le responderá', 'success');
+    cargarExcluidos();
+  } catch (e) { mostrarToast(e.message || 'Error', 'danger'); }
+}
+
+async function eliminarExcluido(id) {
+  if (!confirm('¿Quitar este número de la lista? El bot volverá a responderle.')) return;
+  try {
+    await api(`/api/bot/excluidos/${id}`, { method: 'DELETE' });
+    cargarExcluidos();
+  } catch (e) { mostrarToast(e.message || 'Error', 'danger'); }
 }
 
 function mostrarPanel(nombre, rol) {

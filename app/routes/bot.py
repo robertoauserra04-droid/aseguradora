@@ -22,6 +22,11 @@ class BotToggleBody(BaseModel):
     bot_activo: bool
 
 
+class ExcluidoBody(BaseModel):
+    numero: str
+    motivo: Optional[str] = None
+
+
 @router.get("/api/bot/config")
 def get_config(agente=Depends(get_agente)):
     return crud.get_config()
@@ -56,3 +61,24 @@ def toggle_bot(conv_id: str, body: BotToggleBody, agente=Depends(get_agente)):
     from app.crud.conversaciones import toggle_bot as crud_toggle
     crud_toggle(conv_id, body.bot_activo)
     return {"ok": True, "bot_activo": body.bot_activo}
+
+
+# ── Números excluidos ──
+
+@router.get("/api/bot/excluidos")
+def list_excluidos(agente=Depends(get_agente)):
+    return crud.list_excluidos()
+
+
+@router.post("/api/bot/excluidos", status_code=201)
+def add_excluido(body: ExcluidoBody, agente=Depends(get_agente)):
+    if not body.numero.strip():
+        raise HTTPException(400, detail="El número es requerido")
+    return crud.add_excluido(body.numero, body.motivo)
+
+
+@router.delete("/api/bot/excluidos/{excluido_id}")
+def delete_excluido(excluido_id: str, agente=Depends(get_agente)):
+    if not crud.delete_excluido(excluido_id):
+        raise HTTPException(404, detail="No encontrado")
+    return {"ok": True}
