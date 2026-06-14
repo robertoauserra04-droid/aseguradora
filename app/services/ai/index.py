@@ -64,3 +64,70 @@ def generar_respuesta(conversacion_id: str) -> str | None:
         return (resp2.choices[0].message.content or "").strip() or None
 
     return (choice.message.content or "").strip() or None
+
+
+def _handle_tool_prueba(nombre: str, args: dict) -> str:
+    """Handler de tools para el modo prueba — NO toca la base de datos."""
+    if nombre == "registrar_interes":
+        return f"Interés en seguro de tipo \"{args.get('tipo_seguro')}\" registrado (simulado)."
+    if nombre == "escalar_a_agente":
+        return "Conversación marcada para un asesor humano (simulado)."
+    if nombre == "agendar_cita":
+        return "Cita agendada (simulado)."
+    return "Acción simulada."
+
+
+def responder_prueba(historial: list) -> str:
+    """Genera una respuesta del bot para el MODO PRUEBA del panel.
+
+    Usa la misma configuración (perfil, tono, FAQs, reglas) pero:
+    - no requiere que el bot esté activo globalmente,
+    - no lee ni escribe conversaciones reales,
+    - no ejecuta tools sobre la BD ni envía WhatsApp.
+    """
+    from app.config.database import query
+    from app.config.env import OPENAI_API_KEY
+
+    if not OPENAI_API_KEY:
+        return "⚠️ Falta configurar OPENAI_API_KEY para poder probar el bot."
+
+    openai = _get_openai()
+    cfg_r = query("SELECT instrucciones, activo_global, contexto FROM bot_config WHERE id = 1")
+    cfg = cfg_r.rows[0] if cfg_r.rows else {"instrucciones": "", "contexto": {}}
+    faqs = query("SELECT pregunta, respuesta FROM bot_faq WHERE activo = true ORDER BY orden, created_at").rows
+
+    contexto = cfg.get("contexto") or {}
+    modelo = contexto.get("modelo") or "gpt-4o-mini"
+    try:
+        temperatura = float(contexto.get("temperatura", 0.65))
+    except (ValueError, TypeError):
+        temperatura = 0.65
+
+    slots_info = {"texto": "", "slots": []}  # sin calendario en modo prueba
+    system_prompt = build_system_prompt(cfg, faqs, slots_info)
+    messages = [{"role": "system", "content": system_prompt}] + (historial or [])
+    tools = build_tools(slots_info)
+
+    kwargs = {"model": modelo, "messages": messages, "max_tokens": 400, "temperature": temperatura}
+    if tools:
+        kwargs["tools"] = tools
+        kwargs["tool_choice"] = "auto"
+
+    resp = openai.chat.completions.create(**kwargs)
+    choice = resp.choices[0]
+
+    if choice.finish_reason == "tool_calls" and choice.message.tool_calls:
+        messages.append(choice.message)
+        for tc in choice.message.tool_calls:
+            try:
+                args = json.loads(tc.function.arguments)
+            except Exception:
+                args = {}
+            messages.append({"role": "tool", "tool_call_id": tc.id,
+                             "content": _handle_tool_prueba(tc.function.name, args)})
+        resp2 = openai.chat.completions.create(
+            model=modelo, messages=messages, max_tokens=300, temperature=temperatura
+        )
+        return (resp2.choices[0].message.content or "").strip() or "(sin respuesta)"
+
+    return (choice.message.content or "").strip() or "(sin respuesta)"

@@ -27,6 +27,15 @@ class ExcluidoBody(BaseModel):
     motivo: Optional[str] = None
 
 
+class MensajePrueba(BaseModel):
+    role: str
+    content: str
+
+
+class PruebaBody(BaseModel):
+    mensajes: list[MensajePrueba]
+
+
 @router.get("/api/bot/config")
 def get_config(agente=Depends(get_agente)):
     return crud.get_config()
@@ -82,3 +91,14 @@ def delete_excluido(excluido_id: str, agente=Depends(get_agente)):
     if not crud.delete_excluido(excluido_id):
         raise HTTPException(404, detail="No encontrado")
     return {"ok": True}
+
+
+# ── Modo prueba: chatear con el bot sin tocar BD ni WhatsApp ──
+
+@router.post("/api/bot/probar")
+async def probar_bot(body: PruebaBody, agente=Depends(get_agente)):
+    from fastapi.concurrency import run_in_threadpool
+    from app.services.ai.index import responder_prueba
+    historial = [{"role": m.role, "content": m.content} for m in body.mensajes]
+    respuesta = await run_in_threadpool(responder_prueba, historial)
+    return {"respuesta": respuesta}
