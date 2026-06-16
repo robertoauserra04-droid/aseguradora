@@ -32,10 +32,14 @@ def handle_tool_call(tool_name: str, args: dict, context: dict) -> str:
         if idx < 0 or idx >= len(slots):
             return "El horario seleccionado ya no está disponible. Por favor elige otro."
         slot = slots[idx]
+        titulo = f"Cita: {conversacion.get('cliente_nombre', 'Cliente')} — {args.get('motivo', '')}".strip(" —")
+
+        # Crear evento en Google Calendar (opcional; si no está configurado, igual se guarda en la BD)
+        google_id = None
         try:
             from app.services.calendar.client import crear_evento
-            crear_evento(
-                titulo=f"Cita Carguill: {conversacion.get('cliente_nombre', 'Cliente')} — {args.get('motivo', '')}",
+            ev = crear_evento(
+                titulo=titulo,
                 descripcion="\n".join([
                     f"Cliente: {conversacion.get('cliente_nombre', '')}",
                     f"Tel: {conversacion.get('cliente_telefono', '')}",
@@ -46,14 +50,32 @@ def handle_tool_call(tool_name: str, args: dict, context: dict) -> str:
                 fin=slot["fin"],
                 email_cliente=conversacion.get("cliente_email"),
             )
-            query(
-                "UPDATE conversaciones SET estado = 'tramite_oficina', updated_at = NOW() WHERE id = %s AND estado = 'inicio'",
-                [conversacion_id],
-            )
-            logger.info("Cita agendada: %s — conv %s", slot["label"], conversacion_id)
-            return f"Cita agendada correctamente para el {slot['label']}."
+            if isinstance(ev, dict):
+                google_id = ev.get("id")
         except Exception as e:
-            logger.error("Error agendando cita: %s", e)
+            logger.error("Google Calendar no disponible al agendar: %s", e)
+
+        # Guardar la cita en la BD del panel (siempre) para que se vea en el calendario
+        try:
+            from app.crud import citas as crud_citas
+            crud_citas.crear({
+                "conversacion_id": conversacion_id,
+                "cliente_id": conversacion.get("cliente_id"),
+                "titulo": titulo,
+                "motivo": args.get("motivo", ""),
+                "inicio": slot["inicio"],
+                "fin": slot.get("fin"),
+                "google_event_id": google_id,
+            })
+        except Exception as e:
+            logger.error("Error guardando cita en BD: %s", e)
             return "Hubo un problema al agendar la cita. Por favor confírmala por otro medio o intenta de nuevo."
+
+        query(
+            "UPDATE conversaciones SET estado = 'tramite_oficina', updated_at = NOW() WHERE id = %s AND estado = 'inicio'",
+            [conversacion_id],
+        )
+        logger.info("Cita agendada: %s — conv %s", slot["label"], conversacion_id)
+        return f"Cita agendada correctamente para el {slot['label']}."
 
     return "Acción no reconocida."

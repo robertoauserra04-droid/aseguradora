@@ -169,4 +169,22 @@ def obtener_eventos(start: str = None, end: str = None) -> list:
             },
         })
 
+    # --- Citas (agendadas por el bot o manuales) ---
+    from app.crud import citas as crud_citas
+    for c in crud_citas.listar_rango(start, end):
+        nombre = c.get("cliente_nombre") or ""
+        eventos.append({
+            "id": f"cita-{c['id']}",
+            "title": "Cita" + (f": {nombre}" if nombre else "") + (f" — {c['motivo']}" if c.get("motivo") else ""),
+            "start": c["inicio"],
+            "end": c.get("fin"),
+            "color": "#6366F1",
+            "extendedProps": {
+                "tipo": "cita",
+                "cita_id": str(c["id"]),
+                "conversacion_id": str(c["conversacion_id"]) if c.get("conversacion_id") else None,
+                "motivo": c.get("motivo"),
+            },
+        })
+
     return eventos

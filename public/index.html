@@ -749,11 +749,17 @@
     <div id="calendario-view">
       <div class="cal-header">
         <h5><i class="bi bi-calendar3 me-2 text-primary"></i>Calendario de pólizas y trámites</h5>
-        <div class="cal-leyenda">
-          <div class="cal-leyenda-item"><div class="cal-dot" style="background:#10B981"></div>Póliza inicio / vigente</div>
-          <div class="cal-leyenda-item"><div class="cal-dot" style="background:#F97316"></div>Cotización por vencer</div>
-          <div class="cal-leyenda-item"><div class="cal-dot" style="background:#3B82F6"></div>En trámite</div>
-          <div class="cal-leyenda-item"><div class="cal-dot" style="background:#EF4444"></div>Vencimiento / Renovación</div>
+        <div class="d-flex align-items-center gap-3">
+          <div class="cal-leyenda">
+            <div class="cal-leyenda-item"><div class="cal-dot" style="background:#10B981"></div>Póliza inicio / vigente</div>
+            <div class="cal-leyenda-item"><div class="cal-dot" style="background:#F97316"></div>Cotización por vencer</div>
+            <div class="cal-leyenda-item"><div class="cal-dot" style="background:#3B82F6"></div>En trámite</div>
+            <div class="cal-leyenda-item"><div class="cal-dot" style="background:#EF4444"></div>Vencimiento / Renovación</div>
+            <div class="cal-leyenda-item"><div class="cal-dot" style="background:#6366F1"></div>Cita</div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="abrirModalCita()">
+            <i class="bi bi-plus-lg me-1"></i>Nueva cita
+          </button>
         </div>
       </div>
       <div id="cal-container"></div>
@@ -1369,6 +1375,42 @@
   </div>
 </div>
 
+<!-- MODAL: NUEVA CITA -->
+<div class="modal fade" id="modal-cita" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow" style="border-radius:12px;">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Nueva cita</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label small fw-semibold mb-1">Cliente (opcional)</label>
+          <select id="cita-cliente" class="form-select form-select-sm"></select>
+        </div>
+        <div class="row g-2">
+          <div class="col-7 mb-2">
+            <label class="form-label small fw-semibold mb-1">Fecha</label>
+            <input type="date" id="cita-fecha" class="form-control form-control-sm">
+          </div>
+          <div class="col-5 mb-2">
+            <label class="form-label small fw-semibold mb-1">Hora</label>
+            <input type="time" id="cita-hora" class="form-control form-control-sm" value="10:00">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold mb-1">Motivo</label>
+          <input type="text" id="cita-motivo" class="form-control form-control-sm" placeholder="Ej: Revisión de póliza de auto">
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-light border btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm fw-semibold" onclick="guardarCitaManual()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: ADMINISTRAR FASES -->
 <div class="modal fade" id="modal-fases" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -1424,6 +1466,40 @@ async function cargarEtapas() {
 
 function getEstado(key) {
   return ETAPAS[key] || { key, label: key, color: '#94a3b8' };
+}
+
+// ─── Citas (calendario) ─────────────────────────────────
+async function abrirModalCita(fechaStr) {
+  if (clientesCache.length === 0) {
+    try { clientesCache = await api('/api/clientes').then(r => r.json()); } catch {}
+  }
+  const sel = document.getElementById('cita-cliente');
+  sel.innerHTML = '<option value="">— Sin cliente —</option>' +
+    clientesCache.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  sel.value = '';
+  document.getElementById('cita-fecha').value = (fechaStr || new Date().toISOString()).slice(0, 10);
+  document.getElementById('cita-hora').value = '10:00';
+  document.getElementById('cita-motivo').value = '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-cita')).show();
+}
+
+async function guardarCitaManual() {
+  const fecha = document.getElementById('cita-fecha').value;
+  const hora  = document.getElementById('cita-hora').value || '10:00';
+  if (!fecha) { mostrarToast('Selecciona la fecha', 'warning'); return; }
+  const cliente_id = document.getElementById('cita-cliente').value || null;
+  const motivo = document.getElementById('cita-motivo').value.trim() || null;
+  const nombre = cliente_id ? (clientesCache.find(c => c.id === cliente_id)?.nombre || '') : '';
+  const inicio = `${fecha}T${hora}:00`;
+  try {
+    await api('/api/citas', {
+      method: 'POST',
+      body: JSON.stringify({ inicio, cliente_id, motivo, titulo: nombre ? `Cita: ${nombre}` : 'Cita' }),
+    });
+    bootstrap.Modal.getInstance(document.getElementById('modal-cita')).hide();
+    mostrarToast('Cita creada', 'success');
+    if (calendarInstance) calendarInstance.refetchEvents();
+  } catch (e) { mostrarToast(e.message || 'No se pudo crear la cita', 'danger'); }
 }
 
 // ─── Administrar fases (editables) ──────────────────────
@@ -2797,9 +2873,16 @@ async function cargarCalendario() {
         failureCallback(e);
       }
     },
+    dateClick: (info) => abrirModalCita(info.dateStr),
     eventClick: (info) => {
       const convId = info.event.extendedProps.conversacion_id;
-      if (convId) abrirDetalle(convId);
+      if (convId) { abrirDetalle(convId); return; }
+      const citaId = info.event.extendedProps.cita_id;
+      if (citaId && confirm('¿Eliminar esta cita?')) {
+        api(`/api/citas/${citaId}`, { method: 'DELETE' })
+          .then(() => { mostrarToast('Cita eliminada', 'success'); calendarInstance.refetchEvents(); })
+          .catch(e => mostrarToast(e.message || 'No se pudo eliminar', 'danger'));
+      }
     },
     eventDidMount: (info) => {
       const tipo = info.event.extendedProps.tipo;
