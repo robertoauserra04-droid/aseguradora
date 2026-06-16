@@ -19,11 +19,12 @@ def handle_tool_call(tool_name: str, args: dict, context: dict) -> str:
         return f"Interés en seguro de tipo \"{args['tipo_seguro']}\" registrado correctamente."
 
     if tool_name == "escalar_a_agente":
+        # Pausa la IA en esta conversación (espera respuesta humana) y la marca como urgente.
         query(
-            "UPDATE conversaciones SET requiere_respuesta = true, prioridad = 'alta', updated_at = NOW() WHERE id = %s",
+            "UPDATE conversaciones SET requiere_respuesta = true, prioridad = 'alta', bot_activo = false, updated_at = NOW() WHERE id = %s",
             [conversacion_id],
         )
-        logger.info("Escalando a agente — %s — conv %s", args.get("motivo"), conversacion_id)
+        logger.info("Escalando a agente (IA en pausa) — %s — conv %s", args.get("motivo"), conversacion_id)
         return "Conversación marcada para atención de asesor humano."
 
     if tool_name == "agendar_cita":

@@ -954,6 +954,68 @@
               </div>
             </div>
 
+            <!-- 5b. Reglas avanzadas (precision) -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-shield-check" style="color:#16a34a;"></i>Reglas avanzadas (para que NO se equivoque)
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="ctx-modo-estricto">
+                <label class="form-check-label small fw-semibold" for="ctx-modo-estricto">
+                  Modo estricto — el bot responde SOLO con lo configurado; si no sabe, pasa con un asesor y se pausa
+                </label>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold mb-1">Mensaje al pasar con un asesor (handoff)</label>
+                <input type="text" id="ctx-handoff" class="form-control form-control-sm"
+                  placeholder="Ej: Excelente pregunta, déjame conectarte con un asesor que te dará el detalle exacto.">
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold mb-1">Proceso / pasos a seguir</label>
+                <textarea id="ctx-proceso" class="form-control form-control-sm" rows="3"
+                  placeholder="Describe el flujo exacto que debe seguir el bot, paso a paso."></textarea>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold mb-1">Datos que SIEMPRE debe pedir</label>
+                <textarea id="ctx-datos-oblig" class="form-control form-control-sm" rows="2"
+                  placeholder="Ej: nombre completo, tipo de seguro, presupuesto aproximado, ciudad."></textarea>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold mb-1">Dirección oficina</label>
+                  <input type="text" id="ctx-direccion" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold mb-1">Teléfono</label>
+                  <input type="text" id="ctx-telefono" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold mb-1">Sitio web</label>
+                  <input type="text" id="ctx-web" class="form-control form-control-sm">
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold mb-1">Política de precios</label>
+                <input type="text" id="ctx-politica" class="form-control form-control-sm"
+                  placeholder="Ej: Nunca dar precios sin cotizar; un asesor envía la cotización.">
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold mb-1">Temas prohibidos</label>
+                <input type="text" id="ctx-prohibidos" class="form-control form-control-sm"
+                  placeholder="Ej: temas legales, médicos, políticos, o ajenos a seguros.">
+              </div>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Máx. palabras por mensaje</label>
+                  <input type="number" id="ctx-max-palabras" class="form-control form-control-sm" placeholder="Ej: 80" min="10">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Firma / cierre</label>
+                  <input type="text" id="ctx-firma" class="form-control form-control-sm" placeholder="Ej: — Equipo Carguill 🙌">
+                </div>
+              </div>
+            </div>
+
             <!-- 6. FAQ -->
             <div class="bot-section-card">
               <div class="bot-section-title">
@@ -1077,11 +1139,15 @@
             </div>
 
             <!-- Guardar -->
-            <div class="d-flex align-items-center gap-3 pb-2">
+            <div class="d-flex align-items-center gap-3 pb-2 flex-wrap">
               <button class="btn btn-primary px-4" onclick="guardarTodo(event)">
                 <i class="bi bi-save me-1"></i>Guardar configuracion
               </button>
+              <button class="btn btn-outline-danger btn-sm" onclick="restablecerConfigBot()">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer
+              </button>
               <div id="bot-save-msg"></div>
+              <div id="bot-updated" class="text-muted small ms-auto"></div>
             </div>
 
           </div><!-- /bot-left -->
@@ -1198,6 +1264,7 @@
         <span id="det-tipo-pill" class="pill-tipo"></span>
         <span id="det-estado-pill" class="pill-estado"></span>
         <span id="det-alerta-badge"></span>
+        <span id="det-pausa-badge"></span>
         <div class="d-flex align-items-center gap-1 ms-auto">
           <i class="bi bi-robot" style="font-size:12px;color:#8b5cf6;"></i>
           <span style="font-size:11px;color:#64748b;">Bot</span>
@@ -1712,6 +1779,25 @@ async function cargarVistaBotInstrucciones() {
     const soloH = document.getElementById('ctx-solo-horario');
     if (soloH) soloH.checked = !!ctx.solo_horario;
     toggleHorarioFields();
+
+    // Reglas avanzadas
+    set('ctx-handoff', ctx.mensaje_handoff);
+    set('ctx-proceso', ctx.proceso);
+    set('ctx-datos-oblig', ctx.datos_obligatorios);
+    set('ctx-direccion', ctx.direccion);
+    set('ctx-telefono', ctx.telefono);
+    set('ctx-web', ctx.web);
+    set('ctx-politica', ctx.politica_precios);
+    set('ctx-prohibidos', ctx.temas_prohibidos);
+    set('ctx-max-palabras', ctx.max_palabras != null ? String(ctx.max_palabras) : '');
+    set('ctx-firma', ctx.firma);
+    const estricto = document.getElementById('ctx-modo-estricto');
+    if (estricto) estricto.checked = !!ctx.modo_estricto;
+
+    // Última actualización + restablecer
+    const upd = document.getElementById('bot-updated');
+    if (upd) upd.textContent = d.updated_at ? ('Última actualización: ' + fmtHora(d.updated_at)) : '';
+
     cargarExcluidos();
 
     // Seguros cards
@@ -1795,6 +1881,18 @@ async function guardarContexto() {
     hora_inicio:  parseInt(document.getElementById('ctx-hora-inicio')?.value, 10) || 9,
     hora_fin:     parseInt(document.getElementById('ctx-hora-fin')?.value, 10) || 18,
     mensaje_fuera_horario: (document.getElementById('ctx-msg-fuera')?.value || '').trim(),
+    // Reglas avanzadas (precisión)
+    modo_estricto:      document.getElementById('ctx-modo-estricto')?.checked || false,
+    mensaje_handoff:    (document.getElementById('ctx-handoff')?.value || '').trim(),
+    proceso:            (document.getElementById('ctx-proceso')?.value || '').trim(),
+    datos_obligatorios: (document.getElementById('ctx-datos-oblig')?.value || '').trim(),
+    direccion:          (document.getElementById('ctx-direccion')?.value || '').trim(),
+    telefono:           (document.getElementById('ctx-telefono')?.value || '').trim(),
+    web:                (document.getElementById('ctx-web')?.value || '').trim(),
+    politica_precios:   (document.getElementById('ctx-politica')?.value || '').trim(),
+    temas_prohibidos:   (document.getElementById('ctx-prohibidos')?.value || '').trim(),
+    max_palabras:       parseInt(document.getElementById('ctx-max-palabras')?.value, 10) || null,
+    firma:              (document.getElementById('ctx-firma')?.value || '').trim(),
   };
   await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ contexto }) });
 }
@@ -1815,6 +1913,15 @@ async function guardarPersonalidad() {
     }
   } catch {}
   await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ instrucciones, contexto }) });
+}
+
+async function restablecerConfigBot() {
+  if (!confirm('¿Restablecer la configuración del bot? Se borran instrucciones y contexto (no apaga el bot).')) return;
+  try {
+    await api('/api/bot/config', { method: 'DELETE' });
+    mostrarToast('Configuración restablecida', 'success');
+    cargarVistaBotInstrucciones();
+  } catch (e) { mostrarToast(e.message || 'No se pudo restablecer', 'danger'); }
 }
 
 async function guardarTodo(ev) {
@@ -2225,6 +2332,12 @@ async function abrirDetalle(id) {
     // Toggle bot por conversación
     const toggleConv = document.getElementById('toggle-bot-conv');
     if (toggleConv) toggleConv.checked = c.bot_activo !== false;
+    const pausaBadge = document.getElementById('det-pausa-badge');
+    if (pausaBadge) {
+      pausaBadge.innerHTML = c.bot_activo === false
+        ? '<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;"><i class="bi bi-pause-circle me-1"></i>IA en pausa · requiere humano</span>'
+        : '';
+    }
 
     document.getElementById('det-nombre').textContent = c.cliente_nombre;
     const fichaLink = c.cliente_id

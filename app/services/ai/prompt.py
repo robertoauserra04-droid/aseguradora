@@ -39,6 +39,25 @@ def build_system_prompt(cfg: dict, faqs: list, slots_info: dict) -> str:
    le enviará cotizaciones comparativas de varias aseguradoras. No inventes precios.
 6. Si el cliente pide hablar con una persona o la consulta es muy compleja, usa "escalar_a_agente".""")
 
+    # Proceso/flujo personalizado (sustituye o complementa el flujo base)
+    if c.get("proceso"):
+        partes.append("PROCESO A SEGUIR (indicaciones del negocio):\n" + c["proceso"].strip())
+
+    # Datos que el bot SIEMPRE debe recopilar
+    if c.get("datos_obligatorios"):
+        partes.append(
+            "Antes de agendar o escalar, asegúrate de tener estos datos del cliente:\n"
+            + c["datos_obligatorios"].strip()
+        )
+
+    # Datos de la oficina
+    oficina = []
+    if c.get("direccion"): oficina.append(f"Dirección: {c['direccion']}")
+    if c.get("telefono"): oficina.append(f"Teléfono: {c['telefono']}")
+    if c.get("web"): oficina.append(f"Sitio web: {c['web']}")
+    if oficina:
+        partes.append("Datos de la oficina:\n" + "\n".join(f"• {o}" for o in oficina))
+
     if c.get("horario"):
         partes.append(f"Horario de atención: {c['horario']}.")
 
@@ -54,12 +73,14 @@ def build_system_prompt(cfg: dict, faqs: list, slots_info: dict) -> str:
         partes.append(f'Cuando un cliente escriba por primera vez salúdalo así: "{c["bienvenida"]}"')
 
     restricciones_extra = f"\n• {c['restricciones']}" if c.get("restricciones") else ""
+    politica = f"\n• {c['politica_precios']}" if c.get("politica_precios") else ""
+    prohibidos = f"\n• Temas prohibidos (no respondas sobre esto, escala a un asesor): {c['temas_prohibidos']}" if c.get("temas_prohibidos") else ""
     partes.append(
         "RESTRICCIONES IMPORTANTES:\n"
         "• Nunca inventes precios, primas ni coberturas específicas.\n"
         "• Nunca prometas aprobación de una póliza.\n"
         "• No proporciones datos de clientes de terceros.\n"
-        f"• Si no sabes algo, dilo honestamente y ofrece conectar con un asesor.{restricciones_extra}"
+        f"• Si no sabes algo, dilo honestamente y ofrece conectar con un asesor.{politica}{prohibidos}{restricciones_extra}"
     )
 
     if cfg.get("instrucciones", "").strip():
@@ -73,6 +94,24 @@ def build_system_prompt(cfg: dict, faqs: list, slots_info: dict) -> str:
         partes.append(
             slots_info["texto"] +
             '\nSi el cliente quiere agendar, usa la función "agendar_cita" con el índice del slot elegido (0-based).'
+        )
+
+    # Límite de longitud y firma
+    if c.get("max_palabras"):
+        partes.append(f"Responde de forma breve: máximo {c['max_palabras']} palabras por mensaje.")
+    if c.get("firma"):
+        partes.append(f'Cierra tus mensajes con: "{c["firma"]}"')
+
+    # MODO ESTRICTO: el bot responde SOLO con lo configurado; si no, pasa a un humano.
+    if c.get("modo_estricto"):
+        handoff = (c.get("mensaje_handoff") or
+                   "Excelente pregunta. Déjame conectarte con un asesor que te dará el detalle exacto. 🙌")
+        partes.append(
+            "MODO ESTRICTO (OBLIGATORIO): Responde ÚNICAMENTE con base en la información de esta "
+            "configuración, las RESTRICCIONES y la BASE DE CONOCIMIENTO. Si la información necesaria "
+            "para responder NO está aquí, NO la inventes, NO supongas ni uses conocimiento externo: "
+            'llama a la función "escalar_a_agente" y responde EXACTAMENTE con este texto: '
+            f'"{handoff}"'
         )
 
     return "\n\n".join(partes)

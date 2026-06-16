@@ -47,6 +47,12 @@ def update_config(body: BotConfigBody, agente=Depends(get_agente)):
     return {"ok": True}
 
 
+@router.delete("/api/bot/config")
+def reset_config(agente=Depends(get_agente)):
+    crud.reset_config()
+    return {"ok": True}
+
+
 @router.get("/api/bot/faq")
 def list_faq(agente=Depends(get_agente)):
     return crud.list_faq()

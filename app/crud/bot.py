@@ -3,10 +3,16 @@ from app.config.database import query
 
 
 def get_config() -> dict:
-    r = query("SELECT instrucciones, activo_global, contexto FROM bot_config WHERE id = 1")
-    row = r.rows[0] if r.rows else {"instrucciones": "", "activo_global": False, "contexto": {}}
+    r = query("SELECT instrucciones, activo_global, contexto, updated_at FROM bot_config WHERE id = 1")
+    row = r.rows[0] if r.rows else {"instrucciones": "", "activo_global": False, "contexto": {}, "updated_at": None}
     row["contexto"] = row.get("contexto") or {}
     return row
+
+
+def reset_config() -> None:
+    """Limpia la configuración del bot (instrucciones y contexto) a valores vacíos.
+    No cambia activo_global para no apagar el bot por accidente."""
+    query("UPDATE bot_config SET instrucciones = '', contexto = '{}', updated_at = NOW() WHERE id = 1")
 
 
 def update_config(datos: dict) -> None:
