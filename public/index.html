@@ -708,8 +708,8 @@
           <option value="">Todos los seguros</option>
           <option value="vida">Vida</option>
           <option value="auto">Auto</option>
-          <option value="medical">Medico</option>
-          <option value="dano">Danos</option>
+          <option value="medical">Gastos Médicos</option>
+          <option value="daño">Daños</option>
           <option value="viaje">Viaje</option>
         </select>
         <select id="filtro-urgencia" class="form-select form-select-sm" style="max-width:150px;flex-shrink:0;" onchange="aplicarFiltros()">
@@ -1632,12 +1632,12 @@ async function guardarOrdenFases() {
 }
 
 const TIPOS = {
-  vida:    { label: 'Vida',   cls: 't-vida',    icon: 'bi-heart-pulse' },
-  auto:    { label: 'Auto',   cls: 't-auto',    icon: 'bi-car-front' },
-  medical: { label: 'Medico', cls: 't-medical', icon: 'bi-hospital' },
-  dano:    { label: 'Danos',  cls: 't-dano',    icon: 'bi-house' },
-  daño:    { label: 'Danos',  cls: 't-dano',    icon: 'bi-house' },
-  viaje:   { label: 'Viaje',  cls: 't-viaje',   icon: 'bi-airplane' },
+  vida:    { label: 'Vida',           cls: 't-vida',    icon: 'bi-heart-pulse' },
+  auto:    { label: 'Auto',           cls: 't-auto',    icon: 'bi-car-front' },
+  medical: { label: 'Gastos Médicos', cls: 't-medical', icon: 'bi-hospital' },
+  dano:    { label: 'Daños',          cls: 't-dano',    icon: 'bi-house' },
+  daño:    { label: 'Daños',          cls: 't-dano',    icon: 'bi-house' },
+  viaje:   { label: 'Viaje',          cls: 't-viaje',   icon: 'bi-airplane' },
 };
 
 function urgClase(c) {
@@ -3131,7 +3131,7 @@ async function desactivarAgente(id, nombre) {
 let editandoClienteId = null;
 let editandoPolizaId  = null;
 let clientesCache     = [];
-const RAMO_LABEL = { vida: 'Vida', auto: 'Auto', medical: 'Médico', 'daño': 'Daños', viaje: 'Viaje', mascotas: 'Mascotas' };
+const RAMO_LABEL = { vida: 'Vida', auto: 'Auto', medical: 'Gastos Médicos', 'daño': 'Daños', viaje: 'Viaje', mascotas: 'Mascotas' };
 const fmtMoney = n => (n == null ? '—' : '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0 }));
 const fmtFecha = f => {
   if (!f) return '—';
@@ -3579,7 +3579,7 @@ function limpiarVistasExtra() {
               <option value="">Sin tipo</option>
               <option value="vida">Vida</option>
               <option value="auto">Auto</option>
-              <option value="medical">Médico</option>
+              <option value="medical">Gastos Médicos</option>
               <option value="daño">Daños</option>
               <option value="viaje">Viaje</option>
               <option value="mascotas">Mascotas</option>
