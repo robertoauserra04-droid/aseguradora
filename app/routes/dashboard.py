@@ -56,3 +56,37 @@ def kpis(agente=Depends(get_agente)):
             for r in criticas.rows
         ],
     }
+
+
+@router.get("/api/dashboard/estadisticas")
+def estadisticas(agente=Depends(get_agente)):
+    """Conteos para la vista de Estadísticas: activas, cerradas y por fase."""
+    etapas = query(
+        "SELECT key, label, color, orden, es_cerrada FROM etapas WHERE activo = true ORDER BY orden ASC"
+    ).rows
+    conteos = {
+        row["estado"]: int(row["total"])
+        for row in query(
+            "SELECT estado, COUNT(*) AS total FROM conversaciones WHERE activo = true GROUP BY estado"
+        ).rows
+    }
+    cerradas_keys = {e["key"] for e in etapas if e["es_cerrada"]}
+    por_fase = [
+        {
+            "key": e["key"], "label": e["label"], "color": e["color"],
+            "es_cerrada": e["es_cerrada"], "total": conteos.get(e["key"], 0),
+        }
+        for e in etapas
+    ]
+    activas = sum(c for k, c in conteos.items() if k not in cerradas_keys)
+    cerradas = sum(c for k, c in conteos.items() if k in cerradas_keys)
+    requiere = query(
+        "SELECT COUNT(*) AS t FROM conversaciones WHERE requiere_respuesta = true AND activo = true"
+    ).rows[0]["t"]
+
+    return {
+        "activas": activas,
+        "cerradas": cerradas,
+        "requiere_respuesta": int(requiere),
+        "por_fase": por_fase,
+    }

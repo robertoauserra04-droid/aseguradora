@@ -292,6 +292,36 @@ UPDATE conversaciones SET tipos_seguro = ARRAY[tipo_seguro]
   WHERE tipo_seguro IS NOT NULL AND (tipos_seguro IS NULL OR tipos_seguro = '{}');
 
 -- =============================================
+-- TABLA: etapas (fases del kanban, editables)
+-- =============================================
+CREATE TABLE IF NOT EXISTS etapas (
+  key VARCHAR(50) PRIMARY KEY,
+  label VARCHAR(100) NOT NULL,
+  color VARCHAR(20) NOT NULL DEFAULT '#3B82F6',
+  orden INT NOT NULL DEFAULT 0,
+  es_cerrada BOOLEAN DEFAULT false,
+  activo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- =============================================
+-- TABLA: citas (agendadas por el bot o manual; se ven en el calendario del panel)
+-- =============================================
+CREATE TABLE IF NOT EXISTS citas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversacion_id UUID REFERENCES conversaciones(id) ON DELETE SET NULL,
+  cliente_id UUID REFERENCES clientes(id) ON DELETE SET NULL,
+  titulo VARCHAR(200),
+  motivo TEXT,
+  inicio TIMESTAMP NOT NULL,
+  fin TIMESTAMP,
+  estado VARCHAR(30) DEFAULT 'agendada',
+  google_event_id VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_citas_inicio ON citas(inicio);
+
+-- =============================================
 -- TABLA: bot_numeros_excluidos
 -- Números donde el bot NUNCA responde (ej. número personal del dueño,
 -- contactos que se atienden manualmente, proveedores, etc.)

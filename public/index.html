@@ -454,11 +454,18 @@
     #cal-container .fc { font-size: 13px; }
 
     /* ─── AGENTES VIEW ───────────────────────────────────── */
-    #agentes-view, #clientes-view {
+    #agentes-view, #clientes-view, #stats-view {
       display: none; flex: 1; flex-direction: column; overflow: hidden;
       background: #f8fafc;
     }
-    #agentes-view.visible, #clientes-view.visible { display: flex; }
+    #agentes-view.visible, #clientes-view.visible, #stats-view.visible { display: flex; }
+    #stats-view { overflow-y: auto; }
+    .stat-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 16px 20px; min-width: 160px;
+    }
+    .stat-num { font-size: 30px; font-weight: 700; line-height: 1; }
+    .stat-lbl { font-size: 12px; color: #64748b; margin-top: 6px; }
     .ag-header {
       background: #fff; border-bottom: 1px solid #e2e8f0;
       padding: 14px 20px; display: flex; align-items: center;
@@ -634,6 +641,12 @@
     <div id="sb-nav-calendario" class="sb-nav-item" onclick="irAVista('calendario')">
       <i class="bi bi-calendar3 me-2"></i>Calendario
     </div>
+    <div id="sb-nav-estadisticas" class="sb-nav-item" onclick="irAVista('estadisticas')">
+      <i class="bi bi-bar-chart me-2"></i>Estadísticas
+    </div>
+    <div class="sb-nav-item" onclick="abrirModalFases()">
+      <i class="bi bi-columns-gap me-2"></i>Administrar fases
+    </div>
 
     <!-- CARTERA -->
     <div class="sb-section" style="margin-top:4px;">Cartera</div>
@@ -787,6 +800,17 @@
           <tbody id="clientes-tbody"></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- ESTADÍSTICAS VIEW -->
+    <div id="stats-view">
+      <div class="ag-header">
+        <h5><i class="bi bi-bar-chart me-2 text-primary"></i>Estadísticas</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="cargarEstadisticas()">
+          <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+        </button>
+      </div>
+      <div id="stats-content" class="p-4"></div>
     </div>
 
   </div><!-- /main -->
@@ -1345,13 +1369,35 @@
   </div>
 </div>
 
+<!-- MODAL: ADMINISTRAR FASES -->
+<div class="modal fade" id="modal-fases" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow" style="border-radius:12px;">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Administrar fases del kanban</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="fases-lista"></div>
+        <button class="btn btn-sm btn-outline-primary mt-2" onclick="crearFase()">
+          <i class="bi bi-plus-lg me-1"></i>Nueva fase
+        </button>
+        <div class="text-muted mt-2" style="font-size:11px;">
+          Arrastra <i class="bi bi-grip-vertical"></i> para reordenar. El nombre y el color se guardan al editarlos. La fase "Cerrada" no se puede eliminar.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // ════════════════════════════════════════════════════
 // CONFIGURACION
 // ════════════════════════════════════════════════════
 // 8 etapas = 8 estados, sin subestados
-const ETAPAS = {
+// Fases del kanban. Se cargan desde /api/etapas (editables); estos son el fallback.
+let ETAPAS = {
   inicio:              { key: 'inicio',              label: 'Inicio',               color: '#3B82F6' },
   cotizacion:          { key: 'cotizacion',          label: 'Cotización',           color: '#8B5CF6' },
   tramite_oficina:     { key: 'tramite_oficina',     label: 'Trámite Oficina',      color: '#F59E0B' },
@@ -1362,8 +1408,84 @@ const ETAPAS = {
   renovacion:          { key: 'renovacion',          label: 'Renovación',           color: '#EF4444' },
 };
 
+async function cargarEtapas() {
+  try {
+    const r = await api('/api/etapas');
+    if (!r.ok) return;
+    const lista = await r.json();
+    if (!Array.isArray(lista) || !lista.length) return;
+    const nuevo = {};
+    lista.forEach(e => {
+      nuevo[e.key] = { key: e.key, label: e.label, color: e.color, es_cerrada: e.es_cerrada, orden: e.orden };
+    });
+    ETAPAS = nuevo;
+  } catch {}
+}
+
 function getEstado(key) {
   return ETAPAS[key] || { key, label: key, color: '#94a3b8' };
+}
+
+// ─── Administrar fases (editables) ──────────────────────
+let fasesSortable = null;
+async function abrirModalFases() {
+  let lista = [];
+  try { lista = await api('/api/etapas').then(r => r.json()); } catch {}
+  const el = document.getElementById('fases-lista');
+  el.innerHTML = lista.map(e => `
+    <div class="d-flex align-items-center gap-2 mb-2 fase-row" data-key="${e.key}">
+      <i class="bi bi-grip-vertical text-muted fase-grip" style="cursor:grab;"></i>
+      <input type="color" value="${e.color}" title="Color"
+        onchange="actualizarFase('${e.key}', { color: this.value })"
+        style="width:34px;height:30px;padding:1px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;">
+      <input type="text" value="${esc(e.label)}" class="form-control form-control-sm"
+        onchange="actualizarFase('${e.key}', { label: this.value })">
+      ${e.es_cerrada
+        ? '<span class="badge bg-secondary-subtle text-secondary border" style="font-size:10px;">cerrada</span>'
+        : `<button class="btn btn-sm btn-outline-danger" style="padding:2px 8px;" onclick="eliminarFase('${e.key}')"><i class="bi bi-trash"></i></button>`}
+    </div>`).join('');
+  if (fasesSortable) { fasesSortable.destroy(); fasesSortable = null; }
+  if (window.Sortable) {
+    fasesSortable = Sortable.create(el, { handle: '.fase-grip', animation: 150, onEnd: guardarOrdenFases });
+  }
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-fases')).show();
+}
+
+function refrescarVistaActual() {
+  if (vistaActual === 'kanban') cargarKanban();
+  else if (vistaActual === 'lista') cargarLista();
+}
+
+async function actualizarFase(key, datos) {
+  try {
+    await api(`/api/etapas/${key}`, { method: 'PUT', body: JSON.stringify(datos) });
+    await cargarEtapas(); refrescarVistaActual();
+  } catch (e) { mostrarToast(e.message || 'No se pudo guardar', 'danger'); }
+}
+
+async function crearFase() {
+  const nombre = prompt('Nombre de la nueva fase:');
+  if (!nombre || !nombre.trim()) return;
+  try {
+    await api('/api/etapas', { method: 'POST', body: JSON.stringify({ label: nombre.trim() }) });
+    await cargarEtapas(); abrirModalFases(); refrescarVistaActual();
+  } catch (e) { mostrarToast(e.message || 'No se pudo crear', 'danger'); }
+}
+
+async function eliminarFase(key) {
+  if (!confirm('¿Eliminar esta fase? (debe estar vacía)')) return;
+  try {
+    await api(`/api/etapas/${key}`, { method: 'DELETE' });
+    await cargarEtapas(); abrirModalFases(); refrescarVistaActual();
+  } catch (e) { mostrarToast(e.message || 'No se pudo eliminar', 'danger'); }
+}
+
+async function guardarOrdenFases() {
+  const keys = [...document.querySelectorAll('#fases-lista .fase-row')].map(r => r.dataset.key);
+  try {
+    await api('/api/etapas/orden', { method: 'PUT', body: JSON.stringify({ keys }) });
+    await cargarEtapas(); refrescarVistaActual();
+  } catch (e) { mostrarToast(e.message || 'No se pudo reordenar', 'danger'); }
 }
 
 const TIPOS = {
@@ -1805,7 +1927,7 @@ async function enviarPrueba() {
   }
 }
 
-function mostrarPanel(nombre, rol) {
+async function mostrarPanel(nombre, rol) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('panel-screen').style.display = 'flex';
   document.getElementById('sb-user').textContent = (nombre || 'Agente') + (rol && rol !== 'vendedor' ? ` · ${rol}` : '');
@@ -1814,6 +1936,7 @@ function mostrarPanel(nombre, rol) {
   if (navAgentes) navAgentes.style.display = (rol === 'admin') ? '' : 'none';
   renderSidebar();
   cargarConfigBot();
+  await cargarEtapas();
   cambiarVista('kanban');
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
@@ -1838,7 +1961,7 @@ function api(url, opts = {}) {
     }
     if (!r.ok) {
       return r.json().catch(() => ({})).then(body => {
-        return Promise.reject(new Error(body.error || `Error ${r.status}`));
+        return Promise.reject(new Error(body.detail || body.error || `Error ${r.status}`));
       });
     }
     return r;
@@ -2424,6 +2547,20 @@ async function eliminarConversacion(id) {
   }
 }
 
+async function cerrarConversacion(id) {
+  if (!confirm('¿Marcar esta conversación como Cerrada? Quedará registrada en estadísticas.')) return;
+  try {
+    await api(`/api/conversaciones/${id}/estado`, {
+      method: 'POST',
+      body: JSON.stringify({ estado_nuevo: 'cerrada', motivo: null }),
+    });
+    mostrarToast('Conversación cerrada', 'success');
+    if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
+  } catch (e) {
+    mostrarToast(e.message || 'No se pudo cerrar', 'danger');
+  }
+}
+
 async function cargarKanban() {
   const sort = document.getElementById('sort-sel')?.value || 'mas_urgente';
   const tipo = document.getElementById('filtro-tipo')?.value || '';
@@ -2488,6 +2625,10 @@ function renderKanban() {
           <div class="kb-card-nombre">${esc(c.cliente_nombre)}</div>
           <div class="d-flex align-items-center gap-1">
             ${alertaHtml}
+            ${c.estado === 'cerrada' ? '' : `<button class="kb-card-del" title="Cerrar (mover a Cerrada)"
+              onclick="event.stopPropagation(); cerrarConversacion('${c.id}')">
+              <i class="bi bi-check2-circle"></i>
+            </button>`}
             <button class="kb-card-del" title="Eliminar conversación"
               onclick="event.stopPropagation(); eliminarConversacion('${c.id}')">
               <i class="bi bi-trash"></i>
@@ -3075,7 +3216,7 @@ async function eliminarPoliza(id) {
 // NAVEGACIÓN ENTRE VISTAS ESPECIALES
 // ════════════════════════════════════════════════════
 function irAVista(vista) {
-  ['kanban-view', 'lista-view', 'calendario-view', 'agentes-view', 'clientes-view'].forEach(id => {
+  ['kanban-view', 'lista-view', 'calendario-view', 'agentes-view', 'clientes-view', 'stats-view'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });
@@ -3093,11 +3234,47 @@ function irAVista(vista) {
     document.getElementById('clientes-view').classList.add('visible');
     activarNavItem('sb-nav-clientes');
     cargarClientes();
+  } else if (vista === 'estadisticas') {
+    document.getElementById('stats-view').classList.add('visible');
+    activarNavItem('sb-nav-estadisticas');
+    cargarEstadisticas();
+  }
+}
+
+async function cargarEstadisticas() {
+  const cont = document.getElementById('stats-content');
+  if (!cont) return;
+  cont.innerHTML = '<div class="text-muted small p-3">Cargando…</div>';
+  try {
+    const d = await api('/api/dashboard/estadisticas').then(r => r.json());
+    const maxFase = Math.max(1, ...d.por_fase.map(f => f.total));
+    const tarjeta = (label, val, color) =>
+      `<div class="stat-card"><div class="stat-num" style="color:${color}">${val}</div><div class="stat-lbl">${label}</div></div>`;
+    const barras = d.por_fase.map(f => `
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div style="width:150px;font-size:12px;color:#334155;">
+          <span class="d-inline-block rounded-circle me-1" style="width:9px;height:9px;background:${f.color};"></span>${esc(f.label)}
+        </div>
+        <div style="flex:1;background:#f1f5f9;border-radius:6px;height:18px;position:relative;">
+          <div style="width:${(f.total / maxFase) * 100}%;background:${f.color};height:100%;border-radius:6px;min-width:${f.total ? 4 : 0}px;"></div>
+        </div>
+        <div style="width:34px;text-align:right;font-size:12px;font-weight:600;">${f.total}</div>
+      </div>`).join('');
+    cont.innerHTML = `
+      <div class="d-flex gap-3 flex-wrap mb-4">
+        ${tarjeta('Personas activas', d.activas, '#2563eb')}
+        ${tarjeta('Requieren respuesta', d.requiere_respuesta, '#f59e0b')}
+        ${tarjeta('Cerradas', d.cerradas, '#64748b')}
+      </div>
+      <h6 class="fw-bold mb-3" style="font-size:13px;">Clientes por fase</h6>
+      ${barras}`;
+  } catch (e) {
+    cont.innerHTML = `<div class="text-danger small p-3">${e.message || 'Error al cargar estadísticas'}</div>`;
   }
 }
 
 function limpiarVistasExtra() {
-  ['calendario-view', 'agentes-view', 'clientes-view'].forEach(id => {
+  ['calendario-view', 'agentes-view', 'clientes-view', 'stats-view'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });

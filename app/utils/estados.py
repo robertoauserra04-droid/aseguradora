@@ -53,4 +53,13 @@ MIGRACION_ESTADOS = {
 
 
 def es_estado_valido(estado: str) -> bool:
+    # Las fases ahora viven en la tabla `etapas` (editables). Validar contra ella;
+    # si la consulta falla, caer al set por defecto.
+    try:
+        from app.config.database import query
+        r = query("SELECT 1 FROM etapas WHERE key = %s AND activo = true", [estado])
+        if r.rows:
+            return True
+    except Exception:
+        pass
     return estado in ESTADOS

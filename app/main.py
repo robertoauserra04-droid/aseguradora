@@ -20,6 +20,7 @@ from app.routes.webhook import router as webhook_router
 from app.routes.conversaciones import router as conversaciones_router
 from app.routes.clientes import router as clientes_router
 from app.routes.polizas import router as polizas_router
+from app.routes.etapas import router as etapas_router
 
 app = FastAPI(title="Seguros Carguill API", version="2.0.0")
 
@@ -42,6 +43,7 @@ app.include_router(webhook_router)
 app.include_router(conversaciones_router)
 app.include_router(clientes_router)
 app.include_router(polizas_router)
+app.include_router(etapas_router)
 
 # Servir el frontend estático
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "..", "public")
@@ -51,11 +53,12 @@ if os.path.isdir(PUBLIC_DIR):
 
 @app.on_event("startup")
 def startup():
-    from app.db.migrate import run_migrations, backfill_clientes_polizas
+    from app.db.migrate import run_migrations, backfill_clientes_polizas, seed_etapas
     from app.db.seed import run_seed
     from app.services.jobs_service import iniciar_jobs
 
     run_migrations()
+    seed_etapas()
     backfill_clientes_polizas()
     run_seed()
     iniciar_jobs()

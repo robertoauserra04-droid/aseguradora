@@ -18,6 +18,28 @@ def run_migrations() -> None:
         raise
 
 
+def seed_etapas() -> None:
+    """Carga las fases por defecto en la tabla `etapas` si está vacía.
+    Idempotente: ON CONFLICT no pisa fases que el usuario haya editado."""
+    try:
+        from app.utils.estados import ESTADOS
+        for e in ESTADOS.values():
+            query(
+                """INSERT INTO etapas (key, label, color, orden, es_cerrada)
+                   VALUES (%s, %s, %s, %s, false)
+                   ON CONFLICT (key) DO NOTHING""",
+                [e["key"], e["label"], e["color"], e["orden"]],
+            )
+        # Fase "Cerrada" (única, para el botón de cierre y estadísticas)
+        query(
+            """INSERT INTO etapas (key, label, color, orden, es_cerrada)
+               VALUES ('cerrada', 'Cerrada', '#64748B', 99, true)
+               ON CONFLICT (key) DO NOTHING"""
+        )
+    except Exception as e:
+        logger.error("Error en seed_etapas: %s", e)
+
+
 def backfill_clientes_polizas() -> None:
     """Normaliza datos legados: crea clientes y pólizas desde conversaciones.
 
