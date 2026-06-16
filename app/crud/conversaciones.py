@@ -270,9 +270,17 @@ def editar_cliente(conv_id: str, datos: dict) -> None:
         )
         return
 
+    nombre = cliente_nombre.strip()
     query(
         "UPDATE conversaciones SET cliente_nombre = %s, cliente_email = %s, updated_at = NOW() WHERE id = %s",
-        [cliente_nombre.strip(), cliente_email or None, conv_id],
+        [nombre, cliente_email or None, conv_id],
+    )
+    # Propagar el nombre/email al registro de `clientes` enlazado para que el cambio
+    # se vea también en la sección Clientes (y el webhook no lo pise por ser manual).
+    query(
+        """UPDATE clientes SET nombre = %s, email = COALESCE(%s, email), updated_at = NOW()
+           WHERE id = (SELECT cliente_id FROM conversaciones WHERE id = %s)""",
+        [nombre, cliente_email or None, conv_id],
     )
 
 

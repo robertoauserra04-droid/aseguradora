@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
+from typing import Optional
 from app.middleware.auth import get_agente
 from app.crud.conversaciones import cambiar_estado
 from app.utils.estados import es_estado_valido
@@ -9,7 +10,7 @@ router = APIRouter()
 
 class EstadoBody(BaseModel):
     estado_nuevo: str
-    motivo: str
+    motivo: Optional[str] = None
 
 
 def _evento_calendario(estado_nuevo: str, conv_id: str) -> None:
@@ -31,7 +32,7 @@ def post_estado(conv_id: str, body: EstadoBody, background: BackgroundTasks, age
     if not es_estado_valido(body.estado_nuevo):
         raise HTTPException(400, detail=f"Estado inválido: {body.estado_nuevo}")
 
-    estado_anterior = cambiar_estado(conv_id, body.estado_nuevo, body.motivo, agente)
+    estado_anterior = cambiar_estado(conv_id, body.estado_nuevo, body.motivo or "", agente)
     if estado_anterior is None:
         raise HTTPException(404, detail="Conversación no encontrada")
 
