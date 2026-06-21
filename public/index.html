@@ -669,7 +669,7 @@
     </div>
     <div class="sb-nav-item" style="color:#94a3b8;"
       data-bs-toggle="modal" data-bs-target="#modal-bot"
-      onclick="botTab('contexto'); cargarVistaBotInstrucciones();">
+      onclick="cargarVistaBotInstrucciones();">
       <i class="bi bi-sliders me-2"></i>Configurar bot
     </div>
     <div class="sb-nav-item" style="color:#94a3b8;" onclick="abrirModalProbar()">
@@ -697,6 +697,9 @@
     <!-- TOPBAR: búsqueda + filtros + toggle de vista -->
     <div class="topbar">
       <div class="d-flex align-items-center gap-2 flex-fill" style="min-width:0;">
+        <button class="btn btn-sm btn-primary fw-semibold flex-shrink-0" onclick="abrirNuevaConv()">
+          <i class="bi bi-plus-lg me-1"></i>Nuevo
+        </button>
         <div class="input-group input-group-sm" style="max-width:200px;flex-shrink:0;">
           <span class="input-group-text bg-white border-end-0">
             <i class="bi bi-search text-muted"></i>
@@ -1263,6 +1266,7 @@
       <div class="det-badges">
         <span id="det-tipo-pill" class="pill-tipo"></span>
         <span id="det-estado-pill" class="pill-estado"></span>
+        <span id="det-tiempo-badge"></span>
         <span id="det-alerta-badge"></span>
         <span id="det-pausa-badge"></span>
         <div class="d-flex align-items-center gap-1 ms-auto">
@@ -1277,6 +1281,9 @@
       <div class="det-acciones">
         <button class="btn btn-sm btn-primary fw-semibold" onclick="abrirModalEstado()">
           <i class="bi bi-arrow-right-circle me-1"></i>Cambiar estado
+        </button>
+        <button class="btn btn-sm btn-outline-danger fw-semibold" id="det-btn-cerrar" onclick="cerrarConversacion(convId)">
+          <i class="bi bi-check2-circle me-1"></i>Cerrar conversación
         </button>
         <div class="dropdown">
           <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
@@ -1416,8 +1423,8 @@
   </div>
 </div>
 
-<!-- MODAL: EDITAR CLIENTE -->
-<div class="modal fade" id="modal-cliente" tabindex="-1">
+<!-- MODAL: EDITAR CLIENTE (desde el caso) -->
+<div class="modal fade" id="modal-cliente-conv" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content border-0 shadow" style="border-radius:12px;">
       <div class="modal-header border-0 pb-0">
@@ -1436,7 +1443,7 @@
       </div>
       <div class="modal-footer border-0 pt-0">
         <button class="btn btn-light border btn-sm" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-primary btn-sm fw-semibold" onclick="guardarCliente()">Guardar</button>
+        <button class="btn btn-primary btn-sm fw-semibold" onclick="guardarClienteConv()">Guardar</button>
       </div>
     </div>
   </div>
@@ -1533,6 +1540,28 @@ async function cargarEtapas() {
 
 function getEstado(key) {
   return ETAPAS[key] || { key, label: key, color: '#94a3b8' };
+}
+
+// Días que lleva (o llevó) abierta una conversación. Se congela en closed_at al cerrar.
+function diasConversacion(c) {
+  if (!c || !c.created_at) return null;
+  const inicio = new Date(c.created_at);
+  const fin = c.closed_at ? new Date(c.closed_at) : new Date();
+  return Math.max(0, Math.floor((fin - inicio) / 86400000));
+}
+
+function tiempoConversacionHtml(c) {
+  const dias = diasConversacion(c);
+  if (dias === null) return '';
+  const texto = dias === 0 ? 'Hoy' : dias === 1 ? '1 día' : dias + ' días';
+  const cerrada = !!c.closed_at;
+  const estilo = cerrada
+    ? 'background:#e2e8f0;color:#475569;'
+    : 'background:#ecfdf5;color:#047857;';
+  const icono = cerrada ? 'bi-flag-fill' : 'bi-hourglass-split';
+  const sufijo = cerrada ? ' · cerrado' : ' abierto';
+  return `<span class="pill-estado" style="${estilo}" title="Tiempo de conversación">
+    <i class="bi ${icono} me-1"></i>${texto}${sufijo}</span>`;
 }
 
 // ─── Citas (calendario) ─────────────────────────────────
@@ -2213,7 +2242,7 @@ async function cargarLista() {
   const sort     = document.getElementById('sort-sel')?.value || 'mas_urgente';
   const tipo     = document.getElementById('filtro-tipo')?.value || '';
   const urgencia = document.getElementById('filtro-urgencia')?.value || '';
-  const p = new URLSearchParams({ limit: LIMIT, offset, sort_by: sort });
+  const p = new URLSearchParams({ limit: LIMIT, offset, sort_by: sort, incluir_cerradas: 'true' });
   if (etapaFiltro) p.set('estados', etapaFiltro);
   if (search)   p.set('search', search);
   if (tipo)     p.set('tipo_seguro', tipo);
@@ -2259,14 +2288,20 @@ function renderLista(convs) {
       return `<span class="pill-tipo ${ti.cls} me-1"><i class="bi ${ti.icon} me-1"></i>${ti.label}</span>`;
     }).join('');
 
-    // Dias en estado actual (aproximado desde fecha_cambio_estado o created_at)
-    const fechaRef = c.updated_at || c.created_at;
-    const diasEnEstado = fechaRef
-      ? Math.floor((Date.now() - new Date(fechaRef)) / 86400000)
-      : null;
-    const diasHtml = diasEnEstado !== null && diasEnEstado > 0
-      ? `<span class="card-dias">${diasEnEstado}d en esta etapa</span>`
-      : '';
+    // Tiempo del caso: si está cerrado, total congelado; si está abierto, días en esta etapa.
+    let diasHtml = '';
+    if (c.closed_at) {
+      const dt = diasConversacion(c);
+      diasHtml = `<span class="card-dias">cerrado · ${dt === 0 ? 'mismo día' : dt + 'd'}</span>`;
+    } else {
+      const fechaRef = c.updated_at || c.created_at;
+      const diasEnEstado = fechaRef
+        ? Math.floor((Date.now() - new Date(fechaRef)) / 86400000)
+        : null;
+      diasHtml = diasEnEstado !== null && diasEnEstado > 0
+        ? `<span class="card-dias">${diasEnEstado}d en esta etapa</span>`
+        : '';
+    }
 
     return `<div class="conv-card ${urg} ${convId === c.id ? 'selected' : ''}"
       data-id="${c.id}" onclick="abrirDetalle('${c.id}')">
@@ -2340,13 +2375,13 @@ async function abrirDetalle(id) {
     }
 
     document.getElementById('det-nombre').textContent = c.cliente_nombre;
-    const fichaLink = c.cliente_id
-      ? ` · <a href="#" onclick="cerrarDrawer(); abrirFichaCliente('${c.cliente_id}'); return false;" style="color:#3b82f6;">ver ficha</a>`
+    const notasLink = c.cliente_id
+      ? ` · <a href="#" onclick="abrirNotasCliente('${c.cliente_id}'); return false;" style="color:#3b82f6;">ver notas</a>`
       : '';
     document.getElementById('det-meta').innerHTML =
       esc(c.cliente_telefono || '') +
       (c.cliente_email ? ' · ' + esc(c.cliente_email) : '') +
-      fichaLink;
+      notasLink;
 
     // Tipo(s) de seguro — varios por persona
     const tipos = (Array.isArray(c.tipos_seguro) && c.tipos_seguro.length)
@@ -2360,6 +2395,14 @@ async function abrirDetalle(id) {
     estPill.className = 'pill-estado';
     estPill.textContent = e.label;
     estPill.style.cssText = `background:${e.color}18;color:${e.color};`;
+
+    // Tiempo de conversación (días abiertos; se congela al cerrar)
+    const tiempoBadge = document.getElementById('det-tiempo-badge');
+    if (tiempoBadge) tiempoBadge.innerHTML = tiempoConversacionHtml(c);
+
+    // El botón "Cerrar conversación" no aplica si el caso ya está cerrado
+    const btnCerrar = document.getElementById('det-btn-cerrar');
+    if (btnCerrar) btnCerrar.style.display = c.closed_at ? 'none' : '';
 
     // Alerta badge
     const alertaBadge = document.getElementById('det-alerta-badge');
@@ -2506,7 +2549,7 @@ function abrirModalEstado() {
   document.getElementById('txt-motivo').value = '';
 
   const grid = document.getElementById('estado-grid');
-  grid.innerHTML = `<div class="estado-grid">${Object.values(ETAPAS).map(etapa => {
+  grid.innerHTML = `<div class="estado-grid">${Object.values(ETAPAS).filter(e => !e.es_cerrada).map(etapa => {
     const isActual = etapa.key === estadoActualConv;
     return `<div class="estado-btn ${isActual ? 'actual' : ''}" id="ebtn-${etapa.key}"
       onclick="${isActual ? '' : `selEstado('${etapa.key}')`}">
@@ -2550,7 +2593,11 @@ async function confirmarEstado() {
 function abrirEditarCliente() {
   document.getElementById('edit-nombre').value =
     document.getElementById('det-nombre').textContent;
-  new bootstrap.Modal(document.getElementById('modal-cliente')).show();
+  // Prellenar el correo si está en la meta del detalle (formato: "tel · correo · ...")
+  const metaTxt = document.getElementById('det-meta')?.textContent || '';
+  const correo = (metaTxt.match(/[^\s·]+@[^\s·]+/) || [''])[0];
+  document.getElementById('edit-email').value = correo;
+  new bootstrap.Modal(document.getElementById('modal-cliente-conv')).show();
 }
 
 function toggleSidebar() {
@@ -2610,7 +2657,7 @@ async function guardarTiposSeguro() {
   }
 }
 
-async function guardarCliente() {
+async function guardarClienteConv() {
   const nombre = document.getElementById('edit-nombre').value.trim();
   const email  = document.getElementById('edit-email').value.trim();
   if (!nombre) { alert('El nombre es requerido'); return; }
@@ -2621,7 +2668,7 @@ async function guardarCliente() {
   });
 
   if (r.ok) {
-    bootstrap.Modal.getInstance(document.getElementById('modal-cliente')).hide();
+    bootstrap.Modal.getInstance(document.getElementById('modal-cliente-conv')).hide();
     abrirDetalle(convId);
   }
 }
@@ -2697,7 +2744,6 @@ function cambiarVista(vista) {
 }
 
 function abrirModalBot() {
-  botTab('contexto');
   cargarVistaBotInstrucciones();
   bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-bot')).show();
 }
@@ -2737,17 +2783,68 @@ async function eliminarConversacion(id) {
 }
 
 async function cerrarConversacion(id) {
-  if (!confirm('¿Marcar esta conversación como Cerrada? Quedará registrada en estadísticas.')) return;
+  if (!id) return;
+  if (!confirm('¿Estás seguro de cerrar esta conversación?\n\nDejará de aparecer en el tablero y quedará en la lista como Cerrada.')) return;
   try {
-    await api(`/api/conversaciones/${id}/estado`, {
-      method: 'POST',
-      body: JSON.stringify({ estado_nuevo: 'cerrada', motivo: null }),
-    });
+    await api(`/api/conversaciones/${id}/cerrar`, { method: 'POST' });
     mostrarToast('Conversación cerrada', 'success');
+    if (convId === id) cerrarDrawer();
     if (vistaActual === 'kanban') cargarKanban(); else cargarLista();
   } catch (e) {
     mostrarToast(e.message || 'No se pudo cerrar', 'danger');
   }
+}
+
+// ════════════════════════════════════════════════════
+// NUEVO CASO (botón "Nuevo")
+// ════════════════════════════════════════════════════
+async function abrirNuevaConv() {
+  // Clientes existentes (+ opción de crear uno nuevo)
+  if (clientesCache.length === 0) {
+    try { clientesCache = await api('/api/clientes').then(r => r.json()); } catch {}
+  }
+  const selCli = document.getElementById('nv-cliente');
+  selCli.innerHTML =
+    '<option value="">— Cliente nuevo —</option>' +
+    clientesCache.map(c => `<option value="${c.id}">${esc(c.nombre)}${c.telefono ? ' · ' + esc(c.telefono) : ''}</option>`).join('');
+  selCli.value = '';
+  nvToggleNuevo();
+
+  // Fases disponibles (sin la fase Cerrada)
+  const selFase = document.getElementById('nv-fase');
+  selFase.innerHTML = Object.values(ETAPAS).filter(e => !e.es_cerrada)
+    .map(e => `<option value="${e.key}">${esc(e.label)}</option>`).join('');
+  selFase.value = 'inicio';
+
+  document.getElementById('nv-nombre').value = '';
+  document.getElementById('nv-telefono').value = '';
+  document.getElementById('nv-nota').value = '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-nueva-conv')).show();
+}
+
+function nvToggleNuevo() {
+  const esNuevo = !document.getElementById('nv-cliente').value;
+  document.getElementById('nv-nuevo-campos').style.display = esNuevo ? '' : 'none';
+}
+
+async function guardarNuevaConv() {
+  const clienteId = document.getElementById('nv-cliente').value || null;
+  const estado = document.getElementById('nv-fase').value || 'inicio';
+  const nota = document.getElementById('nv-nota').value.trim() || null;
+  const body = { cliente_id: clienteId, estado, nota };
+  if (!clienteId) {
+    body.cliente_nombre = document.getElementById('nv-nombre').value.trim() || 'Cliente';
+    body.cliente_telefono = document.getElementById('nv-telefono').value.trim();
+    if (!body.cliente_telefono) { mostrarToast('El teléfono es requerido', 'warning'); return; }
+  }
+  try {
+    const r = await api('/api/conversaciones', { method: 'POST', body: JSON.stringify(body) }).then(r => r.json());
+    bootstrap.Modal.getInstance(document.getElementById('modal-nueva-conv')).hide();
+    mostrarToast('Caso creado', 'success');
+    clientesCache = [];
+    if (vistaActual === 'kanban') await cargarKanban(); else await cargarLista();
+    if (r.conversacion_id) abrirDetalle(r.conversacion_id);
+  } catch (e) { mostrarToast(e.message || 'No se pudo crear el caso', 'danger'); }
 }
 
 async function cargarKanban() {
@@ -2788,7 +2885,7 @@ function renderKanban() {
     porEtapa[ek].push(conv);
   }
 
-  el.innerHTML = Object.values(ETAPAS).map(etapa => {
+  el.innerHTML = Object.values(ETAPAS).filter(e => !e.es_cerrada).map(etapa => {
     // Si hay filtro de etapa activo y no coincide, mostrar columna vacía pero visible
     const convs = etapaFiltro && etapaFiltro !== etapa.key ? [] : (porEtapa[etapa.key] || []);
     const oculta = etapaFiltro && etapaFiltro !== etapa.key;
@@ -2846,7 +2943,7 @@ function renderKanban() {
   }).join('');
 
   // Inicializar SortableJS en cada columna
-  for (const etapa of Object.values(ETAPAS)) {
+  for (const etapa of Object.values(ETAPAS).filter(e => !e.es_cerrada)) {
     const colEl = document.getElementById(`kb-col-${etapa.key}`);
     if (!colEl) continue;
     const s = Sortable.create(colEl, {
@@ -3204,6 +3301,30 @@ async function eliminarCliente(id, nombre) {
     await api(`/api/clientes/${id}`, { method: 'DELETE' });
     mostrarToast('Cliente eliminado', 'success');
     cargarClientes();
+  } catch (e) { mostrarToast(e.message || 'Error', 'danger'); }
+}
+
+async function abrirNotasCliente(id) {
+  if (!id) return;
+  try {
+    const d = await api(`/api/clientes/${id}`).then(r => r.json());
+    const c = d.cliente;
+    document.getElementById('notas-cli-nombre').textContent = c.nombre || 'Cliente';
+    document.getElementById('notas-cli-sub').textContent =
+      [c.telefono, c.email].filter(Boolean).join(' · ') || 'Sin datos de contacto';
+    const notas = d.notas || [];
+    document.getElementById('notas-cli-lista').innerHTML = notas.length === 0
+      ? '<div class="text-muted small text-center py-3">Sin notas registradas</div>'
+      : notas.map(n => `
+        <div class="nota-card">
+          <div class="nota-meta">
+            <i class="bi bi-person me-1"></i>${esc(n.agente_nombre || 'Agente')}
+            &nbsp;&middot;&nbsp;${fmtHora(n.created_at)}
+            ${n.closed_at ? '&nbsp;&middot;&nbsp;<span class="text-muted">caso cerrado</span>' : ''}
+          </div>
+          <div class="nota-cuerpo">${esc(n.contenido)}</div>
+        </div>`).join('');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-notas-cliente')).show();
   } catch (e) { mostrarToast(e.message || 'Error', 'danger'); }
 }
 
@@ -3657,6 +3778,65 @@ function limpiarVistasExtra() {
           </button>
         </div>
         <div id="ficha-polizas"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MODAL NUEVO CASO (botón "Nuevo" del kanban)
+════════════════════════════════════ -->
+<div class="modal fade" id="modal-nueva-conv" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow" style="border-radius:12px;">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Nuevo caso</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold mb-1">Cliente</label>
+          <div class="d-flex gap-2 mb-2">
+            <select id="nv-cliente" class="form-select form-select-sm" onchange="nvToggleNuevo()"></select>
+          </div>
+          <div id="nv-nuevo-campos" style="display:none;">
+            <input type="text" id="nv-nombre" class="form-control form-control-sm mb-2" placeholder="Nombre del cliente" />
+            <input type="text" id="nv-telefono" class="form-control form-control-sm" placeholder="Teléfono (ej: +52811...)" />
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold mb-1">Fase</label>
+          <select id="nv-fase" class="form-select form-select-sm"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold mb-1">Nota inicial <span class="text-muted">(opcional)</span></label>
+          <textarea id="nv-nota" class="form-control form-control-sm" rows="2" placeholder="Ej: Prospecto referido, interesado en seguro de auto"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-light border btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm fw-semibold" onclick="guardarNuevaConv()">Crear caso</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MODAL NOTAS DEL CLIENTE (todos sus casos)
+════════════════════════════════════ -->
+<div class="modal fade" id="modal-notas-cliente" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-1">
+        <div>
+          <h6 class="modal-title fw-bold mb-0" id="notas-cli-nombre"></h6>
+          <div class="text-muted" id="notas-cli-sub" style="font-size:12px;"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="small fw-semibold text-muted mb-2">NOTAS (todos sus casos)</div>
+        <div id="notas-cli-lista"></div>
       </div>
     </div>
   </div>

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 from app.middleware.auth import get_agente
-from app.crud.conversaciones import cambiar_estado
+from app.crud.conversaciones import cambiar_estado, cerrar
 from app.utils.estados import es_estado_valido
 
 router = APIRouter()
@@ -38,4 +38,12 @@ def post_estado(conv_id: str, body: EstadoBody, background: BackgroundTasks, age
 
     background.add_task(_evento_calendario, body.estado_nuevo, conv_id)
 
+    return {"success": True, "conversacion_id": conv_id}
+
+
+@router.post("/api/conversaciones/{conv_id}/cerrar")
+def post_cerrar(conv_id: str, agente=Depends(get_agente)):
+    estado_anterior = cerrar(conv_id, agente)
+    if estado_anterior is None:
+        raise HTTPException(404, detail="Conversación no encontrada")
     return {"success": True, "conversacion_id": conv_id}

@@ -10,7 +10,7 @@ router = APIRouter()
 def kpis(agente=Depends(get_agente)):
     hoy = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
-    por_estado = query("SELECT estado, COUNT(*) AS total FROM conversaciones WHERE activo = true GROUP BY estado")
+    por_estado = query("SELECT estado, COUNT(*) AS total FROM conversaciones WHERE activo = true AND closed_at IS NULL GROUP BY estado")
     hoy_nuevos = query("SELECT COUNT(*) AS total FROM conversaciones WHERE created_at >= %s", [hoy])
     hoy_propuestas = query(
         "SELECT COUNT(*) AS total FROM cambios_estado_historico WHERE estado_nuevo = 'cotizacion' AND timestamp >= %s", [hoy]
@@ -18,7 +18,7 @@ def kpis(agente=Depends(get_agente)):
     hoy_polizas = query(
         "SELECT COUNT(*) AS total FROM cambios_estado_historico WHERE estado_nuevo = 'vigente' AND timestamp >= %s", [hoy]
     )
-    pendientes = query("SELECT COUNT(*) AS total FROM conversaciones WHERE requiere_respuesta = true AND activo = true")
+    pendientes = query("SELECT COUNT(*) AS total FROM conversaciones WHERE requiere_respuesta = true AND activo = true AND closed_at IS NULL")
     criticas = query(
         """SELECT c.id, c.cliente_nombre, c.estado, c.prioridad,
                   EXTRACT(EPOCH FROM (NOW() - c.ultimo_mensaje_at)) / 3600 AS horas_sin_respuesta,
@@ -29,7 +29,7 @@ def kpis(agente=Depends(get_agente)):
              WHERE conversacion_id = c.id
              ORDER BY timestamp_mensaje DESC LIMIT 1
            ) m ON true
-           WHERE c.requiere_respuesta = true AND c.activo = true
+           WHERE c.requiere_respuesta = true AND c.activo = true AND c.closed_at IS NULL
            ORDER BY horas_sin_respuesta DESC
            LIMIT 10"""
     )
@@ -62,15 +62,15 @@ def kpis(agente=Depends(get_agente)):
 def estadisticas(agente=Depends(get_agente)):
     """Conteos para la vista de Estadísticas: activas, cerradas y por fase."""
     etapas = query(
-        "SELECT key, label, color, orden, es_cerrada FROM etapas WHERE activo = true ORDER BY orden ASC"
+        "SELECT key, label, color, orden, es_cerrada FROM etapas WHERE activo = true AND es_cerrada = false ORDER BY orden ASC"
     ).rows
+    # Solo casos abiertos por fase (los cerrados se cuentan aparte por closed_at).
     conteos = {
         row["estado"]: int(row["total"])
         for row in query(
-            "SELECT estado, COUNT(*) AS total FROM conversaciones WHERE activo = true GROUP BY estado"
+            "SELECT estado, COUNT(*) AS total FROM conversaciones WHERE activo = true AND closed_at IS NULL GROUP BY estado"
         ).rows
     }
-    cerradas_keys = {e["key"] for e in etapas if e["es_cerrada"]}
     por_fase = [
         {
             "key": e["key"], "label": e["label"], "color": e["color"],
@@ -78,15 +78,19 @@ def estadisticas(agente=Depends(get_agente)):
         }
         for e in etapas
     ]
-    activas = sum(c for k, c in conteos.items() if k not in cerradas_keys)
-    cerradas = sum(c for k, c in conteos.items() if k in cerradas_keys)
+    activas = query(
+        "SELECT COUNT(*) AS t FROM conversaciones WHERE activo = true AND closed_at IS NULL"
+    ).rows[0]["t"]
+    cerradas = query(
+        "SELECT COUNT(*) AS t FROM conversaciones WHERE closed_at IS NOT NULL"
+    ).rows[0]["t"]
     requiere = query(
-        "SELECT COUNT(*) AS t FROM conversaciones WHERE requiere_respuesta = true AND activo = true"
+        "SELECT COUNT(*) AS t FROM conversaciones WHERE requiere_respuesta = true AND activo = true AND closed_at IS NULL"
     ).rows[0]["t"]
 
     return {
-        "activas": activas,
-        "cerradas": cerradas,
+        "activas": int(activas),
+        "cerradas": int(cerradas),
         "requiere_respuesta": int(requiere),
         "por_fase": por_fase,
     }

@@ -112,7 +112,14 @@ def _sincronizar_cliente(phone: str, nombre: str, conv_id: str) -> None:
 
 
 def _obtener_o_crear_conversacion(phone: str, nombre: str) -> str:
-    r = query("SELECT id, cliente_nombre FROM conversaciones WHERE cliente_whatsapp_id = %s", [phone])
+    # Solo se reusa una conversación ABIERTA. Si el cliente tenía su caso cerrado y vuelve a
+    # escribir, se abre un caso NUEVO en 'inicio' (el cerrado queda intacto en el historial).
+    r = query(
+        """SELECT id, cliente_nombre FROM conversaciones
+           WHERE cliente_whatsapp_id = %s AND closed_at IS NULL
+           ORDER BY created_at DESC LIMIT 1""",
+        [phone],
+    )
     if r.rows:
         conv_id = str(r.rows[0]["id"])
         # Reactivar la conversación: si se había eliminado (activo=false) y vuelve a

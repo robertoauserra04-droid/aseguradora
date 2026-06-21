@@ -45,10 +45,23 @@ def obtener_por_id(cliente_id: str) -> dict | None:
         [cliente_id],
     )
 
+    # Todas las notas del cliente a lo largo de todos sus casos (por cliente_id o por teléfono,
+    # para incluir conversaciones legadas sin cliente_id enlazado).
+    telefono = r.rows[0].get("telefono")
+    notas = query(
+        """SELECT n.contenido, n.agente_nombre, n.created_at, c.estado, c.closed_at
+           FROM notas_internas n
+           JOIN conversaciones c ON c.id = n.conversacion_id
+           WHERE c.cliente_id = %s OR (%s IS NOT NULL AND c.cliente_telefono = %s)
+           ORDER BY n.created_at DESC""",
+        [cliente_id, telefono, telefono],
+    )
+
     return {
         "cliente": r.rows[0],
         "polizas": polizas.rows,
         "conversaciones": convs.rows,
+        "notas": notas.rows,
     }
 
 

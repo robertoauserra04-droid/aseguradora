@@ -36,8 +36,10 @@ CREATE TABLE IF NOT EXISTS conversaciones (
 
   -- Cliente
   cliente_nombre VARCHAR(255) NOT NULL DEFAULT 'Cliente',
-  cliente_telefono VARCHAR(20) NOT NULL UNIQUE,
-  cliente_whatsapp_id VARCHAR(50) NOT NULL UNIQUE,
+  -- Sin UNIQUE: un mismo cliente puede tener varias conversaciones (casos), p.ej. un caso
+  -- cerrado en el historial + uno nuevo abierto al volver a escribir.
+  cliente_telefono VARCHAR(20) NOT NULL,
+  cliente_whatsapp_id VARCHAR(50) NOT NULL,
   cliente_email VARCHAR(255),
 
   -- Seguro
@@ -73,7 +75,8 @@ CREATE TABLE IF NOT EXISTS conversaciones (
   -- Timestamps
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  ultimo_mensaje_at TIMESTAMP
+  ultimo_mensaje_at TIMESTAMP,
+  closed_at TIMESTAMP -- NULL = abierta; al cerrar el caso se congela aquí
 );
 
 CREATE INDEX IF NOT EXISTS idx_conversaciones_estado ON conversaciones(estado);
@@ -333,3 +336,14 @@ CREATE TABLE IF NOT EXISTS bot_numeros_excluidos (
   created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_bot_excluidos_numero ON bot_numeros_excluidos(numero);
+
+-- =============================================
+-- Cierre de conversaciones por caso (closed_at) y varias conversaciones por teléfono
+-- =============================================
+-- Una conversación cerrada deja de aparecer en el tablero pero sigue en la lista/historial.
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP;
+-- Permitir varias conversaciones (casos) por mismo teléfono: quitar los UNIQUE heredados.
+ALTER TABLE conversaciones DROP CONSTRAINT IF EXISTS conversaciones_cliente_telefono_key;
+ALTER TABLE conversaciones DROP CONSTRAINT IF EXISTS conversaciones_cliente_whatsapp_id_key;
+CREATE INDEX IF NOT EXISTS idx_conversaciones_closed_at ON conversaciones(closed_at);
+CREATE INDEX IF NOT EXISTS idx_conversaciones_whatsapp_id ON conversaciones(cliente_whatsapp_id);

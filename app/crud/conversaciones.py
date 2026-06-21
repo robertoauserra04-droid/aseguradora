@@ -11,9 +11,15 @@ def listar(filtros: dict) -> dict:
     limit = int(filtros.get("limit", 50))
     offset = int(filtros.get("offset", 0))
     sort_by = filtros.get("sort_by", "mas_reciente")
+    incluir_cerradas = str(filtros.get("incluir_cerradas", "")).lower() in ("true", "1", "yes")
 
     conditions = ["c.activo = true"]
     params = []
+
+    # Por defecto solo conversaciones abiertas (el tablero). La lista/historial pasa
+    # incluir_cerradas=true para ver también los casos ya cerrados.
+    if not incluir_cerradas:
+        conditions.append("c.closed_at IS NULL")
 
     if estado:
         conditions.append("c.estado = %s")
@@ -55,7 +61,7 @@ def listar(filtros: dict) -> dict:
               c.id, c.cliente_nombre, c.cliente_telefono, c.tipo_seguro, c.tipos_seguro,
               c.estado, c.agente_asignado, c.agente_nombre,
               c.requiere_respuesta, c.prioridad, c.dias_en_estado,
-              c.created_at, c.updated_at, c.ultimo_mensaje_at,
+              c.created_at, c.updated_at, c.ultimo_mensaje_at, c.closed_at,
               m.contenido AS ultimo_mensaje_contenido,
               m.timestamp_mensaje AS ultimo_mensaje_timestamp,
               m.autor AS ultimo_mensaje_autor
@@ -94,6 +100,7 @@ def listar(filtros: dict) -> dict:
             } if r["ultimo_mensaje_contenido"] else None,
             "created_at": r["created_at"],
             "updated_at": r["updated_at"],
+            "closed_at": r["closed_at"],
         })
 
     return {"conversaciones": conversaciones, "total": total, "limit": limit, "offset": offset}
@@ -105,10 +112,15 @@ def obtener_por_id(conv_id: str) -> dict | None:
         return None
 
     mensajes, cotizaciones, notas, historial = (
+        # Conversación COMPLETA del cliente: todos sus mensajes a lo largo de todos sus casos
+        # (la conversación de WhatsApp es continua aunque cada caso sea una fila distinta).
         query(
-            """SELECT id, autor, nombre_autor, contenido, tipo_mensaje,
-                      timestamp_mensaje, palabras_clave, sentimiento, requiere_respuesta
-               FROM mensajes WHERE conversacion_id = %s ORDER BY timestamp_mensaje ASC""",
+            """SELECT m.id, m.autor, m.nombre_autor, m.contenido, m.tipo_mensaje,
+                      m.timestamp_mensaje, m.palabras_clave, m.sentimiento, m.requiere_respuesta
+               FROM mensajes m
+               JOIN conversaciones c2 ON c2.id = m.conversacion_id
+               WHERE c2.cliente_telefono = (SELECT cliente_telefono FROM conversaciones WHERE id = %s)
+               ORDER BY m.timestamp_mensaje ASC""",
             [conv_id],
         ),
         query(
@@ -216,6 +228,83 @@ def cambiar_estado(conv_id: str, estado_nuevo: str, motivo: str, agente: dict) -
         [conv_id, estado_actual, estado_nuevo, agente_id, agente_nombre, motivo],
     )
     return estado_actual
+
+
+def cerrar(conv_id: str, agente: dict) -> str | None:
+    """Cierra el caso: deja de aparecer en el tablero y queda en la lista como 'cerrada'.
+    Congela `closed_at` (para la métrica de tiempo de conversación) y registra el cambio.
+    Devuelve el estado anterior, o None si la conversación no existe."""
+    r = query("SELECT estado FROM conversaciones WHERE id = %s", [conv_id])
+    if not r.rows:
+        return None
+    estado_actual = r.rows[0]["estado"]
+
+    query(
+        """UPDATE conversaciones
+           SET estado = 'cerrada', estado_anterior = %s, closed_at = NOW(),
+               fecha_cambio_estado = NOW(), updated_at = NOW()
+           WHERE id = %s""",
+        [estado_actual, conv_id],
+    )
+
+    agente_nombre = agente.get("nombre", "Sistema")
+    agente_id = agente.get("id", "sistema")
+    query(
+        """INSERT INTO cambios_estado_historico
+             (conversacion_id, estado_anterior, estado_nuevo, realizado_por, nombre_quien_realizo, motivo)
+           VALUES (%s, %s, 'cerrada', %s, %s, %s)""",
+        [conv_id, estado_actual, agente_id, agente_nombre, "Conversación cerrada"],
+    )
+    return estado_actual
+
+
+def crear_manual(datos: dict, agente: dict) -> str:
+    """Crea un caso manualmente desde el panel (botón 'Nuevo' del kanban).
+
+    Acepta un cliente existente (`cliente_id`) o uno nuevo (`cliente_nombre` + `cliente_telefono`).
+    Coloca el caso en la fase indicada (`estado`) y, si viene `nota`, la registra.
+    """
+    cliente_id = datos.get("cliente_id")
+    estado = datos.get("estado") or "inicio"
+
+    if cliente_id:
+        cli = query("SELECT id, nombre, telefono FROM clientes WHERE id = %s", [cliente_id])
+        if not cli.rows:
+            raise ValueError("Cliente no encontrado")
+        nombre = cli.rows[0]["nombre"] or "Cliente"
+        telefono = cli.rows[0]["telefono"]
+        if not telefono:
+            raise ValueError("El cliente no tiene teléfono")
+    else:
+        nombre = (datos.get("cliente_nombre") or "Cliente").strip() or "Cliente"
+        telefono = (datos.get("cliente_telefono") or "").strip()
+        if not telefono:
+            raise ValueError("El teléfono es requerido para un cliente nuevo")
+        existente = query("SELECT id FROM clientes WHERE telefono = %s", [telefono])
+        if existente.rows:
+            cliente_id = str(existente.rows[0]["id"])
+        else:
+            ins_cli = query(
+                "INSERT INTO clientes (nombre, telefono) VALUES (%s, %s) RETURNING id",
+                [nombre, telefono],
+            )
+            cliente_id = str(ins_cli.rows[0]["id"])
+
+    ins = query(
+        """INSERT INTO conversaciones
+             (cliente_telefono, cliente_whatsapp_id, cliente_nombre, estado, cliente_id,
+              bot_activo, requiere_respuesta, created_at, ultimo_mensaje_at)
+           VALUES (%s, %s, %s, %s, %s, true, false, NOW(), NOW())
+           RETURNING id""",
+        [telefono, telefono, nombre, estado, cliente_id],
+    )
+    conv_id = str(ins.rows[0]["id"])
+
+    nota = (datos.get("nota") or "").strip()
+    if nota:
+        crear_nota(conv_id, nota, agente)
+
+    return conv_id
 
 
 def crear_nota(conv_id: str, contenido: str, agente: dict) -> str:
