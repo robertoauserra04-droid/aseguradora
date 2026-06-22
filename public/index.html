@@ -850,6 +850,11 @@
               </div>
               <div class="row g-3">
                 <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1">Nombre del asistente</label>
+                  <input type="text" id="ctx-bot-nombre" class="form-control form-control-sm"
+                    placeholder="Ej: Sofia, Leo, Asistente Carguill" oninput="actualizarPreviewBot()">
+                </div>
+                <div class="col-md-6">
                   <label class="form-label small fw-semibold mb-1">Nombre de la empresa</label>
                   <input type="text" id="ctx-empresa" class="form-control form-control-sm"
                     placeholder="Ej: Seguros Carguill" oninput="actualizarPreviewBot()">
@@ -860,9 +865,16 @@
                     placeholder="Ej: Monterrey, NL">
                 </div>
                 <div class="col-12">
-                  <label class="form-label small fw-semibold mb-1">Descripcion del negocio</label>
-                  <textarea id="ctx-descripcion" class="form-control form-control-sm" rows="2"
-                    placeholder="Ej: Somos un broker de seguros con 10 anos de experiencia, trabajamos con las mejores aseguradoras del mercado mexicano."></textarea>
+                  <label class="form-label small fw-semibold mb-1">Descripcion del negocio / qué hace el asistente</label>
+                  <p class="text-muted mb-1" style="font-size:11px;">Define quién es el asistente y su rol. Esto MANDA sobre el comportamiento por defecto.</p>
+                  <textarea id="ctx-descripcion" class="form-control form-control-sm" rows="3"
+                    placeholder="Ej: Eres el asistente de una agencia de seguros. Orientas al cliente, resuelves dudas y lo conectas con un asesor para cotizar. No eres vendedor directo."></textarea>
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-semibold mb-1">Cómo debe atender (paso a paso)</label>
+                  <p class="text-muted mb-1" style="font-size:11px;">Si lo llenas, define el flujo que sigue el bot en cada conversación.</p>
+                  <textarea id="ctx-proceso" class="form-control form-control-sm" rows="4"
+                    placeholder="Ej:&#10;1. Saluda y pregunta qué seguro necesita.&#10;2. Recopila los datos básicos del cliente.&#10;3. Ofrece agendar una cita con un asesor."></textarea>
                 </div>
               </div>
             </div>
@@ -944,6 +956,13 @@
               <div class="bot-section-title">
                 <i class="bi bi-slash-circle" style="color:#ef4444;"></i>Reglas del bot
               </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="ctx-modo-estricto">
+                <label class="form-check-label small fw-semibold" for="ctx-modo-estricto">
+                  No inventar <span class="badge bg-success ms-1" style="font-size:9px;vertical-align:middle;">Recomendado</span>
+                  <span class="d-block text-muted fw-normal" style="font-size:11px;">Si algo no está en su configuración o FAQ, el bot lo dice y pasa con un asesor — en vez de inventar.</span>
+                </label>
+              </div>
               <div class="mb-3">
                 <label class="form-label small fw-semibold mb-1">Lo que NO debe hacer el bot</label>
                 <p class="text-muted mb-1" style="font-size:11px;">Una restriccion por linea. Se aplica en cada conversacion.</p>
@@ -960,23 +979,12 @@
             <!-- 5b. Reglas avanzadas (precision) -->
             <div class="bot-section-card">
               <div class="bot-section-title">
-                <i class="bi bi-shield-check" style="color:#16a34a;"></i>Reglas avanzadas (para que NO se equivoque)
-              </div>
-              <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" id="ctx-modo-estricto">
-                <label class="form-check-label small fw-semibold" for="ctx-modo-estricto">
-                  Modo estricto — el bot responde SOLO con lo configurado; si no sabe, pasa con un asesor y se pausa
-                </label>
+                <i class="bi bi-shield-check" style="color:#16a34a;"></i>Reglas avanzadas (opcional)
               </div>
               <div class="mb-2">
                 <label class="form-label small fw-semibold mb-1">Mensaje al pasar con un asesor (handoff)</label>
                 <input type="text" id="ctx-handoff" class="form-control form-control-sm"
                   placeholder="Ej: Excelente pregunta, déjame conectarte con un asesor que te dará el detalle exacto.">
-              </div>
-              <div class="mb-2">
-                <label class="form-label small fw-semibold mb-1">Proceso / pasos a seguir</label>
-                <textarea id="ctx-proceso" class="form-control form-control-sm" rows="3"
-                  placeholder="Describe el flujo exacto que debe seguir el bot, paso a paso."></textarea>
               </div>
               <div class="mb-2">
                 <label class="form-label small fw-semibold mb-1">Datos que SIEMPRE debe pedir</label>
@@ -1066,13 +1074,6 @@
                 <i class="bi bi-sliders2" style="color:#8b5cf6;"></i>Comportamiento del bot
               </div>
               <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold mb-1">Inteligencia del bot</label>
-                  <select id="ctx-modelo" class="form-select form-select-sm">
-                    <option value="gpt-4o-mini">Rápido y económico (recomendado)</option>
-                    <option value="gpt-4o">Avanzado (respuestas más elaboradas)</option>
-                  </select>
-                </div>
                 <div class="col-md-6">
                   <label class="form-label small fw-semibold mb-1">Creatividad</label>
                   <select id="ctx-temperatura" class="form-select form-select-sm">
@@ -1790,6 +1791,7 @@ async function cargarVistaBotInstrucciones() {
     const ctx = d.contexto || {};
 
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('ctx-bot-nombre', ctx.bot_nombre);
     set('ctx-empresa', ctx.empresa);
     set('ctx-ciudad', ctx.ciudad);
     set('ctx-descripcion', ctx.descripcion);
@@ -1894,6 +1896,7 @@ function seleccionarTono(el) {
 async function guardarContexto() {
   const seguros = [...document.querySelectorAll('.seguro-card.active')].map(c => c.dataset.valor);
   const contexto = {
+    bot_nombre:   (document.getElementById('ctx-bot-nombre')?.value || '').trim(),
     empresa:      (document.getElementById('ctx-empresa')?.value || '').trim(),
     ciudad:       (document.getElementById('ctx-ciudad')?.value || '').trim(),
     descripcion:  (document.getElementById('ctx-descripcion')?.value || '').trim(),

@@ -55,12 +55,13 @@ if os.path.isdir(PUBLIC_DIR):
 
 @app.on_event("startup")
 def startup():
-    from app.db.migrate import run_migrations, backfill_clientes_polizas, seed_etapas
+    from app.db.migrate import run_migrations, backfill_clientes_polizas, seed_etapas, seed_bot_config_defaults
     from app.db.seed import run_seed
     from app.services.jobs_service import iniciar_jobs
 
     run_migrations()
     seed_etapas()
+    seed_bot_config_defaults()
     backfill_clientes_polizas()
     run_seed()
     iniciar_jobs()

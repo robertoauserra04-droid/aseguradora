@@ -2,46 +2,42 @@ def build_system_prompt(cfg: dict, faqs: list, slots_info: dict) -> str:
     c = cfg.get("contexto") or {}
     partes = []
 
-    empresa = c.get("empresa", "Seguros Carguill")
-    ciudad = c.get("ciudad", "San Pedro Garza García, NL")
+    # ── Identidad: 100% desde la configuración del panel (sin nada hardcodeado de aseguradora) ──
+    nombre_bot = (c.get("bot_nombre") or "Asistente").strip()
+    empresa = (c.get("empresa") or "la empresa").strip()
+    ciudad = (c.get("ciudad") or "").strip()
+    ubic = f", ubicada en {ciudad}, México" if ciudad else ""
     partes.append(
-        f"Eres el asistente virtual de {empresa}, un broker de seguros ubicado en {ciudad}, México. "
-        "Tu nombre es Carguill. Responde siempre en español, de forma clara y concisa."
+        f"Eres {nombre_bot}, el asistente virtual de {empresa}{ubic}. "
+        "Responde siempre en español, de forma clara y concisa."
     )
 
-    partes.append(
-        "Tu rol es orientar y asesorar a los clientes que buscan un seguro. "
-        "NO eres un vendedor directo: tu función es entender la necesidad del cliente, "
-        "recopilar la información relevante y conectarlo con un asesor humano para la cotización formal. "
-        "Trabajamos con más de 25 aseguradoras en México para encontrar la mejor opción para cada cliente."
-    )
+    # Descripción/rol del negocio: lo define el panel. Si no hay, un rol neutro mínimo.
+    descripcion = (c.get("descripcion") or "").strip()
+    if descripcion:
+        partes.append(descripcion)
+    else:
+        partes.append(
+            f"Tu función es atender a los clientes de {empresa}: entender lo que necesitan, "
+            "resolver sus dudas con la información disponible y conectarlos con un asesor humano "
+            "cuando haga falta."
+        )
 
-    seguros = c.get("seguros") or ["Vida", "Gastos Médicos Mayores", "Auto", "Daños", "Viaje", "Mascotas"]
-    partes.append("Seguros que ofrecemos:\n" + "\n".join(f"• {s}" for s in seguros))
+    if c.get("seguros"):
+        partes.append("Productos/servicios que ofrecemos:\n" + "\n".join(f"• {s}" for s in c["seguros"]))
 
     if c.get("aseguradoras"):
         partes.append(f"Aseguradoras con las que trabajamos: {c['aseguradoras']}.")
 
-    partes.append("""FLUJO DE ATENCIÓN (síguelo en orden):
-
-1. Saluda al cliente y pregunta qué tipo de seguro le interesa o qué necesita.
-2. Una vez detectado el tipo de seguro, llama a "registrar_interes" para registrarlo.
-3. Recopila los datos básicos según el tipo:
-   • Vida: edad del titular, si fuma, monto de cobertura deseado.
-   • Gastos Médicos: edad, número de personas a asegurar, ¿tiene condiciones preexistentes?
-   • Auto: año, marca y modelo del vehículo, uso (personal/comercial), ¿amplia o limitada?
-   • Daños: tipo de bien (casa, negocio, equipo), ubicación, valor aproximado.
-   • Viaje: destino, fechas, número de viajeros, ¿tiene cobertura médica incluida?
-   • Mascotas: especie, raza, edad de la mascota.
-4. Con esa información, ofrece al cliente agendar una llamada o cita con un asesor para la cotización formal.
-   Si el cliente acepta, usa "agendar_cita".
-5. Si el cliente pregunta precios específicos, dile que los precios dependen de sus datos y que un asesor
-   le enviará cotizaciones comparativas de varias aseguradoras. No inventes precios.
-6. Si el cliente pide hablar con una persona o la consulta es muy compleja, usa "escalar_a_agente".""")
-
-    # Proceso/flujo personalizado (sustituye o complementa el flujo base)
+    # Flujo de atención: lo define el panel (campo "proceso"). Ya no hay flujo de aseguradora fijo.
     if c.get("proceso"):
-        partes.append("PROCESO A SEGUIR (indicaciones del negocio):\n" + c["proceso"].strip())
+        partes.append("CÓMO DEBES ATENDER (síguelo en orden):\n" + c["proceso"].strip())
+
+    # Las funciones siguen disponibles con cualquier flujo.
+    partes.append(
+        "Tienes funciones para registrar el interés del cliente, escalar la conversación a un "
+        "asesor humano y agendar una cita; úsalas cuando corresponda."
+    )
 
     # Datos que el bot SIEMPRE debe recopilar
     if c.get("datos_obligatorios"):
@@ -77,10 +73,12 @@ def build_system_prompt(cfg: dict, faqs: list, slots_info: dict) -> str:
     prohibidos = f"\n• Temas prohibidos (no respondas sobre esto, escala a un asesor): {c['temas_prohibidos']}" if c.get("temas_prohibidos") else ""
     partes.append(
         "RESTRICCIONES IMPORTANTES:\n"
-        "• Nunca inventes precios, primas ni coberturas específicas.\n"
-        "• Nunca prometas aprobación de una póliza.\n"
-        "• No proporciones datos de clientes de terceros.\n"
-        f"• Si no sabes algo, dilo honestamente y ofrece conectar con un asesor.{politica}{prohibidos}{restricciones_extra}"
+        "• NO inventes ni supongas información. Si algo NO está en esta configuración ni en la "
+        "BASE DE CONOCIMIENTO, dilo con honestidad y ofrece conectar con un asesor humano. "
+        "Prefiere decir \"no tengo ese dato, te conecto con un asesor\" antes que arriesgar una respuesta.\n"
+        "• No inventes precios, cifras, fechas ni hagas promesas.\n"
+        "• No proporciones datos personales de terceros.\n"
+        f"• No te desvíes a temas ajenos a {empresa}; si insisten, ofrece pasar con un asesor.{politica}{prohibidos}{restricciones_extra}"
     )
 
     if cfg.get("instrucciones", "").strip():

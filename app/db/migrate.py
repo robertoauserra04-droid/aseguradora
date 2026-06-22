@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from app.config.database import query
@@ -38,6 +39,67 @@ def seed_etapas() -> None:
         )
     except Exception as e:
         logger.error("Error en seed_etapas: %s", e)
+
+
+def seed_bot_config_defaults() -> None:
+    """Prellena `bot_config.contexto` con lo que antes estaba hardcodeado en el prompt
+    (nombre, descripción/rol, flujo y lista de seguros), SOLO si faltan esas claves.
+
+    Así el bot conserva el comportamiento previo de Carguill, pero ahora TODO es editable
+    desde el panel (el código ya no impone identidad ni flujo de aseguradora)."""
+    try:
+        r = query("SELECT contexto FROM bot_config WHERE id = 1")
+        if not r.rows:
+            return
+        ctx = r.rows[0].get("contexto") or {}
+        if isinstance(ctx, str):
+            try:
+                ctx = json.loads(ctx)
+            except Exception:
+                ctx = {}
+
+        defaults = {
+            "empresa": "Seguros Carguill",
+            "ciudad": "San Pedro Garza García, NL",
+            "bot_nombre": "Carguill",
+            "seguros": ["Vida", "Gastos Médicos Mayores", "Auto", "Daños", "Viaje", "Mascotas"],
+            "descripcion": (
+                "Tu rol es orientar y asesorar a los clientes que buscan un seguro. NO eres un "
+                "vendedor directo: tu función es entender la necesidad del cliente, recopilar la "
+                "información relevante y conectarlo con un asesor humano para la cotización formal. "
+                "Trabajamos con más de 25 aseguradoras en México para encontrar la mejor opción para "
+                "cada cliente."
+            ),
+            "proceso": (
+                "1. Saluda al cliente y pregunta qué tipo de seguro le interesa o qué necesita.\n"
+                '2. Una vez detectado el tipo de seguro, llama a "registrar_interes" para registrarlo.\n'
+                "3. Recopila los datos básicos según el tipo:\n"
+                "   • Vida: edad del titular, si fuma, monto de cobertura deseado.\n"
+                "   • Gastos Médicos: edad, número de personas a asegurar, ¿condiciones preexistentes?\n"
+                "   • Auto: año, marca y modelo, uso (personal/comercial), ¿amplia o limitada?\n"
+                "   • Daños: tipo de bien (casa, negocio, equipo), ubicación, valor aproximado.\n"
+                "   • Viaje: destino, fechas, número de viajeros, ¿cobertura médica incluida?\n"
+                "   • Mascotas: especie, raza, edad.\n"
+                '4. Con esa información, ofrece agendar una llamada o cita con un asesor (usa "agendar_cita").\n'
+                "5. Si preguntan precios específicos, explica que dependen de sus datos y que un asesor "
+                "enviará cotizaciones de varias aseguradoras. No inventes precios.\n"
+                '6. Si piden hablar con una persona o la consulta es compleja, usa "escalar_a_agente".'
+            ),
+        }
+
+        cambios = False
+        for k, v in defaults.items():
+            actual = ctx.get(k)
+            vacio = actual is None or (isinstance(actual, str) and not actual.strip()) or actual == []
+            if vacio:
+                ctx[k] = v
+                cambios = True
+
+        if cambios:
+            query("UPDATE bot_config SET contexto = %s, updated_at = NOW() WHERE id = 1", [json.dumps(ctx)])
+            logger.info("seed_bot_config_defaults: configuración del bot prellenada con los valores por defecto")
+    except Exception as e:
+        logger.error("Error en seed_bot_config_defaults: %s", e)
 
 
 def backfill_clientes_polizas() -> None:

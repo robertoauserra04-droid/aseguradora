@@ -26,7 +26,7 @@ def generar_respuesta(conversacion_id: str) -> str | None:
         return None
 
     contexto = snapshot["cfg"].get("contexto") or {}
-    modelo = contexto.get("modelo") or "gpt-4o-mini"
+    modelo = "gpt-4o-mini"  # modelo fijo (no configurable desde el panel)
     try:
         temperatura = float(contexto.get("temperatura", 0.65))
     except (ValueError, TypeError):
@@ -97,7 +97,7 @@ def responder_prueba(historial: list) -> str:
     faqs = query("SELECT pregunta, respuesta FROM bot_faq WHERE activo = true ORDER BY orden, created_at").rows
 
     contexto = cfg.get("contexto") or {}
-    modelo = contexto.get("modelo") or "gpt-4o-mini"
+    modelo = "gpt-4o-mini"  # modelo fijo (no configurable desde el panel)
     try:
         temperatura = float(contexto.get("temperatura", 0.65))
     except (ValueError, TypeError):
