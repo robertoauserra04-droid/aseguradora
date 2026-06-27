@@ -1084,6 +1084,12 @@
                 </div>
               </div>
               <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="ctx-solo-seguros">
+                <label class="form-check-label small fw-semibold" for="ctx-solo-seguros">
+                  El bot solo responde si el cliente pregunta por seguros
+                </label>
+              </div>
+              <div class="form-check form-switch mt-3">
                 <input class="form-check-input" type="checkbox" id="ctx-solo-horario" onchange="toggleHorarioFields()">
                 <label class="form-check-label small fw-semibold" for="ctx-solo-horario">
                   El bot solo responde dentro del horario de atención
@@ -1807,6 +1813,8 @@ async function cargarVistaBotInstrucciones() {
     set('ctx-hora-inicio', ctx.hora_inicio != null ? String(ctx.hora_inicio) : '9');
     set('ctx-hora-fin', ctx.hora_fin != null ? String(ctx.hora_fin) : '18');
     set('ctx-msg-fuera', ctx.mensaje_fuera_horario);
+    const soloS = document.getElementById('ctx-solo-seguros');
+    if (soloS) soloS.checked = !!ctx.solo_seguros;
     const soloH = document.getElementById('ctx-solo-horario');
     if (soloH) soloH.checked = !!ctx.solo_horario;
     toggleHorarioFields();
@@ -1909,6 +1917,7 @@ async function guardarContexto() {
     // Comportamiento
     modelo:       document.getElementById('ctx-modelo')?.value || 'gpt-4o-mini',
     temperatura:  parseFloat(document.getElementById('ctx-temperatura')?.value) || 0.65,
+    solo_seguros: document.getElementById('ctx-solo-seguros')?.checked || false,
     solo_horario: document.getElementById('ctx-solo-horario')?.checked || false,
     hora_inicio:  parseInt(document.getElementById('ctx-hora-inicio')?.value, 10) || 9,
     hora_fin:     parseInt(document.getElementById('ctx-hora-fin')?.value, 10) || 18,

@@ -100,6 +100,15 @@ def build_system_prompt(cfg: dict, faqs: list, slots_info: dict) -> str:
     if c.get("firma"):
         partes.append(f'Cierra tus mensajes con: "{c["firma"]}"')
 
+    # SOLO SEGUROS: el bot únicamente conversa sobre seguros y temas relacionados.
+    if c.get("solo_seguros"):
+        partes.append(
+            "ÁMBITO RESTRINGIDO (OBLIGATORIO): Solo debes conversar sobre seguros y temas "
+            "directamente relacionados (cotización, coberturas, agendar cita con un asesor). "
+            "Si el cliente escribe sobre cualquier otro tema, NO continúes la conversación ni "
+            "respondas la consulta ajena."
+        )
+
     # MODO ESTRICTO: el bot responde SOLO con lo configurado; si no, pasa a un humano.
     if c.get("modo_estricto"):
         handoff = (c.get("mensaje_handoff") or

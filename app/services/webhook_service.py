@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 from app.config.database import query
 from app.config.env import OPENAI_API_KEY
-from app.utils.detectors import detectar_tipo_seguro
+from app.utils.detectors import detectar_tipo_seguro, menciona_seguros
 from app import crud
 
 logger = logging.getLogger(__name__)
@@ -244,6 +244,34 @@ def _fuera_de_horario(contexto: dict) -> bool:
     return not (inicio <= _hora_monterrey() < fin)
 
 
+def _es_sobre_seguros(conv_id: str, contexto: dict) -> bool:
+    """Con modo 'solo_seguros' activo, decide si el bot debe responder.
+
+    Responde si la conversación ya tiene tipo_seguro detectado (ya hubo interés)
+    o si el último mensaje del cliente menciona un seguro. En cualquier otro caso
+    el bot se queda callado y el mensaje queda en el panel para un humano.
+    """
+    if not contexto.get("solo_seguros"):
+        return True  # modo apagado → comportamiento de siempre
+    r = query("SELECT tipo_seguro FROM conversaciones WHERE id = %s", [conv_id])
+    if r.rows and r.rows[0].get("tipo_seguro"):
+        return True  # conversación ya enganchada con un tipo de seguro
+    # Si el bot ya respondió antes en esta conversación, ya está enganchada: continúa
+    # aunque los mensajes de seguimiento no repitan una palabra de seguros.
+    b = query(
+        "SELECT 1 FROM mensajes WHERE conversacion_id = %s AND autor = 'bot' LIMIT 1",
+        [conv_id],
+    )
+    if b.rows:
+        return True
+    m = query(
+        "SELECT contenido FROM mensajes WHERE conversacion_id = %s AND autor = 'cliente' "
+        "ORDER BY timestamp_mensaje DESC LIMIT 1",
+        [conv_id],
+    )
+    return bool(m.rows and menciona_seguros(m.rows[0]["contenido"]))
+
+
 def ejecutar_bot(conv_id: str) -> None:
     """Genera y envía la respuesta del bot. Se ejecuta como BackgroundTask (sync, en threadpool)."""
     try:
@@ -263,6 +291,11 @@ def ejecutar_bot(conv_id: str) -> None:
         from app.crud.bot import numero_excluido
         if numero_excluido(conv["cliente_telefono"]):
             logger.info("Bot omitido: %s está en la lista de excluidos", conv["cliente_telefono"])
+            return
+
+        # Modo "solo seguros": el bot solo responde si la conversación es sobre seguros
+        if not _es_sobre_seguros(conv_id, contexto):
+            logger.info("Bot omitido (modo solo-seguros): conv %s no es sobre seguros aún", conv_id)
             return
 
         from app.services.whatsapp.sender import enviar_mensaje
