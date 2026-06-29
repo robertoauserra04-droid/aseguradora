@@ -129,6 +129,15 @@ NO_ES_SEGUROS = [
     "¿dónde están ubicados?",
     "",
     None,
+    # Falsos positivos por subcadena que el fix de límite de palabra (\b) elimina:
+    "saludos a todos",          # 'saludos' ya no matchea 'salud'
+    "ya estoy casado",          # 'casado' ya no matchea 'casa'
+    "necesito un motor nuevo",  # 'motor' ya no matchea 'moto'
+    "se me olvida siempre",     # 'olvida' ya no matchea 'vida'
+    # Falsos positivos por palabra ambigua que la neutralización elimina:
+    "estoy seguro que no",      # 'seguro' = cierto, no el sustantivo
+    "de seguro vienen mañana",  # 'de seguro' = seguramente
+    "mi prima viene el lunes",  # 'prima' = pariente, no el costo del seguro
 ]
 
 
@@ -142,11 +151,17 @@ def test_menciona_seguros_negativos():
     assert not fallos, "NO debió detectar seguros:\n  " + "\n  ".join(fallos)
 
 
-def test_limitacion_conocida_seguro_ambiguo():
-    """'seguro' también significa 'cierto' en español -> falso positivo aceptado.
-    Documentado a propósito: preferimos responder de más que dejar callado a un
-    prospecto real."""
-    assert menciona_seguros("estoy seguro que no quiero nada") is True
+def test_seguro_ambiguo_ya_no_es_falso_positivo():
+    """'seguro' como adjetivo ('cierto') ya NO dispara al bot: la capa de
+    neutralización lo descarta. Antes era un falso positivo aceptado a propósito;
+    ahora se corrige para no responder fuera de tema."""
+    assert menciona_seguros("estoy seguro que no quiero nada") is False
+
+
+def test_mensaje_mixto_conserva_el_seguro_real():
+    """Si el mensaje mezcla un uso ambiguo con uno real, la detección debe ganar:
+    se neutraliza 'estoy seguro' pero se conserva el 'seguro de auto'."""
+    assert menciona_seguros("estoy seguro que quiero un seguro de auto") is True
 
 
 # ════════════════════════════════════════════════════════════════════════════
