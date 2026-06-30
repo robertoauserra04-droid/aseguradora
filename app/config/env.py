@@ -23,3 +23,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GOOGLE_CLIENT_EMAIL = os.getenv("GOOGLE_CLIENT_EMAIL", "")
 GOOGLE_PRIVATE_KEY = os.getenv("GOOGLE_PRIVATE_KEY", "").replace("\\n", "\n")
 GOOGLE_CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID", "")
+
+GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+APP_URL = os.getenv("RAILWAY_PUBLIC_DOMAIN", "https://aseguradora.up.railway.app")
+if APP_URL and not APP_URL.startswith("http"):
+    APP_URL = f"https://{APP_URL}"

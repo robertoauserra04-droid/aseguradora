@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from app.config.env import GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_CALENDAR_ID
+from app.config.env import GOOGLE_CALENDAR_ID
+from app.services.google_auth import get_credentials
+
+_SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 TIMEZONE = "America/Monterrey"
 HORA_INICIO = 9
@@ -32,13 +34,9 @@ def _get_calendar_id() -> str:
 
 
 def _get_service():
-    if not GOOGLE_CLIENT_EMAIL or not GOOGLE_PRIVATE_KEY:
+    creds = get_credentials(_SCOPES)
+    if not creds:
         return None
-    creds = service_account.Credentials.from_service_account_info(
-        {"client_email": GOOGLE_CLIENT_EMAIL, "private_key": GOOGLE_PRIVATE_KEY,
-         "token_uri": "https://oauth2.googleapis.com/token"},
-        scopes=["https://www.googleapis.com/auth/calendar"],
-    )
     return build("calendar", "v3", credentials=creds, cache_discovery=False)
 
 

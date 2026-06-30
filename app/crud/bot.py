@@ -3,8 +3,8 @@ from app.config.database import query
 
 
 def get_config() -> dict:
-    r = query("SELECT instrucciones, activo_global, contexto, calendar_id, drive_folder_id, whatsapp_template_notif, updated_at FROM bot_config WHERE id = 1")
-    row = r.rows[0] if r.rows else {"instrucciones": "", "activo_global": False, "contexto": {}, "calendar_id": None, "drive_folder_id": None, "whatsapp_template_notif": "actualizacion_seguro_fase", "updated_at": None}
+    r = query("SELECT instrucciones, activo_global, contexto, calendar_id, drive_folder_id, whatsapp_template_notif, google_email, updated_at FROM bot_config WHERE id = 1")
+    row = r.rows[0] if r.rows else {"instrucciones": "", "activo_global": False, "contexto": {}, "calendar_id": None, "drive_folder_id": None, "whatsapp_template_notif": "actualizacion_seguro_fase", "google_email": None, "updated_at": None}
     row["contexto"] = row.get("contexto") or {}
     if not row.get("whatsapp_template_notif"):
         row["whatsapp_template_notif"] = "actualizacion_seguro_fase"

@@ -372,6 +372,9 @@ CREATE TABLE IF NOT EXISTS notificaciones_etapa (
 ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS drive_folder_id TEXT;
 ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS calendar_id TEXT;
 ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS whatsapp_template_notif TEXT DEFAULT 'actualizacion_fase';
+ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS google_refresh_token TEXT;
+ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS google_email TEXT;
+ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS google_oauth_state TEXT;
 
 CREATE TABLE IF NOT EXISTS documentos_drive (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

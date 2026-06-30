@@ -1,16 +1,14 @@
 import io
 import logging
-from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from app.config.env import GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY
 from app.config.database import query
+from app.services.google_auth import get_credentials
 
 logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+_SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
-# MIME types de Google Workspace que se pueden exportar como texto
 _EXPORTABLES = {
     "application/vnd.google-apps.document":     "text/plain",
     "application/vnd.google-apps.spreadsheet":  "text/csv",
@@ -18,17 +16,10 @@ _EXPORTABLES = {
 
 
 def _get_service():
-    if not GOOGLE_CLIENT_EMAIL or not GOOGLE_PRIVATE_KEY:
-        return None
     try:
-        creds = service_account.Credentials.from_service_account_info(
-            {
-                "client_email": GOOGLE_CLIENT_EMAIL,
-                "private_key":  GOOGLE_PRIVATE_KEY,
-                "token_uri":    "https://oauth2.googleapis.com/token",
-            },
-            scopes=SCOPES,
-        )
+        creds = get_credentials(_SCOPES)
+        if not creds:
+            return None
         return build("drive", "v3", credentials=creds, cache_discovery=False)
     except Exception as e:
         logger.error("[Drive] Error al crear servicio: %s", e)

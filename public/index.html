@@ -1179,6 +1179,20 @@
 
               <div class="d-flex flex-column gap-2">
 
+                <!-- Google OAuth -->
+                <div id="google-oauth-row" class="d-flex align-items-center gap-2">
+                  <div class="integ-icon" style="background:#f1f5f9;flex-shrink:0;">
+                    <i class="bi bi-google" style="color:#64748b;"></i>
+                  </div>
+                  <button onclick="conectarGoogle()" class="btn btn-sm btn-primary" style="font-size:12px;">
+                    <i class="bi bi-google"></i> Conectar con Google
+                  </button>
+                  <span class="text-muted" style="font-size:11px;">Necesario para Calendar y Drive</span>
+                </div>
+                <div class="integ-hint">Conecta la cuenta de Google que tiene acceso al Calendar y Drive que quieres usar. Solo necesitas hacerlo una vez.</div>
+
+                <hr class="my-1" style="border-color:#e2e8f0;">
+
                 <!-- Calendar -->
                 <div class="d-flex align-items-center gap-2">
                   <div class="integ-icon" style="background:#e8f0fe; flex-shrink:0;">
@@ -2099,6 +2113,7 @@ async function cargarVistaBotInstrucciones() {
     if (calId) calId.value = d.calendar_id || '';
     if (driveId) driveId.value = d.drive_folder_id || '';
     if (waTemplate) waTemplate.value = d.whatsapp_template_notif || '';
+    actualizarEstadoGoogle(d.google_email || null);
     cargarDocsDrive();
 
     actualizarPreviewBot();
@@ -2217,6 +2232,36 @@ async function sincronizarDrive() {
   } catch (e) {
     if (msg) msg.textContent = 'Error al sincronizar';
   }
+}
+
+function actualizarEstadoGoogle(email) {
+  const row = document.getElementById('google-oauth-row');
+  if (!row) return;
+  if (email) {
+    row.innerHTML = `
+      <div class="integ-icon" style="background:#dcfce7;flex-shrink:0;"><i class="bi bi-check-circle-fill" style="color:#16a34a;"></i></div>
+      <span style="font-size:12px;color:#15803d;font-weight:500;"><i class="bi bi-google"></i> ${esc(email)}</span>
+      <button onclick="desconectarGoogle()" class="btn btn-sm btn-outline-danger ms-auto" style="font-size:11px;"><i class="bi bi-x-circle"></i> Desconectar</button>
+    `;
+  } else {
+    row.innerHTML = `
+      <div class="integ-icon" style="background:#f1f5f9;flex-shrink:0;"><i class="bi bi-google" style="color:#64748b;"></i></div>
+      <button onclick="conectarGoogle()" class="btn btn-sm btn-primary" style="font-size:12px;"><i class="bi bi-google"></i> Conectar con Google</button>
+      <span class="text-muted" style="font-size:11px;">Necesario para Calendar y Drive</span>
+    `;
+  }
+}
+
+function conectarGoogle() {
+  window.location.href = '/api/oauth/google';
+}
+
+async function desconectarGoogle() {
+  if (!confirm('¿Desconectar la cuenta de Google? El bot dejará de tener acceso a Calendar y Drive.')) return;
+  try {
+    await api('/api/oauth/google', { method: 'DELETE' });
+    actualizarEstadoGoogle(null);
+  } catch { alert('Error al desconectar'); }
 }
 
 async function guardarPersonalidad() {
@@ -3884,6 +3929,19 @@ function limpiarVistasExtra() {
 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
   new bootstrap.Tooltip(el, { trigger: 'hover' });
 });
+
+// Toast de éxito al regresar del OAuth de Google
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  const email = p.get('google_connected');
+  if (!email) return;
+  window.history.replaceState({}, '', window.location.pathname);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:#dcfce7;color:#15803d;border:1px solid #86efac;border-radius:10px;padding:12px 18px;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.15);display:flex;align-items:center;gap:8px;';
+  t.innerHTML = `<i class="bi bi-check-circle-fill"></i> Google conectado: ${esc(email)}`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 5000);
+})();
 </script>
 
 <!-- ════════════════════════════════════

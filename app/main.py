@@ -22,6 +22,7 @@ from app.routes.clientes import router as clientes_router
 from app.routes.polizas import router as polizas_router
 from app.routes.etapas import router as etapas_router
 from app.routes.citas import router as citas_router
+from app.routes.oauth import router as oauth_router
 
 app = FastAPI(title="Seguros Carguill API", version="2.0.0")
 
@@ -46,6 +47,7 @@ app.include_router(clientes_router)
 app.include_router(polizas_router)
 app.include_router(etapas_router)
 app.include_router(citas_router)
+app.include_router(oauth_router)
 
 # Servir el frontend estático
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "..", "public")
