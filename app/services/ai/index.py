@@ -32,7 +32,14 @@ def generar_respuesta(conversacion_id: str) -> str | None:
     except (ValueError, TypeError):
         temperatura = 0.65
 
-    system_prompt = build_system_prompt(snapshot["cfg"], snapshot["faqs"], snapshot["slots_info"])
+    docs = []
+    try:
+        from app.services.drive.client import obtener_docs_para_contexto
+        docs = obtener_docs_para_contexto()
+    except Exception:
+        pass
+
+    system_prompt = build_system_prompt(snapshot["cfg"], snapshot["faqs"], snapshot["slots_info"], docs)
     messages = build_messages(system_prompt, snapshot["mensajes"])
     tools = build_tools(snapshot["slots_info"])
 

@@ -61,6 +61,7 @@ def listar(filtros: dict) -> dict:
               c.id, c.cliente_nombre, c.cliente_telefono, c.tipo_seguro, c.tipos_seguro,
               c.estado, c.agente_asignado, c.agente_nombre,
               c.requiere_respuesta, c.prioridad, c.dias_en_estado,
+              c.bot_auto_pausado,
               c.created_at, c.updated_at, c.ultimo_mensaje_at, c.closed_at,
               m.contenido AS ultimo_mensaje_contenido,
               m.timestamp_mensaje AS ultimo_mensaje_timestamp,
@@ -93,6 +94,7 @@ def listar(filtros: dict) -> dict:
             "requiere_respuesta": r["requiere_respuesta"],
             "prioridad": r["prioridad"],
             "dias_en_estado": r["dias_en_estado"],
+            "bot_auto_pausado": r.get("bot_auto_pausado") or False,
             "ultimo_mensaje": {
                 "contenido": r["ultimo_mensaje_contenido"],
                 "timestamp": r["ultimo_mensaje_timestamp"],

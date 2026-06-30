@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 from app.middleware.auth import get_agente
+from app.config.database import query
 from app.crud import etapas as crud
 
 router = APIRouter()
@@ -14,6 +15,11 @@ class EtapaBody(BaseModel):
 
 class OrdenBody(BaseModel):
     keys: List[str]
+
+
+class NotificacionBody(BaseModel):
+    mensaje_template: str
+    activo: bool = True
 
 
 @router.get("/api/etapas")
@@ -53,4 +59,26 @@ def eliminar(key: str, agente=Depends(get_agente)):
             "ultima_fase": "Debe quedar al menos una fase",
         }
         raise HTTPException(409, detail=mensajes.get(r["motivo"], "No se puede eliminar"))
+    return {"ok": True}
+
+
+# ── Notificaciones por fase ──────────────────────────────────────────────────
+
+@router.get("/api/etapas/notificaciones")
+def listar_notificaciones(agente=Depends(get_agente)):
+    return crud.listar_notificaciones()
+
+
+@router.put("/api/etapas/notificaciones/{key}")
+def upsert_notificacion(key: str, body: NotificacionBody, agente=Depends(get_agente)):
+    if not query("SELECT 1 FROM etapas WHERE key = %s", [key]).rows:
+        raise HTTPException(404, detail="Fase no encontrada")
+    crud.upsert_notificacion(key, body.mensaje_template, body.activo)
+    return {"ok": True}
+
+
+@router.delete("/api/etapas/notificaciones/{key}")
+def eliminar_notificacion(key: str, agente=Depends(get_agente)):
+    if not crud.eliminar_notificacion(key):
+        raise HTTPException(404, detail="Notificación no encontrada")
     return {"ok": True}

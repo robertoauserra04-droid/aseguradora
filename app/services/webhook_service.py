@@ -203,14 +203,20 @@ def procesar_mensaje_entrante(body: dict, idempotency_key: str = None,
 
         if message["direction"] == "inbound":
             query(
-                "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = %s WHERE id = %s",
+                "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = %s, ultimo_autor = 'cliente' WHERE id = %s",
                 [requiere, conv_id],
             )
         else:
             query(
-                "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false WHERE id = %s",
-                [conv_id],
+                "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false, ultimo_autor = %s WHERE id = %s",
+                [autor, conv_id],
             )
+            # Pausa automática del bot cuando un agente humano responde
+            if autor == "agente":
+                query(
+                    "UPDATE conversaciones SET bot_auto_pausado = true, agente_respondio_at = NOW() WHERE id = %s",
+                    [conv_id],
+                )
 
     if idempotency_key:
         crud_webhooks.registrar(idempotency_key, event_type)
@@ -280,12 +286,27 @@ def ejecutar_bot(conv_id: str) -> None:
             return
         contexto = cfg_r.rows[0].get("contexto") or {}
 
-        conv_r = query("SELECT bot_activo, cliente_telefono FROM conversaciones WHERE id = %s", [conv_id])
+        conv_r = query("SELECT bot_activo, bot_auto_pausado, agente_respondio_at, cliente_telefono FROM conversaciones WHERE id = %s", [conv_id])
         if not conv_r.rows:
             return
         conv = conv_r.rows[0]
         if conv.get("bot_activo") is False:
             return
+
+        # Auto-pausa: el bot se detiene cuando un agente humano tomó la conversación.
+        # Se reactiva cuando han pasado 48 h desde la última respuesta del agente.
+        if conv.get("bot_auto_pausado"):
+            respondio_at = conv.get("agente_respondio_at")
+            if respondio_at:
+                horas = (datetime.now(timezone.utc) - respondio_at.replace(tzinfo=timezone.utc)).total_seconds() / 3600
+                if horas < 48:
+                    logger.info("Bot omitido (auto-pausa agente): conv %s, %0.1f h desde respuesta del agente", conv_id, horas)
+                    return
+                else:
+                    query("UPDATE conversaciones SET bot_auto_pausado = false, agente_respondio_at = NULL WHERE id = %s", [conv_id])
+            else:
+                # Sin timestamp de referencia → limpiar la pausa para no bloquear indefinidamente
+                query("UPDATE conversaciones SET bot_auto_pausado = false WHERE id = %s", [conv_id])
 
         # Número excluido (ej. número personal del dueño) → el bot nunca responde
         from app.crud.bot import numero_excluido
@@ -328,7 +349,7 @@ def _guardar_respuesta_bot(conv_id: str, texto: str) -> None:
         [conv_id, texto],
     )
     query(
-        "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false WHERE id = %s",
+        "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false, ultimo_autor = 'bot' WHERE id = %s",
         [conv_id],
     )
 

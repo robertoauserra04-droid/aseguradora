@@ -11,6 +11,9 @@ class BotConfigBody(BaseModel):
     instrucciones: Optional[str] = None
     activo_global: Optional[bool] = None
     contexto: Optional[dict] = None
+    calendar_id: Optional[str] = None
+    drive_folder_id: Optional[str] = None
+    whatsapp_template_notif: Optional[str] = None
 
 
 class FaqBody(BaseModel):

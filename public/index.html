@@ -198,6 +198,18 @@
       display: inline-flex; align-items: center; gap: 3px;
       white-space: nowrap;
     }
+    .badge-respondido {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 6px; background: #dcfce7; color: #15803d;
+      display: inline-flex; align-items: center; gap: 3px;
+      white-space: nowrap;
+    }
+    .badge-sin-cliente {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 6px; background: #fff7ed; color: #c2410c;
+      display: inline-flex; align-items: center; gap: 3px;
+      white-space: nowrap;
+    }
     .card-dias { font-size: 10px; color: #94a3b8; margin-left: auto; white-space: nowrap; }
 
     /* ─── PANEL DETALLE ─────────────────────────────────────── */
@@ -1148,6 +1160,54 @@
               </div>
             </div>
 
+            <!-- 9. Integraciones Google -->
+            <div class="bot-section-card">
+              <div class="bot-section-title">
+                <i class="bi bi-google" style="color:#4285f4;"></i>Integraciones Google
+              </div>
+              <p class="text-muted mb-3" style="font-size:11px;">
+                Las credenciales de la cuenta de servicio (GOOGLE_CLIENT_EMAIL y GOOGLE_PRIVATE_KEY)
+                se configuran como variables de entorno en Railway. Solo ingresa los IDs aquí.
+              </p>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" style="font-size:12px;">
+                    <i class="bi bi-calendar3 me-1" style="color:#4285f4;"></i>Google Calendar ID
+                  </label>
+                  <input type="text" id="cfg-calendar-id" class="form-control form-control-sm"
+                    placeholder="tu-calendario@group.calendar.google.com">
+                  <div class="form-text" style="font-size:10px;">ID del calendario donde se crean eventos de citas y etapas.</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" style="font-size:12px;">
+                    <i class="bi bi-folder2-open me-1" style="color:#fbbc04;"></i>Google Drive Folder ID
+                  </label>
+                  <input type="text" id="cfg-drive-folder-id" class="form-control form-control-sm"
+                    placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs...">
+                  <div class="form-text" style="font-size:10px;">Carpeta de Drive con documentos que el bot usará como contexto.</div>
+                </div>
+              </div>
+              <div class="col-12 mt-2">
+                <label class="form-label fw-semibold" style="font-size:12px;">
+                  <i class="bi bi-whatsapp me-1" style="color:#25d366;"></i>Nombre del template de WhatsApp
+                </label>
+                <input type="text" id="cfg-wa-template" class="form-control form-control-sm"
+                  placeholder="actualizacion_seguro_fase">
+                <div class="form-text" style="font-size:10px;">
+                  Nombre exacto del template aprobado en Meta Business Manager que se usa para notificaciones de fase.
+                  El template debe tener 4 variables: <code>{{1}}</code> nombre, <code>{{2}}</code> empresa,
+                  <code>{{3}}</code> fase, <code>{{4}}</code> mensaje personalizado.
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2 mt-3 flex-wrap">
+                <button class="btn btn-sm btn-outline-primary" onclick="sincronizarDrive()">
+                  <i class="bi bi-arrow-repeat me-1"></i>Sincronizar Drive ahora
+                </button>
+                <span id="drive-sync-msg" class="text-muted" style="font-size:11px;"></span>
+              </div>
+              <div id="drive-docs-lista" class="mt-3"></div>
+            </div>
+
             <!-- Guardar -->
             <div class="d-flex align-items-center gap-3 pb-2 flex-wrap">
               <button class="btn btn-primary px-4" onclick="guardarTodo(event)">
@@ -1508,6 +1568,44 @@
         <div class="text-muted mt-2" style="font-size:11px;">
           Arrastra <i class="bi bi-grip-vertical"></i> para reordenar. El nombre y el color se guardan al editarlos. La fase "Cerrada" no se puede eliminar.
         </div>
+        <hr class="my-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-semibold" style="font-size:13px;"><i class="bi bi-bell me-1" style="color:#8b5cf6;"></i>Recordatorios por fase</span>
+          <span class="text-muted" style="font-size:11px;">WhatsApp automático al cliente al cambiar de fase</span>
+        </div>
+        <div id="notificaciones-fases-lista" class="mt-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITAR RECORDATORIO DE FASE -->
+<div class="modal fade" id="modal-notif-fase" tabindex="-1" style="z-index:1060;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow" style="border-radius:12px;">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold" id="notif-fase-titulo">Recordatorio — <span id="notif-fase-label"></span></h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-2" style="font-size:12px;">
+          Variables disponibles: <code>{nombre}</code> (cliente), <code>{empresa}</code>, <code>{etapa}</code>, <code>{asesor}</code>
+        </p>
+        <textarea id="notif-fase-template" class="form-control" rows="4"
+          placeholder="Ej: Hola {nombre}, tu solicitud ya está en la etapa {etapa}. Te contactará {asesor} pronto. — {empresa}"></textarea>
+        <div class="form-check mt-3">
+          <input class="form-check-input" type="checkbox" id="notif-fase-activo" checked>
+          <label class="form-check-label" for="notif-fase-activo" style="font-size:13px;">Activo</label>
+        </div>
+        <input type="hidden" id="notif-fase-key">
+      </div>
+      <div class="modal-footer border-0 pt-0 gap-2">
+        <button class="btn btn-sm btn-outline-danger" onclick="eliminarNotifFase()">
+          <i class="bi bi-trash me-1"></i>Quitar recordatorio
+        </button>
+        <button class="btn btn-sm btn-primary" onclick="guardarNotifFase()">
+          <i class="bi bi-check-lg me-1"></i>Guardar
+        </button>
       </div>
     </div>
   </div>
@@ -1627,7 +1725,84 @@ async function abrirModalFases() {
   if (window.Sortable) {
     fasesSortable = Sortable.create(el, { handle: '.fase-grip', animation: 150, onEnd: guardarOrdenFases });
   }
+  await _renderNotificacionesFases(lista);
   bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-fases')).show();
+}
+
+async function _renderNotificacionesFases(etapas) {
+  let notifs = [];
+  try { notifs = await api('/api/etapas/notificaciones').then(r => r.json()); } catch {}
+  const notifMap = {};
+  notifs.forEach(n => notifMap[n.etapa_key] = n);
+  const el = document.getElementById('notificaciones-fases-lista');
+  const abiertas = (etapas || []).filter(e => !e.es_cerrada);
+  if (!abiertas.length) { el.innerHTML = '<p class="text-muted" style="font-size:12px;">No hay fases abiertas.</p>'; return; }
+  el.innerHTML = abiertas.map(e => {
+    const n = notifMap[e.key];
+    const activo = n?.activo;
+    const preview = n ? esc(n.mensaje_template.slice(0, 60)) + (n.mensaje_template.length > 60 ? '…' : '') : '';
+    return `<div class="d-flex align-items-center justify-content-between gap-2 mb-2 p-2 rounded"
+        style="background:#f8fafc;border:1px solid ${e.color}30;">
+      <div class="d-flex align-items-center gap-2" style="min-width:0;">
+        <span class="badge rounded-pill" style="background:${e.color}20;color:${e.color};font-size:10px;font-weight:600;">${esc(e.label)}</span>
+        ${n
+          ? `<span class="text-muted" style="font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${preview}</span>`
+          : `<span class="text-muted" style="font-size:11px;font-style:italic;">Sin recordatorio</span>`}
+      </div>
+      <div class="d-flex align-items-center gap-1" style="flex-shrink:0;">
+        ${n ? `<span class="badge" style="font-size:10px;background:${activo ? '#dcfce7' : '#fee2e2'};color:${activo ? '#15803d' : '#dc2626'};">${activo ? 'activo' : 'inactivo'}</span>` : ''}
+        <button class="btn btn-xs btn-outline-secondary" style="padding:2px 8px;font-size:11px;"
+          onclick="abrirEditarNotifFase('${e.key}', '${esc(e.label)}')">
+          <i class="bi bi-pencil"></i>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirEditarNotifFase(key, label) {
+  document.getElementById('notif-fase-label').textContent = label;
+  document.getElementById('notif-fase-key').value = key;
+  // cargar datos existentes si los hay
+  api(`/api/etapas/notificaciones`).then(r => r.json()).then(notifs => {
+    const n = notifs.find(x => x.etapa_key === key);
+    document.getElementById('notif-fase-template').value = n?.mensaje_template || '';
+    document.getElementById('notif-fase-activo').checked = n ? n.activo : true;
+  }).catch(() => {
+    document.getElementById('notif-fase-template').value = '';
+    document.getElementById('notif-fase-activo').checked = true;
+  });
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-notif-fase')).show();
+}
+
+async function guardarNotifFase() {
+  const key = document.getElementById('notif-fase-key').value;
+  const template = document.getElementById('notif-fase-template').value.trim();
+  if (!template) { mostrarToast('Escribe el mensaje del recordatorio', 'warning'); return; }
+  const activo = document.getElementById('notif-fase-activo').checked;
+  try {
+    await api(`/api/etapas/notificaciones/${key}`, {
+      method: 'PUT',
+      body: JSON.stringify({ mensaje_template: template, activo }),
+    });
+    bootstrap.Modal.getInstance(document.getElementById('modal-notif-fase')).hide();
+    mostrarToast('Recordatorio guardado', 'success');
+    let lista = [];
+    try { lista = await api('/api/etapas').then(r => r.json()); } catch {}
+    await _renderNotificacionesFases(lista);
+  } catch (e) { mostrarToast(e.message || 'No se pudo guardar', 'danger'); }
+}
+
+async function eliminarNotifFase() {
+  const key = document.getElementById('notif-fase-key').value;
+  try {
+    await api(`/api/etapas/notificaciones/${key}`, { method: 'DELETE' });
+    bootstrap.Modal.getInstance(document.getElementById('modal-notif-fase')).hide();
+    mostrarToast('Recordatorio eliminado', 'success');
+    let lista = [];
+    try { lista = await api('/api/etapas').then(r => r.json()); } catch {}
+    await _renderNotificacionesFases(lista);
+  } catch (e) { mostrarToast(e.message || 'No se pudo eliminar', 'danger'); }
 }
 
 function refrescarVistaActual() {
@@ -1684,6 +1859,19 @@ function urgClase(c) {
   if (c.estado === 'renovacion') return 'u-medio';
   if (c.estado === 'vigente' || c.estado === 'servicio') return 'u-activo';
   return 'u-normal';
+}
+
+// Badge de estado de respuesta: reemplaza el antiguo reloj "Sin respuesta Xh"
+function _alertaBadge(c) {
+  const autor = c.ultimo_mensaje?.autor;
+  if (!autor || autor === 'cliente') return '';
+  const hrs = c.ultimo_mensaje?.timestamp
+    ? Math.round((Date.now() - new Date(c.ultimo_mensaje.timestamp)) / 3600000)
+    : 0;
+  if (hrs < 24) {
+    return `<span class="badge-respondido"><i class="bi bi-check2-circle"></i> ya se respondió</span>`;
+  }
+  return `<span class="badge-sin-cliente"><i class="bi bi-person-slash"></i> sin respuesta del cliente</span>`;
 }
 
 // ════════════════════════════════════════════════════
@@ -1861,6 +2049,15 @@ async function cargarVistaBotInstrucciones() {
       lbl.className = 'sb-bot-status ' + (d.activo_global ? 'on' : 'off');
     }
 
+    // Integraciones Google
+    const calId = document.getElementById('cfg-calendar-id');
+    const driveId = document.getElementById('cfg-drive-folder-id');
+    const waTemplate = document.getElementById('cfg-wa-template');
+    if (calId) calId.value = d.calendar_id || '';
+    if (driveId) driveId.value = d.drive_folder_id || '';
+    if (waTemplate) waTemplate.value = d.whatsapp_template_notif || 'actualizacion_seguro_fase';
+    cargarDocsDrive();
+
     actualizarPreviewBot();
     cargarFaqs();
   } catch {}
@@ -1935,7 +2132,47 @@ async function guardarContexto() {
     max_palabras:       parseInt(document.getElementById('ctx-max-palabras')?.value, 10) || null,
     firma:              (document.getElementById('ctx-firma')?.value || '').trim(),
   };
-  await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ contexto }) });
+  const calendar_id = (document.getElementById('cfg-calendar-id')?.value || '').trim() || null;
+  const drive_folder_id = (document.getElementById('cfg-drive-folder-id')?.value || '').trim() || null;
+  const whatsapp_template_notif = (document.getElementById('cfg-wa-template')?.value || '').trim() || 'actualizacion_seguro_fase';
+  await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ contexto, calendar_id, drive_folder_id, whatsapp_template_notif }) });
+}
+
+async function cargarDocsDrive() {
+  const el = document.getElementById('drive-docs-lista');
+  if (!el) return;
+  try {
+    const r = await api('/api/drive/documentos');
+    if (!r.ok) { el.innerHTML = ''; return; }
+    const d = await r.json();
+    const docs = d.documentos || [];
+    if (!docs.length) {
+      el.innerHTML = '<p class="text-muted mb-0" style="font-size:11px;">Sin documentos sincronizados aún. Configura el Folder ID y haz clic en "Sincronizar".</p>';
+      return;
+    }
+    el.innerHTML = `<div class="text-muted mb-1" style="font-size:11px;">${docs.length} documento(s) sincronizado(s):</div>` +
+      docs.map(d => `<div class="d-flex align-items-center gap-2 py-1" style="font-size:12px;border-bottom:1px solid #f1f5f9;">
+        <i class="bi bi-file-earmark-text text-muted"></i>
+        <span class="fw-medium">${esc(d.nombre)}</span>
+        <span class="text-muted ms-auto" style="font-size:10px;">${d.actualizado_at ? fmtHora(d.actualizado_at) : ''}</span>
+      </div>`).join('');
+  } catch { el.innerHTML = ''; }
+}
+
+async function sincronizarDrive() {
+  const msg = document.getElementById('drive-sync-msg');
+  if (msg) msg.textContent = 'Sincronizando...';
+  try {
+    // Primero guardar el folder_id si cambió
+    const drive_folder_id = (document.getElementById('cfg-drive-folder-id')?.value || '').trim() || null;
+    const calendar_id = (document.getElementById('cfg-calendar-id')?.value || '').trim() || null;
+    await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ drive_folder_id, calendar_id }) });
+    await api('/api/drive/sincronizar', { method: 'POST' });
+    if (msg) msg.textContent = 'Sincronización iniciada ✓ (puede tardar unos segundos)';
+    setTimeout(() => { if (msg) msg.textContent = ''; cargarDocsDrive(); }, 4000);
+  } catch (e) {
+    if (msg) msg.textContent = 'Error al sincronizar';
+  }
 }
 
 async function guardarPersonalidad() {
@@ -2284,13 +2521,7 @@ function renderLista(convs) {
     const e   = getEstado(c.estado);
     const urg = urgClase(c);
 
-    let alertaHtml = '';
-    if (c.requiere_respuesta && c.ultimo_mensaje?.timestamp) {
-      const hrs = Math.round((Date.now() - new Date(c.ultimo_mensaje.timestamp)) / 3600000);
-      if (hrs >= 1) {
-        alertaHtml = `<span class="badge-alerta"><i class="bi bi-clock"></i>Sin respuesta ${hrs}h</span>`;
-      }
-    }
+    const alertaHtml = _alertaBadge(c);
 
     const tiposList = (Array.isArray(c.tipos_seguro) && c.tipos_seguro.length)
       ? c.tipos_seguro
@@ -2418,11 +2649,7 @@ async function abrirDetalle(id) {
 
     // Alerta badge
     const alertaBadge = document.getElementById('det-alerta-badge');
-    if (c.requiere_respuesta) {
-      alertaBadge.innerHTML = '<span class="badge-alerta"><i class="bi bi-exclamation-circle me-1"></i>Requiere respuesta</span>';
-    } else {
-      alertaBadge.innerHTML = '';
-    }
+    alertaBadge.innerHTML = _alertaBadge(c);
 
     renderMensajes(d.mensajes || [], c.cliente_nombre);
     renderNotas(d.notas || []);
@@ -2912,7 +3139,7 @@ function renderKanban() {
         const ti = TIPOS[tk] || { label: tk, cls: 't-none' };
         return `<span class="pill-tipo ${ti.cls} me-1 mb-1">${ti.label}</span>`;
       }).join('');
-      const alertaHtml = c.requiere_respuesta ? `<span class="badge-alerta ms-1"><i class="bi bi-clock"></i></span>` : '';
+      const alertaHtml = _alertaBadge(c);
       const cardBg = etapa.key === 'inicio' ? '#ffffff' : hexToRgba(etapa.color, 0.08);
       const cardBorder = etapa.key === 'inicio' ? '#e2e8f0' : hexToRgba(etapa.color, 0.30);
       return `<div class="kb-card ${convId === c.id ? 'selected' : ''}"

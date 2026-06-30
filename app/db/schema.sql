@@ -347,3 +347,37 @@ ALTER TABLE conversaciones DROP CONSTRAINT IF EXISTS conversaciones_cliente_tele
 ALTER TABLE conversaciones DROP CONSTRAINT IF EXISTS conversaciones_cliente_whatsapp_id_key;
 CREATE INDEX IF NOT EXISTS idx_conversaciones_closed_at ON conversaciones(closed_at);
 CREATE INDEX IF NOT EXISTS idx_conversaciones_whatsapp_id ON conversaciones(cliente_whatsapp_id);
+
+-- =============================================
+-- Feature: pausa automática del bot cuando el agente responde
+-- =============================================
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS bot_auto_pausado BOOLEAN DEFAULT false;
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS agente_respondio_at TIMESTAMP;
+
+-- Feature: rastrear quién envió el último mensaje (para badges 'ya se respondió')
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS ultimo_autor VARCHAR(20);
+
+-- =============================================
+-- Feature: notificaciones WhatsApp por cambio de fase
+-- =============================================
+CREATE TABLE IF NOT EXISTS notificaciones_etapa (
+  etapa_key VARCHAR(50) PRIMARY KEY REFERENCES etapas(key) ON DELETE CASCADE,
+  mensaje_template TEXT NOT NULL,
+  activo BOOLEAN DEFAULT true
+);
+
+-- =============================================
+-- Feature: Google Drive como base de conocimiento del bot
+-- =============================================
+ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS drive_folder_id TEXT;
+ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS calendar_id TEXT;
+ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS whatsapp_template_notif TEXT DEFAULT 'actualizacion_fase';
+
+CREATE TABLE IF NOT EXISTS documentos_drive (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_id TEXT NOT NULL UNIQUE,
+  nombre TEXT,
+  mime_type TEXT,
+  contenido_texto TEXT,
+  actualizado_at TIMESTAMP DEFAULT NOW()
+);

@@ -16,6 +16,21 @@ ETAPAS_EVENTO = {
 }
 
 
+def _get_calendar_id() -> str:
+    """Retorna el Calendar ID: primero busca en bot_config (configurable desde panel),
+    luego usa la variable de entorno como fallback."""
+    try:
+        from app.config.database import query as db_query
+        r = db_query("SELECT calendar_id FROM bot_config WHERE id = 1")
+        if r.rows:
+            cal_id = (r.rows[0].get("calendar_id") or "").strip()
+            if cal_id:
+                return cal_id
+    except Exception:
+        pass
+    return GOOGLE_CALENDAR_ID
+
+
 def _get_service():
     if not GOOGLE_CLIENT_EMAIL or not GOOGLE_PRIVATE_KEY:
         return None
@@ -39,7 +54,8 @@ def _proximos_dias_habiles(n: int = 3) -> list[datetime]:
 
 def consultar_disponibilidad() -> dict:
     svc = _get_service()
-    if not svc or not GOOGLE_CALENDAR_ID:
+    cal_id = _get_calendar_id()
+    if not svc or not cal_id:
         return {"texto": "", "slots": []}
 
     dias = _proximos_dias_habiles(3)
@@ -52,9 +68,9 @@ def consultar_disponibilidad() -> dict:
             "timeMin": time_min,
             "timeMax": time_max,
             "timeZone": TIMEZONE,
-            "items": [{"id": GOOGLE_CALENDAR_ID}],
+            "items": [{"id": cal_id}],
         }).execute()
-        busy = fb.get("calendars", {}).get(GOOGLE_CALENDAR_ID, {}).get("busy", [])
+        busy = fb.get("calendars", {}).get(cal_id, {}).get("busy", [])
     except Exception as e:
         print(f"[Calendar] freebusy error: {e}")
 
@@ -82,7 +98,8 @@ def consultar_disponibilidad() -> dict:
 def crear_evento(titulo: str, descripcion: str, inicio: str, fin: str,
                  email_cliente: Optional[str] = None) -> dict:
     svc = _get_service()
-    if not svc or not GOOGLE_CALENDAR_ID:
+    cal_id = _get_calendar_id()
+    if not svc or not cal_id:
         raise RuntimeError("Google Calendar no configurado")
 
     event = {
@@ -94,7 +111,7 @@ def crear_evento(titulo: str, descripcion: str, inicio: str, fin: str,
         "reminders": {"useDefault": False, "overrides": [{"method": "popup", "minutes": 30}]},
     }
     r = svc.events().insert(
-        calendarId=GOOGLE_CALENDAR_ID,
+        calendarId=cal_id,
         body=event,
         sendUpdates="all" if email_cliente else "none",
     ).execute()
@@ -105,7 +122,8 @@ def crear_evento_etapa(etapa: str, conversacion: dict) -> Optional[dict]:
     if etapa not in ETAPAS_EVENTO:
         return None
     svc = _get_service()
-    if not svc or not GOOGLE_CALENDAR_ID:
+    cal_id = _get_calendar_id()
+    if not svc or not cal_id:
         return None
 
     titulo = f"[{ETAPAS_EVENTO[etapa]}] {conversacion.get('cliente_nombre', '')}"
@@ -118,7 +136,7 @@ def crear_evento_etapa(etapa: str, conversacion: dict) -> Optional[dict]:
 
     try:
         r = svc.events().insert(
-            calendarId=GOOGLE_CALENDAR_ID,
+            calendarId=cal_id,
             body={
                 "summary": titulo,
                 "description": descripcion,

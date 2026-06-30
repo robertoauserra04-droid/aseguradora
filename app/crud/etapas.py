@@ -58,6 +58,40 @@ def contar_conversaciones(key: str) -> int:
     return int(r.rows[0]["c"])
 
 
+def listar_notificaciones() -> list:
+    r = query(
+        """SELECT ne.etapa_key, ne.mensaje_template, ne.activo, e.label, e.color
+           FROM notificaciones_etapa ne
+           JOIN etapas e ON e.key = ne.etapa_key
+           ORDER BY e.orden ASC"""
+    )
+    return r.rows
+
+
+def obtener_notificacion(etapa_key: str) -> dict | None:
+    r = query(
+        "SELECT etapa_key, mensaje_template, activo FROM notificaciones_etapa WHERE etapa_key = %s",
+        [etapa_key],
+    )
+    return r.rows[0] if r.rows else None
+
+
+def upsert_notificacion(etapa_key: str, template: str, activo: bool) -> None:
+    query(
+        """INSERT INTO notificaciones_etapa (etapa_key, mensaje_template, activo)
+           VALUES (%s, %s, %s)
+           ON CONFLICT (etapa_key) DO UPDATE
+           SET mensaje_template = EXCLUDED.mensaje_template,
+               activo = EXCLUDED.activo""",
+        [etapa_key, template, activo],
+    )
+
+
+def eliminar_notificacion(etapa_key: str) -> bool:
+    r = query("DELETE FROM notificaciones_etapa WHERE etapa_key = %s RETURNING etapa_key", [etapa_key])
+    return len(r.rows) > 0
+
+
 def eliminar(key: str) -> dict:
     """Devuelve {ok: bool, motivo: str}. No borra la fase 'cerrada' ni fases con
     conversaciones activas, ni deja menos de 1 fase abierta."""

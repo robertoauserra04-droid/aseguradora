@@ -1,4 +1,4 @@
-def build_system_prompt(cfg: dict, faqs: list, slots_info: dict) -> str:
+def build_system_prompt(cfg: dict, faqs: list, slots_info: dict, docs: list | None = None) -> str:
     c = cfg.get("contexto") or {}
     partes = []
 
@@ -87,6 +87,14 @@ def build_system_prompt(cfg: dict, faqs: list, slots_info: dict) -> str:
     if faqs:
         faq_texto = "\n\n".join(f"P: {f['pregunta']}\nR: {f['respuesta']}" for f in faqs)
         partes.append(f"BASE DE CONOCIMIENTO:\n{faq_texto}")
+
+    if docs:
+        docs_texto = "\n\n---\n".join(
+            f"[{d['nombre']}]\n{d['contenido_texto']}" for d in docs
+            if d.get("contenido_texto")
+        )
+        if docs_texto:
+            partes.append(f"DOCUMENTOS DE REFERENCIA (usa esta información para responder con mayor detalle):\n{docs_texto}")
 
     if slots_info and slots_info.get("texto"):
         partes.append(
