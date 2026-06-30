@@ -1190,8 +1190,14 @@
                 </button>
               </div>
               <div class="integ-form" id="integ-calendar-form" style="display:none;">
-                <input type="text" id="cfg-calendar-id" class="form-control form-control-sm"
-                  placeholder="ej. abc123@group.calendar.google.com">
+                <div class="d-flex gap-2">
+                  <input type="text" id="cfg-calendar-id" class="form-control form-control-sm" placeholder="Pega el ID aquí">
+                  <a href="https://calendar.google.com/calendar/r/settings" target="_blank"
+                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Google Calendar">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </a>
+                </div>
+                <div class="text-muted mt-1" style="font-size:10px;">Abre Google Calendar → Configuración → tu calendario → copia el "ID del calendario"</div>
                 <div class="d-flex gap-2 mt-2">
                   <button class="btn btn-sm btn-primary" onclick="guardarInteg('calendar')">Guardar</button>
                   <button class="btn btn-sm btn-light border" onclick="cerrarInteg('calendar')">Cancelar</button>
@@ -1214,8 +1220,14 @@
                 </button>
               </div>
               <div class="integ-form" id="integ-drive-form" style="display:none;">
-                <input type="text" id="cfg-drive-folder-id" class="form-control form-control-sm"
-                  placeholder="ID de la carpeta de Drive">
+                <div class="d-flex gap-2">
+                  <input type="text" id="cfg-drive-folder-id" class="form-control form-control-sm" placeholder="Pega el ID aquí">
+                  <a href="https://drive.google.com" target="_blank"
+                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Google Drive">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </a>
+                </div>
+                <div class="text-muted mt-1" style="font-size:10px;">Abre la carpeta en Drive → copia el ID de la URL: drive.google.com/drive/folders/<b>ESTE_ID</b></div>
                 <div class="d-flex gap-2 mt-2">
                   <button class="btn btn-sm btn-primary" onclick="guardarInteg('drive')">Guardar</button>
                   <button class="btn btn-sm btn-light border" onclick="sincronizarDrive()">
@@ -1243,9 +1255,14 @@
                 </button>
               </div>
               <div class="integ-form" id="integ-wa-form" style="display:none;">
-                <input type="text" id="cfg-wa-template" class="form-control form-control-sm"
-                  placeholder="actualizacion_seguro_fase">
-                <div class="form-text" style="font-size:10px;">Nombre del template aprobado en Meta. Variables: {{1}} nombre, {{2}} empresa, {{3}} fase, {{4}} mensaje.</div>
+                <div class="d-flex gap-2">
+                  <input type="text" id="cfg-wa-template" class="form-control form-control-sm" placeholder="actualizacion_seguro_fase">
+                  <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank"
+                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Meta Business Manager">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </a>
+                </div>
+                <div class="text-muted mt-1" style="font-size:10px;">Copia el nombre exacto del template aprobado en Meta Business Manager</div>
                 <div class="d-flex gap-2 mt-2">
                   <button class="btn btn-sm btn-primary" onclick="guardarInteg('wa')">Guardar</button>
                   <button class="btn btn-sm btn-light border" onclick="cerrarInteg('wa')">Cancelar</button>
