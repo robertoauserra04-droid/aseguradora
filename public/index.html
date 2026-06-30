@@ -1176,90 +1176,45 @@
                 <i class="bi bi-plug" style="color:#6366f1;"></i>Integraciones
               </div>
 
-              <!-- Google Calendar -->
-              <div class="integ-row" id="integ-calendar-row">
-                <div class="integ-icon" style="background:#e8f0fe;">
-                  <i class="bi bi-calendar3" style="color:#4285f4;"></i>
-                </div>
-                <div class="integ-body">
-                  <div class="integ-name">Google Calendar</div>
-                  <div class="integ-status" id="integ-cal-status">Sin configurar</div>
-                </div>
-                <button class="btn btn-sm btn-light border integ-btn" onclick="abrirInteg('calendar')">
-                  Configurar
-                </button>
-              </div>
-              <div class="integ-form" id="integ-calendar-form" style="display:none;">
-                <div class="d-flex gap-2">
-                  <input type="text" id="cfg-calendar-id" class="form-control form-control-sm" placeholder="Pega el ID aquí">
+              <div class="d-flex flex-column gap-2">
+
+                <!-- Calendar -->
+                <div class="d-flex align-items-center gap-2">
+                  <div class="integ-icon" style="background:#e8f0fe; flex-shrink:0;">
+                    <i class="bi bi-calendar3" style="color:#4285f4;"></i>
+                  </div>
+                  <input type="text" id="cfg-calendar-id" class="form-control form-control-sm" placeholder="Google Calendar ID">
                   <a href="https://calendar.google.com/calendar/r/settings" target="_blank"
-                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Google Calendar">
-                    <i class="bi bi-box-arrow-up-right"></i>
-                  </a>
+                    class="btn btn-sm btn-light border flex-shrink-0"><i class="bi bi-box-arrow-up-right"></i></a>
                 </div>
-                <div class="text-muted mt-1" style="font-size:10px;">Abre Google Calendar → Configuración → tu calendario → copia el "ID del calendario"</div>
-                <div class="d-flex gap-2 mt-2">
-                  <button class="btn btn-sm btn-primary" onclick="guardarInteg('calendar')">Guardar</button>
-                  <button class="btn btn-sm btn-light border" onclick="cerrarInteg('calendar')">Cancelar</button>
-                </div>
-              </div>
 
-              <div class="integ-divider"></div>
-
-              <!-- Google Drive -->
-              <div class="integ-row" id="integ-drive-row">
-                <div class="integ-icon" style="background:#fef9c3;">
-                  <i class="bi bi-folder2-open" style="color:#f59e0b;"></i>
-                </div>
-                <div class="integ-body">
-                  <div class="integ-name">Google Drive</div>
-                  <div class="integ-status" id="integ-drive-status">Sin configurar</div>
-                </div>
-                <button class="btn btn-sm btn-light border integ-btn" onclick="abrirInteg('drive')">
-                  Configurar
-                </button>
-              </div>
-              <div class="integ-form" id="integ-drive-form" style="display:none;">
-                <div class="d-flex gap-2">
-                  <input type="text" id="cfg-drive-folder-id" class="form-control form-control-sm" placeholder="Pega el ID aquí">
+                <!-- Drive -->
+                <div class="d-flex align-items-center gap-2">
+                  <div class="integ-icon" style="background:#fef9c3; flex-shrink:0;">
+                    <i class="bi bi-folder2-open" style="color:#f59e0b;"></i>
+                  </div>
+                  <input type="text" id="cfg-drive-folder-id" class="form-control form-control-sm" placeholder="Google Drive Folder ID">
                   <a href="https://drive.google.com" target="_blank"
-                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Google Drive">
-                    <i class="bi bi-box-arrow-up-right"></i>
-                  </a>
-                </div>
-                <div class="text-muted mt-1" style="font-size:10px;">Abre la carpeta en Drive → copia el ID de la URL: drive.google.com/drive/folders/<b>ESTE_ID</b></div>
-                <div class="d-flex gap-2 mt-2">
-                  <button class="btn btn-sm btn-primary" onclick="guardarInteg('drive')">Guardar</button>
-                  <button class="btn btn-sm btn-light border" onclick="sincronizarDrive()">
-                    <i class="bi bi-arrow-repeat me-1"></i>Sincronizar
+                    class="btn btn-sm btn-light border flex-shrink-0"><i class="bi bi-box-arrow-up-right"></i></a>
+                  <button class="btn btn-sm btn-light border flex-shrink-0" onclick="sincronizarDrive()" title="Sincronizar">
+                    <i class="bi bi-arrow-repeat"></i>
                   </button>
-                  <button class="btn btn-sm btn-light border" onclick="cerrarInteg('drive')">Cancelar</button>
                 </div>
-                <span id="drive-sync-msg" class="text-muted d-block mt-1" style="font-size:10px;"></span>
-                <div id="drive-docs-lista" class="mt-2"></div>
-              </div>
+                <span id="drive-sync-msg" class="text-muted" style="font-size:10px;margin-left:50px;"></span>
+                <div id="drive-docs-lista" style="margin-left:50px;"></div>
 
-              <div class="integ-divider"></div>
-
-              <!-- WhatsApp Template -->
-              <div class="integ-row" id="integ-wa-row">
-                <div class="integ-icon" style="background:#dcfce7;">
-                  <i class="bi bi-whatsapp" style="color:#16a34a;"></i>
-                </div>
-                <div class="integ-body">
-                  <div class="integ-name">Template de notificaciones</div>
-                  <div class="integ-status" id="integ-wa-status">Sin configurar</div>
-                </div>
-                <button class="btn btn-sm btn-light border integ-btn" onclick="abrirInteg('wa')">
-                  Configurar
-                </button>
-              </div>
-              <div class="integ-form" id="integ-wa-form" style="display:none;">
-                <div class="d-flex gap-2">
-                  <input type="text" id="cfg-wa-template" class="form-control form-control-sm" placeholder="actualizacion_seguro_fase">
+                <!-- WA Template -->
+                <div class="d-flex align-items-center gap-2">
+                  <div class="integ-icon" style="background:#dcfce7; flex-shrink:0;">
+                    <i class="bi bi-whatsapp" style="color:#16a34a;"></i>
+                  </div>
+                  <input type="text" id="cfg-wa-template" class="form-control form-control-sm" placeholder="Template WA (notif. fases)">
                   <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank"
-                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Meta Business Manager">
-                    <i class="bi bi-box-arrow-up-right"></i>
+                    class="btn btn-sm btn-light border flex-shrink-0"><i class="bi bi-box-arrow-up-right"></i></a>
+                </div>
+
+              </div>
+            </div>
                   </a>
                 </div>
                 <div class="text-muted mt-1" style="font-size:10px;">Copia el nombre exacto del template aprobado en Meta Business Manager</div>
@@ -2119,7 +2074,7 @@ async function cargarVistaBotInstrucciones() {
     if (calId) calId.value = d.calendar_id || '';
     if (driveId) driveId.value = d.drive_folder_id || '';
     if (waTemplate) waTemplate.value = d.whatsapp_template_notif || '';
-    _actualizarStatusInteg(d.calendar_id, d.drive_folder_id, d.whatsapp_template_notif);
+    cargarDocsDrive();
 
     actualizarPreviewBot();
     cargarFaqs();
@@ -2222,51 +2177,6 @@ async function cargarDocsDrive() {
   } catch { el.innerHTML = ''; }
 }
 
-// ── Integrations UI ──────────────────────────────────────────
-function _actualizarStatusInteg(calId, driveId, waTemplate) {
-  const calSt = document.getElementById('integ-cal-status');
-  const driveSt = document.getElementById('integ-drive-status');
-  const waSt = document.getElementById('integ-wa-status');
-  if (calSt) {
-    calSt.textContent = calId ? calId : 'Sin configurar';
-    calSt.className = 'integ-status' + (calId ? ' connected' : '');
-  }
-  if (driveSt) {
-    driveSt.textContent = driveId ? driveId : 'Sin configurar';
-    driveSt.className = 'integ-status' + (driveId ? ' connected' : '');
-  }
-  if (waSt) {
-    waSt.textContent = waTemplate || 'Sin configurar';
-    waSt.className = 'integ-status' + (waTemplate ? ' connected' : '');
-  }
-}
-
-function abrirInteg(tipo) {
-  ['calendar','drive','wa'].forEach(t => {
-    const f = document.getElementById(`integ-${t}-form`);
-    if (f) f.style.display = (t === tipo) ? '' : 'none';
-    const btn = document.querySelector(`#integ-${t}-row .integ-btn`);
-    if (btn) btn.textContent = (t === tipo) ? 'Cerrar' : 'Configurar';
-    if (btn) btn.onclick = (t === tipo) ? () => cerrarInteg(t) : () => abrirInteg(t);
-  });
-  if (tipo === 'drive') cargarDocsDrive();
-}
-
-function cerrarInteg(tipo) {
-  const f = document.getElementById(`integ-${tipo}-form`);
-  if (f) f.style.display = 'none';
-  const btn = document.querySelector(`#integ-${tipo}-row .integ-btn`);
-  if (btn) { btn.textContent = 'Configurar'; btn.onclick = () => abrirInteg(tipo); }
-}
-
-async function guardarInteg(tipo) {
-  const calId = (document.getElementById('cfg-calendar-id')?.value || '').trim() || null;
-  const driveId = (document.getElementById('cfg-drive-folder-id')?.value || '').trim() || null;
-  const waT = (document.getElementById('cfg-wa-template')?.value || '').trim() || null;
-  await api('/api/bot/config', { method: 'PUT', body: JSON.stringify({ calendar_id: calId, drive_folder_id: driveId, whatsapp_template_notif: waT }) });
-  _actualizarStatusInteg(calId, driveId, waT);
-  cerrarInteg(tipo);
-}
 
 async function sincronizarDrive() {
   const msg = document.getElementById('drive-sync-msg');
