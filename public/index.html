@@ -1191,11 +1191,14 @@
                   </a>
                 </div>
                 <div class="integ-hint">
-                  1. Abre Google Calendar (ícono ↗) → ⚙️ → <b>Configuración</b><br>
-                  2. Menú izquierdo → <b>Mis calendarios</b> → clic en el nombre de tu calendario<br>
-                  3. Baja hasta la sección <b>"Integrate calendar"</b><br>
-                  4. El primer dato que aparece se llama <b>Calendar ID</b> — cópialo aquí<br>
-                  <span style="color:#64748b;">Si es tu calendario principal será tu email (ej. <i>roberto@gmail.com</i>). Si es uno secundario será algo como <i>abc123@group.calendar.google.com</i></span>
+                  <b>Cómo obtener el Calendar ID:</b><br>
+                  1. Clic en el ícono ↗ para abrir Google Calendar<br>
+                  2. Arriba a la derecha, clic en el ícono de ⚙️ engrane → selecciona <b>"Configuración"</b><br>
+                  3. En el panel izquierdo, bajo <b>"Mis calendarios"</b>, clic en el nombre del calendario que quieres conectar<br>
+                  4. Baja hasta encontrar la sección <b>"Integrate calendar"</b><br>
+                  5. El primer campo dice <b>"Calendar ID"</b> — ese es el dato. Cópialo y pégalo arriba<br>
+                  <span style="color:#475569;">· Si es tu calendario personal, el ID es tu correo de Gmail (ej. <i>carlos@gmail.com</i>)<br>
+                  · Si creaste un calendario separado, el ID termina en <i>@group.calendar.google.com</i></span>
                 </div>
 
                 <!-- Drive -->
@@ -1213,11 +1216,13 @@
                   </button>
                 </div>
                 <div class="integ-hint">
-                  1. Abre Google Drive (ícono ↗)<br>
-                  2. Navega hasta la carpeta con los documentos del bot<br>
-                  3. Abre esa carpeta — mira la URL en el navegador<br>
-                  4. La URL se ve así: <i>drive.google.com/drive/folders/<b>1BxiMV...ID_AQUI</b></i><br>
-                  5. Copia todo lo que va después de <b>/folders/</b> y pégalo aquí
+                  <b>Cómo obtener el Folder ID de Drive:</b><br>
+                  1. Clic en el ícono ↗ para abrir Google Drive<br>
+                  2. Busca o crea la carpeta donde vas a guardar los documentos del bot (fichas de producto, coberturas, etc.)<br>
+                  3. Entra a esa carpeta haciendo doble clic<br>
+                  4. Mira la barra de direcciones del navegador — la URL se ve así:<br>
+                  <span style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:10px;">drive.google.com/drive/folders/<b style="color:#0f172a;">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs</b></span><br>
+                  5. Copia únicamente la parte en negritas (después de <b>/folders/</b>) y pégala arriba
                 </div>
                 <span id="drive-sync-msg" class="text-muted" style="font-size:10px;margin-left:50px;"></span>
                 <div id="drive-docs-lista" style="margin-left:50px;"></div>
@@ -1234,11 +1239,13 @@
                   </a>
                 </div>
                 <div class="integ-hint">
-                  1. Abre Meta Business Manager (ícono ↗)<br>
-                  2. En el menú izquierdo busca <b>Cuenta de WhatsApp → Plantillas de mensaje</b><br>
-                  3. Localiza la plantilla con estado <b>Aprobada</b> (en verde)<br>
-                  4. Copia el <b>nombre exacto</b> que aparece abajo del título (ej. <i>actualizacion_seguro_fase</i>)<br>
-                  5. Debe coincidir exactamente — sin mayúsculas ni espacios
+                  <b>Cómo obtener el nombre del template:</b><br>
+                  1. Clic en el ícono ↗ para abrir Meta Business Manager<br>
+                  2. En el menú izquierdo busca <b>"Cuenta de WhatsApp"</b> → clic en <b>"Plantillas de mensaje"</b><br>
+                  3. Verás una lista de tus plantillas — busca la que tiene estado <b style="color:#16a34a;">Aprobada</b><br>
+                  4. Debajo del nombre visible de la plantilla aparece el <b>nombre técnico</b> en minúsculas (ej. <i>actualizacion_seguro_fase</i>)<br>
+                  5. Copia ese nombre técnico exacto — sin mayúsculas, sin espacios, tal cual aparece — y pégalo arriba<br>
+                  <span style="color:#475569;">⚠️ Si el template no está aprobado aún, el bot no podrá enviar notificaciones de fase hasta que Meta lo apruebe.</span>
                 </div>
 
               </div>
