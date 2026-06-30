@@ -2252,8 +2252,13 @@ function actualizarEstadoGoogle(email) {
   }
 }
 
-function conectarGoogle() {
-  window.location.href = '/api/oauth/google';
+async function conectarGoogle() {
+  try {
+    const r = await api('/api/oauth/google');
+    if (!r.ok) { alert('Error al iniciar conexión con Google'); return; }
+    const d = await r.json();
+    window.location.href = d.auth_url;
+  } catch { alert('Error al conectar con Google'); }
 }
 
 async function desconectarGoogle() {

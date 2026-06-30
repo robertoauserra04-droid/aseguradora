@@ -54,7 +54,7 @@ def oauth_google_start(agente=Depends(get_agente)):
         prompt="consent",
         state=state,
     )
-    return RedirectResponse(auth_url)
+    return {"auth_url": auth_url}
 
 
 @router.get("/api/oauth/google/callback")
