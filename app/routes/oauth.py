@@ -1,10 +1,15 @@
+import os
 import secrets
 import logging
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from app.middleware.auth import get_agente
 from app.config.database import query
 from app.config.env import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_URL
+
+# Google añade scopes (openid/email) al canjear el token; sin esto oauthlib falla con "Scope has changed".
+os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -98,8 +103,9 @@ def oauth_google_callback(code: str = None, state: str = None, error: str = None
         return RedirectResponse(f"/?google_connected={email}")
 
     except Exception as e:
-        logger.error("[OAuth] Error al obtener token: %s", e)
-        return RedirectResponse("/?google_error=token_fallido")
+        logger.exception("[OAuth] Error al obtener token")
+        detalle = quote(f"{type(e).__name__}: {e}"[:200])
+        return RedirectResponse(f"/?google_error={detalle}")
 
 
 @router.delete("/api/oauth/google")
