@@ -580,10 +580,7 @@
     .integ-btn { font-size: 12px; flex-shrink: 0; }
     .integ-form { padding: 10px 0 4px 50px; }
     .integ-divider { border-top: 1px solid #f1f5f9; margin: 2px 0; }
-    .integ-help { width:18px; height:18px; border-radius:50%; background:#e2e8f0; color:#64748b;
-      font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;
-      flex-shrink:0; text-decoration:none; }
-    .integ-help:hover { background:#cbd5e1; color:#334155; }
+    .integ-hint { font-size:10px; color:#94a3b8; margin:3px 0 0 50px; line-height:1.5; }
     .seguro-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 9px 12px; cursor: pointer;
       display: flex; align-items: center; gap: 7px; transition: all .15s;
       font-size: 12.5px; font-weight: 500; color: #475569; user-select: none; }
@@ -1188,33 +1185,48 @@
                     <i class="bi bi-calendar3" style="color:#4285f4;"></i>
                   </div>
                   <input type="text" id="cfg-calendar-id" class="form-control form-control-sm" placeholder="Google Calendar ID">
-                  <a class="integ-help" href="https://calendar.google.com/calendar/r/settings" target="_blank"
-                    data-bs-toggle="tooltip" title="Ir a Google Calendar → Configuración → selecciona tu calendario → copia el ID">?</a>
+                  <a href="https://calendar.google.com/calendar/r/settings" target="_blank"
+                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Google Calendar">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </a>
+                </div>
+                <div class="integ-hint">
+                  Entra a Google Calendar → <b>Configuración</b> → selecciona tu calendario en el menú izquierdo → baja hasta <b>"ID del calendario"</b> y cópialo aquí.
                 </div>
 
                 <!-- Drive -->
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 mt-2">
                   <div class="integ-icon" style="background:#fef9c3; flex-shrink:0;">
                     <i class="bi bi-folder2-open" style="color:#f59e0b;"></i>
                   </div>
                   <input type="text" id="cfg-drive-folder-id" class="form-control form-control-sm" placeholder="Google Drive Folder ID">
-                  <a class="integ-help" href="https://drive.google.com" target="_blank"
-                    data-bs-toggle="tooltip" title="Ir a Google Drive → abre la carpeta → copia el ID de la URL">?</a>
+                  <a href="https://drive.google.com" target="_blank"
+                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Google Drive">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </a>
                   <button class="btn btn-sm btn-light border flex-shrink-0" onclick="sincronizarDrive()" title="Sincronizar documentos">
                     <i class="bi bi-arrow-repeat"></i>
                   </button>
+                </div>
+                <div class="integ-hint">
+                  Entra a Google Drive → abre la carpeta que quieres conectar → copia el ID que aparece en la URL después de <b>/folders/</b>
                 </div>
                 <span id="drive-sync-msg" class="text-muted" style="font-size:10px;margin-left:50px;"></span>
                 <div id="drive-docs-lista" style="margin-left:50px;"></div>
 
                 <!-- WA Template -->
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 mt-2">
                   <div class="integ-icon" style="background:#dcfce7; flex-shrink:0;">
                     <i class="bi bi-whatsapp" style="color:#16a34a;"></i>
                   </div>
                   <input type="text" id="cfg-wa-template" class="form-control form-control-sm" placeholder="Template WA (notif. fases)">
-                  <a class="integ-help" href="https://business.facebook.com/wa/manage/message-templates/" target="_blank"
-                    data-bs-toggle="tooltip" title="Ir a Meta Business Manager → ver mis plantillas aprobadas">?</a>
+                  <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank"
+                    class="btn btn-sm btn-light border flex-shrink-0" title="Abrir Meta Business Manager">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </a>
+                </div>
+                <div class="integ-hint">
+                  Entra a Meta Business Manager → <b>Gestionar plantillas</b> → busca tu plantilla aprobada → copia el nombre exacto tal como aparece (ej. <i>actualizacion_seguro_fase</i>).
                 </div>
 
               </div>
