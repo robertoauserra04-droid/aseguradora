@@ -580,6 +580,9 @@
     .integ-btn { font-size: 12px; flex-shrink: 0; }
     .integ-form { padding: 10px 0 4px 50px; }
     .integ-divider { border-top: 1px solid #f1f5f9; margin: 2px 0; }
+    .integ-help { width:18px; height:18px; border-radius:50%; background:#e2e8f0; color:#64748b;
+      font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;
+      flex-shrink:0; cursor:default; user-select:none; }
     .seguro-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 9px 12px; cursor: pointer;
       display: flex; align-items: center; gap: 7px; transition: all .15s;
       font-size: 12.5px; font-weight: 500; color: #475569; user-select: none; }
@@ -1184,8 +1187,8 @@
                     <i class="bi bi-calendar3" style="color:#4285f4;"></i>
                   </div>
                   <input type="text" id="cfg-calendar-id" class="form-control form-control-sm" placeholder="Google Calendar ID">
-                  <a href="https://calendar.google.com/calendar/r/settings" target="_blank"
-                    class="btn btn-sm btn-light border flex-shrink-0"><i class="bi bi-box-arrow-up-right"></i></a>
+                  <span class="integ-help" data-bs-toggle="tooltip"
+                    title="En Google Calendar → Configuración → selecciona tu calendario → copia el 'ID del calendario' que aparece abajo">?</span>
                 </div>
 
                 <!-- Drive -->
@@ -1194,9 +1197,9 @@
                     <i class="bi bi-folder2-open" style="color:#f59e0b;"></i>
                   </div>
                   <input type="text" id="cfg-drive-folder-id" class="form-control form-control-sm" placeholder="Google Drive Folder ID">
-                  <a href="https://drive.google.com" target="_blank"
-                    class="btn btn-sm btn-light border flex-shrink-0"><i class="bi bi-box-arrow-up-right"></i></a>
-                  <button class="btn btn-sm btn-light border flex-shrink-0" onclick="sincronizarDrive()" title="Sincronizar">
+                  <span class="integ-help" data-bs-toggle="tooltip"
+                    title="Abre la carpeta en drive.google.com → mira la URL → copia el ID que va después de /folders/">?</span>
+                  <button class="btn btn-sm btn-light border flex-shrink-0" onclick="sincronizarDrive()" title="Sincronizar documentos">
                     <i class="bi bi-arrow-repeat"></i>
                   </button>
                 </div>
@@ -1209,21 +1212,11 @@
                     <i class="bi bi-whatsapp" style="color:#16a34a;"></i>
                   </div>
                   <input type="text" id="cfg-wa-template" class="form-control form-control-sm" placeholder="Template WA (notif. fases)">
-                  <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank"
-                    class="btn btn-sm btn-light border flex-shrink-0"><i class="bi bi-box-arrow-up-right"></i></a>
+                  <span class="integ-help" data-bs-toggle="tooltip"
+                    title="En Meta Business Manager → WhatsApp → Plantillas → copia el nombre exacto del template aprobado">?</span>
                 </div>
 
               </div>
-            </div>
-                  </a>
-                </div>
-                <div class="text-muted mt-1" style="font-size:10px;">Copia el nombre exacto del template aprobado en Meta Business Manager</div>
-                <div class="d-flex gap-2 mt-2">
-                  <button class="btn btn-sm btn-primary" onclick="guardarInteg('wa')">Guardar</button>
-                  <button class="btn btn-sm btn-light border" onclick="cerrarInteg('wa')">Cancelar</button>
-                </div>
-              </div>
-
             </div>
 
             <!-- Guardar -->
@@ -3854,6 +3847,11 @@ function limpiarVistasExtra() {
     if (el) el.classList.remove('visible');
   });
 }
+
+// Activar tooltips de Bootstrap (para los ? de integraciones)
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+  new bootstrap.Tooltip(el, { trigger: 'hover' });
+});
 </script>
 
 <!-- ════════════════════════════════════
