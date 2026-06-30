@@ -50,7 +50,6 @@ def oauth_google_start(agente=Depends(get_agente)):
         raise HTTPException(400, detail="GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET no configurados en Railway")
 
     state = secrets.token_urlsafe(32)
-    query("UPDATE bot_config SET google_oauth_state = %s WHERE id = 1", [state])
 
     flow = _flow()
     auth_url, _ = flow.authorization_url(
@@ -58,6 +57,11 @@ def oauth_google_start(agente=Depends(get_agente)):
         include_granted_scopes="true",
         prompt="consent",
         state=state,
+    )
+    # Persistir state y code_verifier (PKCE) porque el callback crea un Flow nuevo
+    query(
+        "UPDATE bot_config SET google_oauth_state = %s, google_oauth_verifier = %s WHERE id = 1",
+        [state, getattr(flow, "code_verifier", None)],
     )
     return {"auth_url": auth_url}
 
@@ -71,14 +75,17 @@ def oauth_google_callback(code: str = None, state: str = None, error: str = None
     if not code or not state:
         return RedirectResponse("/?google_error=invalido")
 
-    r = query("SELECT google_oauth_state FROM bot_config WHERE id = 1")
+    r = query("SELECT google_oauth_state, google_oauth_verifier FROM bot_config WHERE id = 1")
     stored_state = (r.rows[0].get("google_oauth_state") or "") if r.rows else ""
+    stored_verifier = (r.rows[0].get("google_oauth_verifier") or "") if r.rows else ""
     if not stored_state or stored_state != state:
         logger.warning("[OAuth] State inválido")
         return RedirectResponse("/?google_error=estado_invalido")
 
     try:
         flow = _flow()
+        if stored_verifier:
+            flow.code_verifier = stored_verifier
         flow.fetch_token(code=code)
         creds = flow.credentials
 
@@ -95,6 +102,7 @@ def oauth_google_callback(code: str = None, state: str = None, error: str = None
                SET google_refresh_token = %s,
                    google_email = %s,
                    google_oauth_state = NULL,
+                   google_oauth_verifier = NULL,
                    updated_at = NOW()
                WHERE id = 1""",
             [creds.refresh_token, email],

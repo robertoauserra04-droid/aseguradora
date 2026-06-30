@@ -375,6 +375,7 @@ ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS whatsapp_template_notif TEXT DEF
 ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS google_refresh_token TEXT;
 ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS google_email TEXT;
 ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS google_oauth_state TEXT;
+ALTER TABLE bot_config ADD COLUMN IF NOT EXISTS google_oauth_verifier TEXT;
 
 CREATE TABLE IF NOT EXISTS documentos_drive (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
