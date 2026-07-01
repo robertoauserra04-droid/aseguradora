@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
@@ -5,6 +6,7 @@ from app.middleware.auth import get_agente
 from app.crud.conversaciones import cambiar_estado, cerrar
 from app.utils.estados import es_estado_valido
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -23,8 +25,8 @@ def _evento_calendario(estado_nuevo: str, conv_id: str) -> None:
         )
         if r.rows:
             crear_evento_etapa(estado_nuevo, r.rows[0])
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[Estado] No se pudo crear el evento de calendario (conv %s): %s", conv_id, e)
 
 
 def _notificacion_fase(estado_nuevo: str, conv_id: str) -> None:
@@ -80,8 +82,8 @@ def _notificacion_fase(estado_nuevo: str, conv_id: str) -> None:
 
         # params = [{{1}}, {{2}}, {{3}}, {{4}}] del template en Meta
         enviar_template(telefono, template_name, [nombre, empresa, etapa_label, mensaje_personalizado])
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[Estado] No se pudo enviar la notificación de fase (conv %s): %s", conv_id, e)
 
 
 @router.post("/api/conversaciones/{conv_id}/estado")
