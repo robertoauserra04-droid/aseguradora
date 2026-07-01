@@ -66,7 +66,11 @@ def _handler(tipo_seguro=None, bot_existe=False, ultimo_cliente=None, hay_conv=T
         if "autor = 'bot'" in sql:
             return QueryResult([{"existe": 1}] if bot_existe else [])
         if "autor = 'cliente'" in sql:
-            return QueryResult([{"contenido": ultimo_cliente}] if ultimo_cliente is not None else [])
+            if ultimo_cliente is None:
+                return QueryResult([])
+            # str -> un mensaje; list -> varios (más reciente primero, como el ORDER BY DESC)
+            msgs = ultimo_cliente if isinstance(ultimo_cliente, list) else [ultimo_cliente]
+            return QueryResult([{"contenido": c} for c in msgs])
         return QueryResult([])
     return h
 
@@ -187,6 +191,14 @@ def test_responde_si_bot_ya_enganchado():
 
 def test_responde_si_ultimo_mensaje_menciona_seguros():
     _set_query(_handler(tipo_seguro=None, bot_existe=False, ultimo_cliente="quiero un seguro"))
+    assert _es_sobre_seguros("c1", {"solo_seguros": True}) is True
+
+
+def test_responde_si_algun_mensaje_reciente_menciona_seguros():
+    # Ráfaga agrupada por el debounce: "quiero un seguro de auto" y luego "gracias".
+    # El último mensaje es "gracias", pero un mensaje reciente sí pidió seguro -> responde.
+    _set_query(_handler(tipo_seguro=None, bot_existe=False,
+                        ultimo_cliente=["gracias", "quiero un seguro de auto"]))
     assert _es_sobre_seguros("c1", {"solo_seguros": True}) is True
 
 

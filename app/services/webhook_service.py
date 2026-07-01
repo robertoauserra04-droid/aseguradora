@@ -260,8 +260,8 @@ def _es_sobre_seguros(conv_id: str, contexto: dict) -> bool:
     """Con modo 'solo_seguros' activo, decide si el bot debe responder.
 
     Responde si la conversación ya tiene tipo_seguro detectado (ya hubo interés)
-    o si el último mensaje del cliente menciona un seguro. En cualquier otro caso
-    el bot se queda callado y el mensaje queda en el panel para un humano.
+    o si alguno de los últimos mensajes del cliente menciona un seguro. En cualquier
+    otro caso el bot se queda callado y el mensaje queda en el panel para un humano.
     """
     if not contexto.get("solo_seguros"):
         return True  # modo apagado → comportamiento de siempre
@@ -276,12 +276,14 @@ def _es_sobre_seguros(conv_id: str, contexto: dict) -> bool:
     )
     if b.rows:
         return True
+    # Se revisan los últimos mensajes del cliente (no solo el último): con el debounce
+    # que agrupa ráfagas, "quiero un seguro" + "gracias" debe seguir enganchando.
     m = query(
         "SELECT contenido FROM mensajes WHERE conversacion_id = %s AND autor = 'cliente' "
-        "ORDER BY timestamp_mensaje DESC LIMIT 1",
+        "ORDER BY timestamp_mensaje DESC LIMIT 5",
         [conv_id],
     )
-    return bool(m.rows and menciona_seguros(m.rows[0]["contenido"]))
+    return any(menciona_seguros(row.get("contenido")) for row in m.rows)
 
 
 def ejecutar_bot(conv_id: str) -> None:
