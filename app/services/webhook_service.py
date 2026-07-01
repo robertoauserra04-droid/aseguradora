@@ -1,3 +1,5 @@
+import os
+import time
 import logging
 from datetime import datetime, timezone
 from app.config.database import query
@@ -6,6 +8,10 @@ from app.utils.detectors import detectar_tipo_seguro, menciona_seguros
 from app import crud
 
 logger = logging.getLogger(__name__)
+
+# Segundos de espera para agrupar una ráfaga de mensajes del cliente antes de responder.
+# Evita que 3 mensajes seguidos generen 3 respuestas; una sola respuesta cubre los 3.
+BOT_DEBOUNCE_SEG = float(os.getenv("BOT_DEBOUNCE_SEG", "4"))
 
 
 def _es_nombre_generico(nombre: str | None, phone: str) -> bool:
@@ -319,6 +325,19 @@ def ejecutar_bot(conv_id: str) -> None:
             logger.info("Bot omitido (modo solo-seguros): conv %s no es sobre seguros aún", conv_id)
             return
 
+        # Anti-duplicados: agrupa la ráfaga de mensajes y reclama el turno de forma
+        # atómica. Si otra tarea ya lo reclamó (mismo o más nuevo), esta se aborta.
+        if not _reclamar_turno(conv_id):
+            logger.info("Bot omitido (turno ya atendido / ráfaga agrupada): conv %s", conv_id)
+            return
+
+        # Re-verificar tras la espera: si el asesor humano intervino mientras el bot
+        # "pensaba", el bot se calla (el guard inicial se evaluó con el estado previo).
+        rp = query("SELECT bot_auto_pausado, bot_activo FROM conversaciones WHERE id = %s", [conv_id])
+        if rp.rows and (rp.rows[0].get("bot_auto_pausado") or rp.rows[0].get("bot_activo") is False):
+            logger.info("Bot omitido (asesor intervino durante la espera): conv %s", conv_id)
+            return
+
         from app.services.whatsapp.sender import enviar_mensaje
 
         # Fuera del horario de atención
@@ -352,6 +371,38 @@ def _guardar_respuesta_bot(conv_id: str, texto: str) -> None:
         "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false, ultimo_autor = 'bot' WHERE id = %s",
         [conv_id],
     )
+
+
+def _reclamar_turno(conv_id: str) -> bool:
+    """Candado anti-duplicados ante ráfagas de mensajes o reintentos de webhook.
+
+    1. Espera BOT_DEBOUNCE_SEG para que los mensajes que llegan casi juntos se
+       agrupen (todas las tareas verán el mismo 'último mensaje del cliente').
+    2. Reclama el turno de forma atómica con un UPDATE condicional: solo la tarea
+       que ve el mensaje del cliente más reciente logra fijar bot_turno_respondido_at;
+       las demás no obtienen fila y se abortan. Como el UPDATE toma lock de fila,
+       funciona aunque haya varios procesos/workers.
+    """
+    if BOT_DEBOUNCE_SEG > 0:
+        time.sleep(BOT_DEBOUNCE_SEG)
+
+    ts_row = query(
+        "SELECT MAX(timestamp_mensaje) AS ts FROM mensajes WHERE conversacion_id = %s AND autor = 'cliente'",
+        [conv_id],
+    )
+    ts_cliente = ts_row.rows[0]["ts"] if ts_row.rows else None
+    if not ts_cliente:
+        return False
+
+    claim = query(
+        """UPDATE conversaciones
+           SET bot_turno_respondido_at = %s
+           WHERE id = %s
+             AND (bot_turno_respondido_at IS NULL OR bot_turno_respondido_at < %s)
+           RETURNING id""",
+        [ts_cliente, conv_id, ts_cliente],
+    )
+    return len(claim.rows) > 0
 
 
 def _bot_respondio_reciente(conv_id: str, horas: int = 4) -> bool:

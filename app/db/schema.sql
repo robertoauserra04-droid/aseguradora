@@ -357,6 +357,11 @@ ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS agente_respondio_at TIMESTAM
 -- Feature: rastrear quién envió el último mensaje (para badges 'ya se respondió')
 ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS ultimo_autor VARCHAR(20);
 
+-- Feature: candado anti-duplicados. Marca hasta qué mensaje del cliente ya respondió
+-- el bot; evita que varias tareas en paralelo (ráfaga de mensajes o reintentos de
+-- webhook) generen respuestas repetidas.
+ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS bot_turno_respondido_at TIMESTAMP;
+
 -- =============================================
 -- Feature: notificaciones WhatsApp por cambio de fase
 -- =============================================
