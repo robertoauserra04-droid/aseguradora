@@ -1,6 +1,6 @@
 import hmac
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException
 from jose import jwt
 from pydantic import BaseModel
@@ -16,7 +16,7 @@ class LoginBody(BaseModel):
 
 
 def _make_token(payload: dict) -> str:
-    payload["exp"] = datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS)
+    payload["exp"] = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS)
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
 

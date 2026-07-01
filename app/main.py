@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -26,7 +27,14 @@ from app.routes.oauth import router as oauth_router
 
 from app.config.env import ALLOWED_ORIGINS
 
-app = FastAPI(title="Seguros Carguill API", version="2.0.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Mismo bootstrap que el viejo @app.on_event("startup")
+    startup()
+    yield
+
+
+app = FastAPI(title="Seguros Carguill API", version="2.0.0", lifespan=lifespan)
 
 # CORS: si hay una lista blanca de orígenes se permiten credenciales; si no,
 # se cae a "*" SIN credenciales (combinar "*" con allow_credentials=True es
@@ -69,7 +77,6 @@ if os.path.isdir(PUBLIC_DIR):
     app.mount("/", StaticFiles(directory=PUBLIC_DIR, html=True), name="static")
 
 
-@app.on_event("startup")
 def startup():
     from app.db.migrate import run_migrations, backfill_clientes_polizas, seed_etapas, seed_bot_config_defaults
     from app.db.seed import run_seed
