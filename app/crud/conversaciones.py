@@ -371,7 +371,9 @@ def editar_cliente(conv_id: str, datos: dict) -> None:
         )
         return
 
-    nombre = cliente_nombre.strip()
+    # Defensivo: la ruta ya exige cliente_nombre, pero evitamos None.strip() por si
+    # se llama a esta función directamente sin pasar por la validación del endpoint.
+    nombre = (cliente_nombre or "").strip()
     query(
         "UPDATE conversaciones SET cliente_nombre = %s, cliente_email = %s, updated_at = NOW() WHERE id = %s",
         [nombre, cliente_email or None, conv_id],

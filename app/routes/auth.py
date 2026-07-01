@@ -1,3 +1,4 @@
+import hmac
 import bcrypt
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException
@@ -21,7 +22,13 @@ def _make_token(payload: dict) -> str:
 
 @router.post("/api/auth/login")
 def login(body: LoginBody):
-    if ADMIN_EMAIL and ADMIN_PASSWORD and body.email == ADMIN_EMAIL and body.password == ADMIN_PASSWORD:
+    # Comparación en tiempo constante para no filtrar el password del admin por timing.
+    admin_ok = (
+        ADMIN_EMAIL and ADMIN_PASSWORD
+        and hmac.compare_digest(body.email, ADMIN_EMAIL)
+        and hmac.compare_digest(body.password, ADMIN_PASSWORD)
+    )
+    if admin_ok:
         token = _make_token({"id": "admin", "nombre": "Administrador", "email": body.email, "rol": "admin"})
         return {"token": token, "nombre": "Administrador", "email": body.email, "rol": "admin"}
 
