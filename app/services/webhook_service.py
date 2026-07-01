@@ -233,11 +233,25 @@ def procesar_mensaje_entrante(body: dict, idempotency_key: str = None,
                 "UPDATE conversaciones SET ultimo_mensaje_at = NOW(), updated_at = NOW(), requiere_respuesta = false, ultimo_autor = %s WHERE id = %s",
                 [autor, conv_id],
             )
-            # Pausa automática del bot cuando un agente humano responde
+            # Pausa automática del bot cuando responde un agente HUMANO.
+            #
+            # 'autor == "agente"' = mensaje SALIENTE que NO es eco del propio bot
+            # (los mensajes del bot llegan con origin=cloud_api y ya se descartaron
+            # arriba como es_eco_api). En la práctica es el asesor escribiendo desde
+            # la app de WhatsApp Business, que Kapso reenvía como evento
+            # whatsapp.message.sent con origin=business_app.
+            #
+            # Requisito: el webhook en Kapso debe estar suscrito a whatsapp.message.sent
+            # (además de whatsapp.message.received); si no, este evento nunca llega y
+            # la pausa no se activará. La IA se reactiva sola tras 48 h (ver ejecutar_bot).
             if autor == "agente":
                 query(
                     "UPDATE conversaciones SET bot_auto_pausado = true, agente_respondio_at = NOW() WHERE id = %s",
                     [conv_id],
+                )
+                logger.info(
+                    "IA en pausa: el asesor humano respondió en la conversación %s "
+                    "(el bot no volverá a responder por 48 h)", conv_id,
                 )
 
     if idempotency_key:
