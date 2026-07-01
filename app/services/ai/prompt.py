@@ -81,8 +81,9 @@ def build_system_prompt(cfg: dict, faqs: list, slots_info: dict, docs: list | No
         f"• No te desvíes a temas ajenos a {empresa}; si insisten, ofrece pasar con un asesor.{politica}{prohibidos}{restricciones_extra}"
     )
 
-    if cfg.get("instrucciones", "").strip():
-        partes.append(cfg["instrucciones"].strip())
+    instrucciones = (cfg.get("instrucciones") or "").strip()
+    if instrucciones:
+        partes.append(instrucciones)
 
     if faqs:
         faq_texto = "\n\n".join(f"P: {f['pregunta']}\nR: {f['respuesta']}" for f in faqs)

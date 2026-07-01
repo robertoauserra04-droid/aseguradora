@@ -6,8 +6,10 @@ logger = logging.getLogger(__name__)
 
 def handle_tool_call(tool_name: str, args: dict, context: dict) -> str:
     conversacion_id = context["conversacion_id"]
-    conversacion = context.get("conversacion", {})
-    slots_info = context.get("slots_info", {})
+    # `or {}` (no el default de .get): la clave puede existir con valor None
+    # si la conversación no se encontró en el snapshot.
+    conversacion = context.get("conversacion") or {}
+    slots_info = context.get("slots_info") or {}
 
     if tool_name == "registrar_interes":
         query(
