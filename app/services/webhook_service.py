@@ -47,6 +47,28 @@ def _extraer_nombre(raw_conv: dict, raw_msg: dict, phone: str) -> str:
     return phone
 
 
+def _parse_timestamp(ts, created_at_raw) -> datetime:
+    """Obtiene la fecha del mensaje de forma robusta. Nunca lanza: ante un valor
+    inválido cae a la hora actual (UTC)."""
+    # 1. Timestamp epoch (Meta/Kapso). Puede venir en segundos o milisegundos.
+    if ts is not None:
+        try:
+            n = int(ts)
+            if n > 10_000_000_000:  # 13 dígitos → milisegundos
+                n //= 1000
+            return datetime.fromtimestamp(n, tz=timezone.utc)
+        except (ValueError, TypeError, OverflowError, OSError):
+            pass
+    # 2. Fecha ISO (normalizando el sufijo 'Z' que fromisoformat no acepta en <3.11)
+    if created_at_raw:
+        try:
+            return datetime.fromisoformat(str(created_at_raw).replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            pass
+    # 3. Fallback
+    return datetime.now(timezone.utc)
+
+
 def _normalizar_payload(body: dict) -> tuple[dict, dict] | None:
     raw_msg = body.get("message", {})
     raw_conv = body.get("conversation", {})
@@ -67,13 +89,7 @@ def _normalizar_payload(body: dict) -> tuple[dict, dict] | None:
     whatsapp_id = raw_msg.get("id") or raw_msg.get("whatsapp_message_id")
     msg_type = raw_msg.get("type") or raw_msg.get("message_type", "text")
 
-    ts = raw_msg.get("timestamp")
-    if ts:
-        created_at = datetime.fromtimestamp(int(ts), tz=timezone.utc)
-    elif raw_msg.get("created_at"):
-        created_at = datetime.fromisoformat(raw_msg["created_at"])
-    else:
-        created_at = datetime.now(timezone.utc)
+    created_at = _parse_timestamp(raw_msg.get("timestamp"), raw_msg.get("created_at"))
 
     raw_phone = (raw_conv.get("phone_number") or raw_msg.get("from", "")).replace(" ", "")
     phone = raw_phone if raw_phone.startswith("+") else f"+{raw_phone}"
