@@ -55,14 +55,26 @@ def generar_respuesta(conversacion_id: str) -> str | None:
         messages.append(choice.message)
 
         for tool_call in choice.message.tool_calls:
-            args = json.loads(tool_call.function.arguments)
-            result = handle_tool_call(
-                tool_call.function.name,
-                args,
-                {"conversacion_id": conversacion_id,
-                 "conversacion": snapshot["conversacion"],
-                 "slots_info": snapshot["slots_info"]},
-            )
+            # Un fallo de una tool no debe tumbar toda la respuesta: se captura y se
+            # devuelve un content de error legible (igual que hace el modo prueba).
+            try:
+                args = json.loads(tool_call.function.arguments)
+            except Exception:
+                args = {}
+            try:
+                result = handle_tool_call(
+                    tool_call.function.name,
+                    args,
+                    {"conversacion_id": conversacion_id,
+                     "conversacion": snapshot["conversacion"],
+                     "slots_info": snapshot["slots_info"]},
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(
+                    "Error en tool %s: %s", tool_call.function.name, e
+                )
+                result = "No se pudo completar la acción en este momento."
             messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": result})
 
         resp2 = openai.chat.completions.create(

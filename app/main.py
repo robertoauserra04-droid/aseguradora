@@ -24,15 +24,29 @@ from app.routes.etapas import router as etapas_router
 from app.routes.citas import router as citas_router
 from app.routes.oauth import router as oauth_router
 
+from app.config.env import ALLOWED_ORIGINS
+
 app = FastAPI(title="Seguros Carguill API", version="2.0.0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS: si hay una lista blanca de orígenes se permiten credenciales; si no,
+# se cae a "*" SIN credenciales (combinar "*" con allow_credentials=True es
+# inválido para los navegadores y una fuga de seguridad).
+if ALLOWED_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 app.include_router(health_router)
 app.include_router(auth_router)
@@ -61,9 +75,15 @@ def startup():
     from app.db.seed import run_seed
     from app.services.jobs_service import iniciar_jobs
 
+    log = logging.getLogger("startup")
+
+    # Las migraciones SÍ deben abortar el arranque si fallan (esquema roto es crítico).
     run_migrations()
-    seed_etapas()
-    seed_bot_config_defaults()
-    backfill_clientes_polizas()
-    run_seed()
-    iniciar_jobs()
+
+    # El resto del bootstrap no debe tumbar todo el servicio por un fallo transitorio:
+    # se loguea y se continúa (el frontend estático y la API siguen sirviéndose).
+    for paso in (seed_etapas, seed_bot_config_defaults, backfill_clientes_polizas, run_seed, iniciar_jobs):
+        try:
+            paso()
+        except Exception as e:
+            log.error("Fallo en el paso de arranque %s: %s", paso.__name__, e)

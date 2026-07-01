@@ -7,6 +7,11 @@ from app.config.env import (
 
 logger = logging.getLogger(__name__)
 
+# Cache de credenciales OAuth por conjunto de scopes: evita hacer un refresh HTTP
+# en cada llamada. Se reutiliza mientras el access_token siga vigente y el
+# refresh_token no haya cambiado (reconexión desde el panel).
+_oauth_cache: dict = {}
+
 
 def get_credentials(scopes: list[str]):
     """Retorna credenciales de Google.
@@ -23,6 +28,12 @@ def get_credentials(scopes: list[str]):
         if refresh_token and GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
             from google.oauth2.credentials import Credentials
             from google.auth.transport.requests import Request
+
+            key = tuple(sorted(scopes))
+            cached_rt, cached_creds = _oauth_cache.get(key, (None, None))
+            if cached_creds is not None and cached_rt == refresh_token and cached_creds.valid:
+                return cached_creds
+
             creds = Credentials(
                 token=None,
                 refresh_token=refresh_token,
@@ -32,6 +43,7 @@ def get_credentials(scopes: list[str]):
                 scopes=scopes,
             )
             creds.refresh(Request())
+            _oauth_cache[key] = (refresh_token, creds)
             return creds
     except Exception as e:
         logger.warning("[GoogleAuth] OAuth falló, intentando service account: %s", e)

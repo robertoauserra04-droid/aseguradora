@@ -4,7 +4,7 @@ import logging
 from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from app.middleware.auth import get_agente
+from app.middleware.auth import get_admin
 from app.config.database import query
 from app.config.env import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_URL
 
@@ -45,7 +45,7 @@ def _flow():
 
 
 @router.get("/api/oauth/google")
-def oauth_google_start(agente=Depends(get_agente)):
+def oauth_google_start(agente=Depends(get_admin)):
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
         raise HTTPException(400, detail="GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET no configurados en Railway")
 
@@ -97,9 +97,12 @@ def oauth_google_callback(code: str = None, state: str = None, error: str = None
         ).json()
         email = userinfo.get("email", "")
 
+        # Google solo devuelve refresh_token en el primer consentimiento; si esta vez
+        # no viene, NO sobrescribimos el que ya teníamos (COALESCE) para no romper la
+        # integración dejándolo en NULL.
         query(
             """UPDATE bot_config
-               SET google_refresh_token = %s,
+               SET google_refresh_token = COALESCE(%s, google_refresh_token),
                    google_email = %s,
                    google_oauth_state = NULL,
                    google_oauth_verifier = NULL,
@@ -117,6 +120,6 @@ def oauth_google_callback(code: str = None, state: str = None, error: str = None
 
 
 @router.delete("/api/oauth/google")
-def oauth_google_disconnect(agente=Depends(get_agente)):
+def oauth_google_disconnect(agente=Depends(get_admin)):
     query("UPDATE bot_config SET google_refresh_token = NULL, google_email = NULL WHERE id = 1")
     return {"ok": True}

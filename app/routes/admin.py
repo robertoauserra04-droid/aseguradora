@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, BackgroundTasks
-from app.middleware.auth import get_agente
+from app.middleware.auth import get_agente, get_admin
 from app.utils.estados import MIGRACION_ESTADOS
 from app.config.database import query
 
@@ -7,21 +7,21 @@ router = APIRouter()
 
 
 @router.delete("/api/admin/datos-prueba")
-def limpiar_datos(agente=Depends(get_agente)):
+def limpiar_datos(agente=Depends(get_admin)):
     from app.db.seed import limpiar_datos as _limpiar
     _limpiar()
     return {"success": True, "mensaje": "Datos de prueba eliminados correctamente"}
 
 
 @router.post("/api/admin/seed")
-def cargar_seed(agente=Depends(get_agente)):
+def cargar_seed(agente=Depends(get_admin)):
     from app.db.seed import run_seed_force
     run_seed_force()
     return {"success": True, "mensaje": "Conversaciones de prueba cargadas correctamente"}
 
 
 @router.post("/api/admin/migrar-estados")
-def migrar_estados(agente=Depends(get_agente)):
+def migrar_estados(agente=Depends(get_admin)):
     actualizadas = 0
     for estado_viejo, estado_nuevo in MIGRACION_ESTADOS.items():
         r = query(
@@ -47,7 +47,7 @@ def listar_docs(agente=Depends(get_agente)):
 
 
 @router.post("/api/drive/sincronizar")
-def sincronizar_drive(background: BackgroundTasks, agente=Depends(get_agente)):
+def sincronizar_drive(background: BackgroundTasks, agente=Depends(get_admin)):
     def _run():
         from app.services.drive.client import sincronizar_documentos
         sincronizar_documentos()

@@ -33,20 +33,34 @@ def _get_folder_id() -> str | None:
     return None
 
 
-def listar_archivos(folder_id: str) -> list:
+def listar_archivos(folder_id: str) -> tuple[list, bool]:
+    """Lista TODOS los archivos de la carpeta recorriendo la paginación.
+
+    Devuelve (archivos, completo). `completo` es False si hubo un error a mitad
+    de la paginación: en ese caso el llamador NO debe borrar registros, para no
+    eliminar archivos que simplemente no se alcanzaron a listar.
+    """
     svc = _get_service()
     if not svc:
-        return []
+        return [], False
+    archivos = []
+    page_token = None
     try:
-        res = svc.files().list(
-            q=f"'{folder_id}' in parents and trashed = false",
-            fields="files(id, name, mimeType, modifiedTime)",
-            pageSize=50,
-        ).execute()
-        return res.get("files", [])
+        while True:
+            res = svc.files().list(
+                q=f"'{folder_id}' in parents and trashed = false",
+                fields="nextPageToken, files(id, name, mimeType, modifiedTime)",
+                pageSize=100,
+                pageToken=page_token,
+            ).execute()
+            archivos.extend(res.get("files", []))
+            page_token = res.get("nextPageToken")
+            if not page_token:
+                break
+        return archivos, True
     except Exception as e:
         logger.error("[Drive] Error al listar archivos: %s", e)
-        return []
+        return archivos, False
 
 
 def _leer_contenido(svc, file_id: str, mime_type: str) -> str | None:
@@ -83,7 +97,7 @@ def sincronizar_documentos() -> int:
         logger.warning("[Drive] Credenciales no configuradas, sync omitida")
         return 0
 
-    archivos = listar_archivos(folder_id)
+    archivos, listado_completo = listar_archivos(folder_id)
     actualizados = 0
     for f in archivos:
         contenido = _leer_contenido(svc, f["id"], f.get("mimeType", ""))
@@ -104,14 +118,18 @@ def sincronizar_documentos() -> int:
         except Exception as e:
             logger.error("[Drive] Error al guardar %s: %s", f["name"], e)
 
-    # Limpiar registros de archivos que ya no están en Drive
-    if archivos:
+    # Limpiar registros de archivos que ya no están en Drive.
+    # SOLO si el listado fue completo y no vacío: si la API falló a mitad de la
+    # paginación, borrar por una lista parcial eliminaría documentos válidos.
+    if listado_completo and archivos:
         ids_actuales = [f["id"] for f in archivos]
         placeholders = ", ".join(["%s"] * len(ids_actuales))
         query(
             f"DELETE FROM documentos_drive WHERE file_id NOT IN ({placeholders})",
             ids_actuales,
         )
+    elif not listado_completo:
+        logger.warning("[Drive] Listado incompleto: se omite el borrado de registros huérfanos")
 
     logger.info("[Drive] Sincronización completada: %d archivos", actualizados)
     return actualizados

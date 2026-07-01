@@ -309,9 +309,19 @@ def crear_manual(datos: dict, agente: dict) -> str:
     return conv_id
 
 
+def _uuid_o_none(valor):
+    """Devuelve el valor solo si es un UUID válido; si no (p.ej. el admin
+    hardcodeado con id='admin'), None — evita el error de casteo a UUID en Postgres."""
+    import uuid
+    try:
+        return str(uuid.UUID(str(valor)))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
 def crear_nota(conv_id: str, contenido: str, agente: dict) -> str:
     agente_nombre = agente.get("nombre", "Agente")
-    agente_id = agente.get("id")
+    agente_id = _uuid_o_none(agente.get("agente_id") or agente.get("id"))
     r = query(
         """INSERT INTO notas_internas (conversacion_id, agente_id, agente_nombre, contenido)
            VALUES (%s, %s, %s, %s) RETURNING id""",
@@ -361,7 +371,9 @@ def editar_cliente(conv_id: str, datos: dict) -> None:
         )
         return
 
-    nombre = cliente_nombre.strip()
+    # Defensivo: la ruta ya exige cliente_nombre, pero evitamos None.strip() por si
+    # se llama a esta función directamente sin pasar por la validación del endpoint.
+    nombre = (cliente_nombre or "").strip()
     query(
         "UPDATE conversaciones SET cliente_nombre = %s, cliente_email = %s, updated_at = NOW() WHERE id = %s",
         [nombre, cliente_email or None, conv_id],

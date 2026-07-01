@@ -12,7 +12,7 @@ def build_snapshot(conversacion_id: str) -> dict:
         [conversacion_id],
     )
     conv_r = query(
-        "SELECT tipo_seguro, estado, cliente_nombre, cliente_email, cliente_telefono FROM conversaciones WHERE id = %s",
+        "SELECT tipo_seguro, estado, cliente_id, cliente_nombre, cliente_email, cliente_telefono FROM conversaciones WHERE id = %s",
         [conversacion_id],
     )
 
