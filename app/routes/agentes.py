@@ -48,6 +48,8 @@ def crear(body: AgenteBody, agente=Depends(get_admin)):
 
 @router.put("/api/agentes/{agente_id}")
 def actualizar(agente_id: str, body: AgenteUpdateBody, agente=Depends(get_admin)):
+    if body.rol and body.rol not in ROLES_VALIDOS:
+        raise HTTPException(400, detail=f"Rol inválido. Usa: {', '.join(ROLES_VALIDOS)}")
     try:
         resultado = crud.actualizar(agente_id, body.model_dump(exclude_none=True))
     except pg_errors.UniqueViolation:

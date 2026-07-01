@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from app.middleware.auth import get_agente
+from app.middleware.auth import get_agente, get_admin, get_supervisor
 from app.crud import bot as crud
 
 router = APIRouter()
@@ -45,13 +45,13 @@ def get_config(agente=Depends(get_agente)):
 
 
 @router.put("/api/bot/config")
-def update_config(body: BotConfigBody, agente=Depends(get_agente)):
+def update_config(body: BotConfigBody, agente=Depends(get_admin)):
     crud.update_config(body.model_dump(exclude_none=True))
     return {"ok": True}
 
 
 @router.delete("/api/bot/config")
-def reset_config(agente=Depends(get_agente)):
+def reset_config(agente=Depends(get_admin)):
     crud.reset_config()
     return {"ok": True}
 
@@ -62,20 +62,20 @@ def list_faq(agente=Depends(get_agente)):
 
 
 @router.post("/api/bot/faq")
-def create_faq(body: FaqBody, agente=Depends(get_agente)):
+def create_faq(body: FaqBody, agente=Depends(get_admin)):
     if not body.pregunta or not body.respuesta:
         raise HTTPException(400, detail="Faltan pregunta o respuesta")
     return crud.create_faq(body.pregunta, body.respuesta)
 
 
 @router.delete("/api/bot/faq/{faq_id}")
-def delete_faq(faq_id: str, agente=Depends(get_agente)):
+def delete_faq(faq_id: str, agente=Depends(get_admin)):
     crud.delete_faq(faq_id)
     return {"ok": True}
 
 
 @router.patch("/api/conversaciones/{conv_id}/bot")
-def toggle_bot(conv_id: str, body: BotToggleBody, agente=Depends(get_agente)):
+def toggle_bot(conv_id: str, body: BotToggleBody, agente=Depends(get_supervisor)):
     from app.crud.conversaciones import toggle_bot as crud_toggle
     crud_toggle(conv_id, body.bot_activo)
     return {"ok": True, "bot_activo": body.bot_activo}
@@ -89,14 +89,14 @@ def list_excluidos(agente=Depends(get_agente)):
 
 
 @router.post("/api/bot/excluidos", status_code=201)
-def add_excluido(body: ExcluidoBody, agente=Depends(get_agente)):
+def add_excluido(body: ExcluidoBody, agente=Depends(get_admin)):
     if not body.numero.strip():
         raise HTTPException(400, detail="El número es requerido")
     return crud.add_excluido(body.numero, body.motivo)
 
 
 @router.delete("/api/bot/excluidos/{excluido_id}")
-def delete_excluido(excluido_id: str, agente=Depends(get_agente)):
+def delete_excluido(excluido_id: str, agente=Depends(get_admin)):
     if not crud.delete_excluido(excluido_id):
         raise HTTPException(404, detail="No encontrado")
     return {"ok": True}
