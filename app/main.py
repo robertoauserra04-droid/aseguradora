@@ -75,9 +75,15 @@ def startup():
     from app.db.seed import run_seed
     from app.services.jobs_service import iniciar_jobs
 
+    log = logging.getLogger("startup")
+
+    # Las migraciones SÍ deben abortar el arranque si fallan (esquema roto es crítico).
     run_migrations()
-    seed_etapas()
-    seed_bot_config_defaults()
-    backfill_clientes_polizas()
-    run_seed()
-    iniciar_jobs()
+
+    # El resto del bootstrap no debe tumbar todo el servicio por un fallo transitorio:
+    # se loguea y se continúa (el frontend estático y la API siguen sirviéndose).
+    for paso in (seed_etapas, seed_bot_config_defaults, backfill_clientes_polizas, run_seed, iniciar_jobs):
+        try:
+            paso()
+        except Exception as e:
+            log.error("Fallo en el paso de arranque %s: %s", paso.__name__, e)
