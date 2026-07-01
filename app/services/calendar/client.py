@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional
 from googleapiclient.discovery import build
 from app.config.env import GOOGLE_CALENDAR_ID
@@ -7,8 +8,24 @@ from app.services.google_auth import get_credentials
 _SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 TIMEZONE = "America/Monterrey"
+_TZ = ZoneInfo(TIMEZONE)
 HORA_INICIO = 9
 HORA_FIN = 18
+
+_DIAS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+_MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+             "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+
+def _fmt_slot_es(dt: datetime, hora: int) -> str:
+    """Etiqueta legible en español sin depender del locale del contenedor."""
+    return f"{_DIAS_ES[dt.weekday()]} {dt.day} de {_MESES_ES[dt.month - 1]} a las {hora}:00"
+
+
+def _parse_google_dt(valor: str) -> datetime:
+    """Parsea un dateTime de la API de Google preservando su offset real.
+    Normaliza el sufijo 'Z' (UTC) que fromisoformat no acepta en versiones antiguas."""
+    return datetime.fromisoformat(valor.replace("Z", "+00:00"))
 
 ETAPAS_EVENTO = {
     "tramite_oficina":     "Trámite en oficina",
@@ -41,8 +58,10 @@ def _get_service():
 
 
 def _proximos_dias_habiles(n: int = 3) -> list[datetime]:
+    # En hora local (Monterrey): así los slots que se generan y muestran
+    # coinciden con la hora real y con el campo timeZone que se envía a Google.
     dias = []
-    d = datetime.now(timezone.utc) + timedelta(days=1)
+    d = datetime.now(_TZ) + timedelta(days=1)
     while len(dias) < n:
         if d.weekday() not in (5, 6):
             dias.append(d.replace(hour=0, minute=0, second=0, microsecond=0))
@@ -75,15 +94,20 @@ def consultar_disponibilidad() -> dict:
     slots = []
     for dia in dias:
         for hora in range(HORA_INICIO, HORA_FIN):
-            inicio = dia.replace(hour=hora)
+            inicio = dia.replace(hour=hora)          # aware, tz=Monterrey
             fin = dia.replace(hour=hora + 1)
-            ocupado = any(
-                inicio < datetime.fromisoformat(b["end"].rstrip("Z")).replace(tzinfo=timezone.utc)
-                and fin > datetime.fromisoformat(b["start"].rstrip("Z")).replace(tzinfo=timezone.utc)
-                for b in busy
-            )
+            ocupado = False
+            for b in busy:
+                b_ini, b_fin = b.get("start"), b.get("end")
+                if not b_ini or not b_fin:
+                    continue
+                # Comparación entre datetimes aware; se preserva el offset real de Google
+                # (no se fuerza UTC), así el solapamiento se calcula correctamente.
+                if inicio < _parse_google_dt(b_fin) and fin > _parse_google_dt(b_ini):
+                    ocupado = True
+                    break
             if not ocupado:
-                label = inicio.strftime(f"%A %d de %B a las {hora}:00")
+                label = _fmt_slot_es(inicio, hora)
                 slots.append({"inicio": inicio.isoformat(), "fin": fin.isoformat(), "label": label})
 
     mostrar = slots[:6]
@@ -130,7 +154,11 @@ def crear_evento_etapa(etapa: str, conversacion: dict) -> Optional[dict]:
         f"Tel: {conversacion.get('cliente_telefono', '')}\n"
         f"Tipo seguro: {conversacion.get('tipo_seguro') or 'No definido'}"
     )
-    manana = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+    # "Mañana" en hora local (no UTC). Para eventos all-day, Google exige que
+    # end.date sea EXCLUSIVO (el día siguiente al último día del evento).
+    hoy_local = datetime.now(_TZ).date()
+    manana = (hoy_local + timedelta(days=1)).strftime("%Y-%m-%d")
+    pasado_manana = (hoy_local + timedelta(days=2)).strftime("%Y-%m-%d")
 
     try:
         r = svc.events().insert(
@@ -139,7 +167,7 @@ def crear_evento_etapa(etapa: str, conversacion: dict) -> Optional[dict]:
                 "summary": titulo,
                 "description": descripcion,
                 "start": {"date": manana},
-                "end":   {"date": manana},
+                "end":   {"date": pasado_manana},
                 "reminders": {"useDefault": False, "overrides": [{"method": "popup", "minutes": 60}]},
             },
         ).execute()
